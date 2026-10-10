@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0f766e">
+  <title>الربط — رفيق الحفظ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body data-task-type="RABT">
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-inner">
+      <div style="display:flex; align-items:center; gap:0.75rem;">
+        <a href="dashboard.html" class="back-link" title="العودة لدفتر اليوم">
+          <span>←</span>
+          <span>العودة للمهام</span>
+        </a>
+        <span class="greeting">🔵 الربط (نافذة الربط المستمرة)</span>
+      </div>
+
+      <div class="header-actions">
+        <!-- Screen Stay-Awake Toggle -->
+        <button type="button" class="wakelock-toggle-btn header-action-btn" data-wakelock="on" title="إبقاء الشاشة مضاءة">
+          <svg class="icon-wakelock-on" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+            <line x1="8" y1="21" x2="16" y2="21"></line>
+            <line x1="12" y1="17" x2="12" y2="21"></line>
+            <circle cx="12" cy="10" r="2.5" fill="currentColor"></circle>
+          </svg>
+          <svg class="icon-wakelock-off" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+            <line x1="8" y1="21" x2="16" y2="21"></line>
+            <line x1="12" y1="17" x2="12" y2="21"></line>
+            <line x1="2" y1="2" x2="22" y2="22" stroke-width="2.2"></line>
+          </svg>
+        </button>
+
+        <!-- Theme Toggle -->
+        <button type="button" class="theme-toggle-btn header-action-btn" title="تبديل المظهر">
+          <svg class="icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="4.5" fill="currentColor"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+          <svg class="icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+        </button>
+
+        <!-- Sound Feedback Toggle -->
+        <button type="button" class="sound-toggle-btn header-action-btn" data-sound="on" title="المؤثرات الصوتية" aria-label="المؤثرات الصوتية">
+          <svg class="icon-sound-on" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+          </svg>
+          <svg class="icon-sound-off" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <line x1="23" y1="9" x2="17" y2="15"></line>
+            <line x1="17" y1="9" x2="23" y2="15"></line>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <div id="task-content">
+      <p class="loading">جاري تجهيز صفحات الربط…</p>
+    </div>
+  </main>
+
+  <!-- Mistake Logging Modal -->
+  <div id="mistake-modal" class="modal-overlay hidden">
+    <div class="modal" role="dialog" aria-modal="true">
+      <div class="modal-head">
+        <h3>سجل خطأ أثناء التلاوة</h3>
+        <span id="modal-page" class="task-page-badge red">صفحة —</span>
+      </div>
+
+      <div class="field">
+        <label for="mistake-surah">السورة</label>
+        <select id="mistake-surah">
+          <option value="">— اختر السورة —</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="mistake-ayah">رقم الآية</label>
+        <select id="mistake-ayah">
+          <option value="">— اختر الآية —</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <span class="field-label">نوع الخطأ</span>
+        <div class="tag-group" id="mistake-tags">
+          <button type="button" class="tag-btn active" data-type="TRANSITION_FAILURE">انقطاع / نقلة</button>
+          <button type="button" class="tag-btn" data-type="MUTASHABIHAT">متشابهات</button>
+          <button type="button" class="tag-btn" data-type="TAWAQQUF">توقف</button>
+          <button type="button" class="tag-btn" data-type="TASHKEEL">تشكيل</button>
+          <button type="button" class="tag-btn" data-type="LAFDH">لفظ</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="mistake-note">ملاحظة مساعدة للتذكر (اختياري)</label>
+        <textarea id="mistake-note" rows="2" maxlength="5000" placeholder="ملاحظة أثناء التلاوة…"></textarea>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" id="modal-cancel" class="btn btn-ghost">إلغاء</button>
+        <button type="button" id="modal-save" class="btn btn-danger">تسجيل الخطأ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile Bottom Navigation -->
+  <nav class="mobile-bottom-nav" aria-label="التنقل السريع">
+    <a href="dashboard.html" class="mobile-nav-link" title="الرئيسية">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+      </svg>
+      <span>الرئيسية</span>
+    </a>
+    <a href="hifz.html" class="mobile-nav-link" title="الحفظ الجديد">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+      </svg>
+      <span>حفظ جديد</span>
+    </a>
+    <a href="rabt.html" class="mobile-nav-link active" title="الربط">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+      </svg>
+      <span>الربط</span>
+    </a>
+    <a href="murajaah.html" class="mobile-nav-link" title="المراجعة">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="23 4 23 10 17 10"></polyline>
+        <polyline points="1 20 1 14 7 14"></polyline>
+        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+      </svg>
+      <span>المراجعة</span>
+    </a>
+    <a href="flashcards.html" class="mobile-nav-link" title="البطاقات">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+        <polyline points="2 17 12 22 22 17"></polyline>
+        <polyline points="2 12 12 17 22 12"></polyline>
+      </svg>
+      <span>البطاقات</span>
+    </a>
+    <a href="history.html" class="mobile-nav-link" title="السجل">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+        <polyline points="14 2 14 8 20 8"></polyline>
+        <line x1="16" y1="13" x2="8" y2="13"></line>
+        <line x1="16" y1="17" x2="8" y2="17"></line>
+      </svg>
+      <span>السجل</span>
+    </a>
+  </nav>
+
+  <script src="js/app.js"></script>
+</body>
+</html>

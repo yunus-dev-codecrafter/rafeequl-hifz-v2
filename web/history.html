@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0f766e">
+  <title>سجل الأخطاء المتقنة — رفيق الحفظ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .history-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+    .filter-tabs {
+      display: flex;
+      background: var(--line-subtle);
+      border-radius: var(--radius-md);
+      padding: 3px;
+    }
+    .filter-btn {
+      border: none;
+      background: transparent;
+      padding: 0.45rem 0.85rem;
+      font-size: 0.85rem;
+      font-weight: 700;
+      border-radius: var(--radius-sm);
+      color: var(--muted);
+      cursor: pointer;
+      transition: all var(--duration) var(--ease);
+    }
+    .filter-btn.active {
+      background: var(--card);
+      color: var(--accent);
+      box-shadow: var(--shadow-sm);
+    }
+    .search-box {
+      flex: 1;
+      min-width: 220px;
+    }
+    .history-card-item {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.4rem;
+      margin-bottom: 0.9rem;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1rem;
+      transition: all var(--duration) var(--ease);
+    }
+    .history-card-item:hover {
+      box-shadow: var(--shadow);
+      border-color: var(--accent-light);
+    }
+    .history-card-item.is-archived {
+      border-right: 4px solid var(--success);
+    }
+    .history-card-item.is-active {
+      border-right: 4px solid var(--danger);
+    }
+    .analytics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .weak-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5rem 0;
+      border-bottom: 1px dashed var(--line);
+      font-size: 0.9rem;
+    }
+    .weak-item:last-child {
+      border-bottom: none;
+    }
+  </style>
+</head>
+<body data-page="history">
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-inner">
+      <div style="display:flex; align-items:center; gap:0.75rem;">
+        <a href="dashboard.html" class="back-link" title="العودة لدفتر اليوم">
+          <span>←</span>
+          <span>العودة للمهام</span>
+        </a>
+        <span class="greeting">📜 سجل الأخطاء وتاريخ الإتقان</span>
+      </div>
+
+      <div class="header-actions">
+        <!-- Screen Stay-Awake Toggle -->
+        <button type="button" class="wakelock-toggle-btn header-action-btn" data-wakelock="on" title="إبقاء الشاشة مضاءة">
+          <svg class="icon-wakelock-on" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+            <line x1="8" y1="21" x2="16" y2="21"></line>
+            <line x1="12" y1="17" x2="12" y2="21"></line>
+            <circle cx="12" cy="10" r="2.5" fill="currentColor"></circle>
+          </svg>
+          <svg class="icon-wakelock-off" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+            <line x1="8" y1="21" x2="16" y2="21"></line>
+            <line x1="12" y1="17" x2="12" y2="21"></line>
+            <line x1="2" y1="2" x2="22" y2="22" stroke-width="2.2"></line>
+          </svg>
+        </button>
+
+        <!-- Theme Toggle -->
+        <button type="button" class="theme-toggle-btn header-action-btn" title="تبديل المظهر">
+          <svg class="icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="4.5" fill="currentColor"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+          <svg class="icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+        </button>
+
+        <!-- Sound Feedback Toggle -->
+        <button type="button" class="sound-toggle-btn header-action-btn" data-sound="on" title="المؤثرات الصوتية" aria-label="المؤثرات الصوتية">
+          <svg class="icon-sound-on" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+          </svg>
+          <svg class="icon-sound-off" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <line x1="23" y1="9" x2="17" y2="15"></line>
+            <line x1="17" y1="9" x2="23" y2="15"></line>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- KPI Mastery Banner -->
+    <section class="stats-banner" aria-label="ملخص الإتقان">
+      <div class="stat-item">
+        <div class="stat-icon" style="color:var(--success); background:var(--success-soft);">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">أخطاء تم إتقانها وأرشفتها</span>
+          <span class="stat-value" id="kpi-archived-count">0 خطأ</span>
+        </div>
+      </div>
+
+      <div class="stat-item">
+        <div class="stat-icon" style="color:var(--danger); background:var(--danger-soft);">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+            <polyline points="2 17 12 22 22 17"></polyline>
+            <polyline points="2 12 12 17 22 12"></polyline>
+          </svg>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">أخطاء لا تزال قيد التدريب</span>
+          <span class="stat-value" id="kpi-active-count">0 خطأ</span>
+        </div>
+      </div>
+
+      <div class="stat-item">
+        <div class="stat-icon" style="color:var(--accent); background:var(--accent-soft);">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+            <polyline points="17 6 23 6 23 12"></polyline>
+          </svg>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">نسبة الإتقان العامة</span>
+          <span class="stat-value" id="kpi-mastery-rate">0%</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Analytics / Weak Points Collapsible Grid -->
+    <section class="chips-card">
+      <div class="chips-title">
+        <span>تحليلات الأخطاء المتكررة</span>
+        <button type="button" id="btn-toggle-analytics" class="btn btn-ghost" style="padding:0.25rem 0.65rem; font-size:0.8rem;">
+          إخفاء / إظهار التحليلات
+        </button>
+      </div>
+
+      <div id="analytics-section" class="analytics-grid">
+        <div style="background:var(--line-subtle); padding:1rem; border-radius:var(--radius-md);">
+          <strong style="display:block; margin-bottom:0.75rem; font-size:0.92rem; color:var(--ink);">أكثر الآيات تكراراً في السجل:</strong>
+          <div id="top-ayahs-list"><p class="hint">لا توجد بيانات كافية</p></div>
+        </div>
+
+        <div style="background:var(--line-subtle); padding:1rem; border-radius:var(--radius-md);">
+          <strong style="display:block; margin-bottom:0.75rem; font-size:0.92rem; color:var(--ink);">أكثر السور تكراراً في السجل:</strong>
+          <div id="top-surahs-list"><p class="hint">لا توجد بيانات كافية</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Filter & Search Controls -->
+    <div class="history-filters">
+      <div class="filter-tabs" id="status-filter-tabs">
+        <button type="button" class="filter-btn active" data-filter="ARCHIVED">الأخطاء المتقنة (المعالجة)</button>
+        <button type="button" class="filter-btn" data-filter="ACTIVE">الأخطاء النشطة حالياً</button>
+        <button type="button" class="filter-btn" data-filter="ALL">جميع السجلات</button>
+      </div>
+
+      <div class="search-box">
+        <input type="text" id="history-search" placeholder="🔍 ابحث بالسورة، الصفحة، أو الملاحظة..." aria-label="بحث في سجل الأخطاء">
+      </div>
+    </div>
+
+    <!-- History Cards Feed -->
+    <section id="history-feed" aria-label="قائمة الأخطاء">
+      <p class="loading">جاري تحميل سجل الأخطاء المتقنة…</p>
+    </section>
+
+  </main>
+
+  <!-- Mobile Bottom Navigation -->
+  <nav class="mobile-bottom-nav" aria-label="التنقل السريع">
+    <a href="dashboard.html" class="mobile-nav-link" title="الرئيسية">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+      </svg>
+      <span>الرئيسية</span>
+    </a>
+    <a href="hifz.html" class="mobile-nav-link" title="الحفظ الجديد">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+      </svg>
+      <span>حفظ جديد</span>
+    </a>
+    <a href="rabt.html" class="mobile-nav-link" title="الربط">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+      </svg>
+      <span>الربط</span>
+    </a>
+    <a href="murajaah.html" class="mobile-nav-link" title="المراجعة">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="23 4 23 10 17 10"></polyline>
+        <polyline points="1 20 1 14 7 14"></polyline>
+        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+      </svg>
+      <span>المراجعة</span>
+    </a>
+    <a href="flashcards.html" class="mobile-nav-link" title="البطاقات">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+        <polyline points="2 17 12 22 22 17"></polyline>
+        <polyline points="2 12 12 17 22 12"></polyline>
+      </svg>
+      <span>البطاقات</span>
+    </a>
+    <a href="history.html" class="mobile-nav-link active" title="السجل">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+        <polyline points="14 2 14 8 20 8"></polyline>
+        <line x1="16" y1="13" x2="8" y2="13"></line>
+        <line x1="16" y1="17" x2="8" y2="17"></line>
+      </svg>
+      <span>السجل</span>
+    </a>
+  </nav>
+
+  <script src="js/app.js"></script>
+  <script>
+    'use strict';
+
+    let historyRecords = [];
+    let currentStatusFilter = 'ARCHIVED';
+    let searchQuery = '';
+
+    const feedEl = document.getElementById('history-feed');
+
+    async function loadHistoryPage() {
+      try {
+        const res = await API.call('mistakes/get_history.php', { redirectOn401: true });
+        historyRecords = res.history || [];
+
+        // Render KPIs
+        const archivedCount = res.summary ? res.summary.archived : 0;
+        const activeCount = res.summary ? res.summary.active : 0;
+        const total = archivedCount + activeCount;
+        const rate = total > 0 ? Math.round((archivedCount / total) * 100) : 0;
+
+        document.getElementById('kpi-archived-count').textContent = archivedCount + ' خطأ';
+        document.getElementById('kpi-active-count').textContent = activeCount + ' خطأ';
+        document.getElementById('kpi-mastery-rate').textContent = rate + '%';
+
+        // Render Top Weak Ayahs & Surahs
+        renderAnalytics(res.top_ayahs || [], res.top_surahs || []);
+
+        renderFeed();
+      } catch (err) {
+        feedEl.innerHTML = '<p class="hint" style="color:var(--danger)">' + esc(err.message) + '</p>';
+      }
+    }
+
+    function renderAnalytics(topAyahs, topSurahs) {
+      const ayahsWrap = document.getElementById('top-ayahs-list');
+      if (ayahsWrap) {
+        if (!topAyahs.length) {
+          ayahsWrap.innerHTML = '<p class="hint">لا توجد آيات متكررة</p>';
+        } else {
+          ayahsWrap.innerHTML = topAyahs.slice(0, 5).map(a => `
+            <div class="weak-item">
+              <span>سورة ${esc(a.surah_name)} — آية ${a.ayah_number}</span>
+              <strong style="color:var(--danger);">${a.count} مرات</strong>
+            </div>
+          `).join('');
+        }
+      }
+
+      const surahsWrap = document.getElementById('top-surahs-list');
+      if (surahsWrap) {
+        if (!topSurahs.length) {
+          surahsWrap.innerHTML = '<p class="hint">لا توجد سور متكررة</p>';
+        } else {
+          surahsWrap.innerHTML = topSurahs.slice(0, 5).map(s => `
+            <div class="weak-item">
+              <span>سورة ${esc(s.surah_name)}</span>
+              <strong style="color:var(--accent);">${s.count} أخطاء</strong>
+            </div>
+          `).join('');
+        }
+      }
+    }
+
+    function renderFeed() {
+      const filtered = historyRecords.filter(item => {
+        // Status filter
+        if (currentStatusFilter !== 'ALL' && item.status !== currentStatusFilter) {
+          return false;
+        }
+
+        // Search query
+        if (searchQuery) {
+          const q = searchQuery.toLowerCase();
+          const matchSurah = (item.surah_name || '').toLowerCase().includes(q);
+          const matchPage = String(item.page_number).includes(q);
+          const matchAyah = String(item.ayah_number).includes(q);
+          const matchNote = (item.notes || '').toLowerCase().includes(q);
+          const matchTag = (item.mistake_label || '').toLowerCase().includes(q);
+          if (!matchSurah && !matchPage && !matchAyah && !matchNote && !matchTag) {
+            return false;
+          }
+        }
+        return true;
+      });
+
+      if (!filtered.length) {
+        feedEl.innerHTML = `
+          <div class="chips-card" style="text-align:center; padding:2.5rem 1rem;">
+            <div style="font-size:2.5rem; margin-bottom:0.5rem;">🍃</div>
+            <h3>لا توجد سجلات مطابقة في هذا التصنيف</h3>
+            <p class="hint">يمكنك مراجعة التصنيفات الأخرى أو البحث عن سورة مختلفة.</p>
+          </div>`;
+        return;
+      }
+
+      feedEl.innerHTML = filtered.map(item => {
+        const isArchived = item.status === 'ARCHIVED';
+        const dateStr = item.created_at ? String(item.created_at).slice(0, 10) : '';
+
+        return `
+          <article class="history-card-item ${isArchived ? 'is-archived' : 'is-active'}">
+            <div style="flex:1;">
+              <div style="display:flex; align-items:center; gap:0.6rem; flex-wrap:wrap; margin-bottom:0.4rem;">
+                <h3 style="font-size:1.15rem;">سورة ${esc(item.surah_name)} — الآية ${item.ayah_number}</h3>
+                <span class="fc-tag-pill" style="font-size:0.75rem; padding:0.2rem 0.6rem;">${esc(item.mistake_label)}</span>
+                <span style="font-size:0.8rem; font-weight:700; color:var(--muted);">صفحة ${item.page_number}</span>
+              </div>
+
+              ${item.notes ? `
+                <p style="margin:0.4rem 0; font-size:0.92rem; color:var(--ink-secondary); background:var(--line-subtle); padding:0.5rem 0.75rem; border-radius:var(--radius-sm);">
+                  📝 ${esc(item.notes)}
+                </p>
+              ` : ''}
+
+              <div style="display:flex; gap:1rem; font-size:0.8rem; color:var(--muted); margin-top:0.4rem; flex-wrap:wrap;">
+                <span>سُجل بتاريخ: ${dateStr}</span>
+                <span>مرات الإتقان: <strong>${item.mastery_count}</strong></span>
+              </div>
+            </div>
+
+            <div style="display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem;">
+              ${isArchived ? `
+                <span class="task-status done">✓ تم إتقانها</span>
+                <div style="display:flex; gap:0.4rem; align-items:center;">
+                  <button type="button" class="btn btn-ghost btn-reactivate" data-id="${item.id}" style="font-size:0.78rem; padding:0.35rem 0.65rem;" title="إعادة إلى رزمة البطاقات النشطة">
+                    إعادة للتدريب 🔁
+                  </button>
+                  <button type="button" class="btn-danger-outline btn-delete-mistake" data-id="${item.id}" style="font-size:0.78rem; padding:0.35rem 0.55rem;" title="حذف هذا الخطأ نهائياً من السجل">
+                    🗑️ حذف
+                  </button>
+                </div>
+              ` : `
+                <span class="task-status" style="color:var(--danger); background:var(--danger-soft);">🔴 قيد التدريب</span>
+                <div style="display:flex; gap:0.4rem; align-items:center;">
+                  <a href="flashcards.html" class="btn btn-primary" style="font-size:0.78rem; padding:0.35rem 0.65rem;">
+                    تدريب الآن ←
+                  </a>
+                  <button type="button" class="btn-danger-outline btn-delete-mistake" data-id="${item.id}" style="font-size:0.78rem; padding:0.35rem 0.55rem;" title="حذف هذا الخطأ نهائياً من السجل">
+                    🗑️ حذف
+                  </button>
+                </div>
+              `}
+            </div>
+          </article>
+        `;
+      }).join('');
+
+      // Wire reactivate buttons
+      document.querySelectorAll('.btn-reactivate').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const mId = parseInt(btn.dataset.id, 10);
+          btn.disabled = true;
+          try {
+            await API.call('mistakes/clear_mistake.php', {
+              method: 'POST',
+              body: { mistake_id: mId, action: 'REACTIVATE' },
+              redirectOn401: true,
+            });
+            showToast('تمت إعادة الآية إلى رزمة بطاقات التدريب النشطة 🔁');
+            await loadHistoryPage();
+          } catch (err) {
+            showToast(err.message, true);
+            btn.disabled = false;
+          }
+        });
+      });
+
+      // Wire delete buttons
+      document.querySelectorAll('.btn-delete-mistake').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const mId = parseInt(btn.dataset.id, 10);
+          if (!confirm('هل أنت متأكد من حذف هذا السجل نهائياً؟ لن يظهر مجدداً في السجل أو البطاقات.')) return;
+          btn.disabled = true;
+          try {
+            await API.call('mistakes/clear_mistake.php', {
+              method: 'POST',
+              body: { mistake_id: mId, action: 'DELETE' },
+              redirectOn401: true,
+            });
+            showToast('تم حذف السجل نهائياً بنجاح 🗑️');
+            await loadHistoryPage();
+          } catch (err) {
+            showToast(err.message, true);
+            btn.disabled = false;
+          }
+        });
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadHistoryPage();
+
+      // Status filter tabs
+      document.querySelectorAll('#status-filter-tabs .filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('#status-filter-tabs .filter-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          currentStatusFilter = btn.dataset.filter;
+          renderFeed();
+        });
+      });
+
+      // Search input
+      const searchInput = document.getElementById('history-search');
+      if (searchInput) {
+        searchInput.addEventListener('input', () => {
+          searchQuery = searchInput.value.trim();
+          renderFeed();
+        });
+      }
+
+      // Toggle analytics
+      const toggleAnalyticsBtn = document.getElementById('btn-toggle-analytics');
+      const analyticsSec = document.getElementById('analytics-section');
+      if (toggleAnalyticsBtn && analyticsSec) {
+        toggleAnalyticsBtn.addEventListener('click', () => {
+          analyticsSec.classList.toggle('hidden');
+        });
+      }
+    });
+  </script>
+</body>
+</html>

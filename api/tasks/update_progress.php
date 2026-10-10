@@ -1,0 +1,370 @@
+<?php
+declare(strict_types=1);
+
+/**
+ * Rafeequl Hifz - Task Progress Update
+ * POST JSON: user_id, task_type, completed_page
+ *
+ * HIFZ_JADID completion increments users.current_hifz_page and
+ * auto-updates the Rabt window row. All log writes run in one transaction.
+ */
+
+require __DIR__ . '/../../config/database.php';
+
+function json_out(int $code, array $payload): void
+{
+    http_response_code($code);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode($payload, JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+// Ensure completed_pages and revision plan columns exist
+try {
+    $pdo->exec("ALTER TABLE `daily_task_logs` ADD COLUMN `completed_pages` TEXT NULL");
+} catch (Throwable $t) {}
+try {
+    $pdo->exec("ALTER TABLE `users` ADD COLUMN `murajaah_days` INT NOT NULL DEFAULT 6");
+} catch (Throwable $t) {}
+try {
+    $pdo->exec("ALTER TABLE `users` ADD COLUMN `rabt_extra_pages` INT NOT NULL DEFAULT 0");
+} catch (Throwable $t) {}
+
+/** Today's row for a task type, else the earliest pending (rollover) row. */
+function findLogRow(PDO $pdo, int $userId, string $type, string $today): ?array
+{
+    $base = 'SELECT `id`, `task_date`, `task_type`, `start_page`, `end_page`, `is_completed`, `completed_pages`
+             FROM `daily_task_logs`
+             WHERE `user_id` = :u AND `task_type` = :t';
+
+    $stmt = $pdo->prepare($base . ' AND `task_date` = :d ORDER BY `id` ASC LIMIT 1');
+    $stmt->execute([':u' => $userId, ':t' => $type, ':d' => $today]);
+    $row = $stmt->fetch();
+    if ($row) {
+        return $row;
+    }
+
+    $stmt = $pdo->prepare($base . ' AND `task_date` <= :d AND `is_completed` = 0 ORDER BY `task_date` ASC, `id` ASC LIMIT 1');
+    $stmt->execute([':u' => $userId, ':t' => $type, ':d' => $today]);
+    $row = $stmt->fetch();
+    return $row ?: null;
+}
+
+function insertLogRow(PDO $pdo, int $userId, string $type, int $start, int $end, string $date, bool $completed, array $completedPages = []): array
+{
+    $json = !empty($completedPages) ? json_encode(array_values(array_unique(array_map('intval', $completedPages)))) : null;
+    $stmt = $pdo->prepare(
+        'INSERT INTO `daily_task_logs`
+            (`user_id`, `task_date`, `task_type`, `start_page`, `end_page`, `completed_pages`, `is_completed`)
+         VALUES (:u, :d, :t, :s, :e, :p, :c)'
+    );
+    $stmt->execute([
+        ':u' => $userId,
+        ':d' => $date,
+        ':t' => $type,
+        ':s' => $start,
+        ':e' => $end,
+        ':p' => $json,
+        ':c' => $completed ? 1 : 0,
+    ]);
+
+    return [
+        'id'              => (int) $pdo->lastInsertId(),
+        'task_date'       => $date,
+        'task_type'       => $type,
+        'start_page'      => $start,
+        'end_page'        => $end,
+        'completed_pages' => $json,
+        'is_completed'    => $completed ? 1 : 0,
+    ];
+}
+
+function formatLogRow(array $row): array
+{
+    $start = (int) $row['start_page'];
+    $end = (int) $row['end_page'];
+    $isDone = (bool) $row['is_completed'];
+
+    $pages = [];
+    if (!empty($row['completed_pages'])) {
+        $dec = json_decode((string) $row['completed_pages'], true);
+        if (is_array($dec)) {
+            $pages = array_values(array_map('intval', $dec));
+        }
+    } elseif ($isDone) {
+        $pages = ($start === $end) ? [$start] : range($start, $end);
+    }
+
+    $total = max(1, $end - $start + 1);
+    $count = count($pages);
+
+    return [
+        'id'               => (int) $row['id'],
+        'task_date'        => (string) $row['task_date'],
+        'task_type'        => (string) $row['task_type'],
+        'start_page'       => $start,
+        'end_page'         => $end,
+        'is_completed'     => $isDone,
+        'completed_pages'  => $pages,
+        'completed_count'  => $count,
+        'total_pages'      => $total,
+        'progress_percent' => min(100, (int) round(($count / $total) * 100)),
+    ];
+}
+
+// ---------------------------------------------------------------------------
+// Method & input
+// ---------------------------------------------------------------------------
+
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+    json_out(400, ['success' => false, 'error' => 'Method not allowed. Use POST.']);
+}
+
+$input = $_GET;
+$raw   = file_get_contents('php://input');
+if (is_string($raw) && $raw !== '') {
+    $json = json_decode($raw, true);
+    if (!is_array($json)) {
+        json_out(400, ['success' => false, 'error' => 'Invalid JSON payload.']);
+    }
+    $input = array_merge($input, $json);
+} elseif (!empty($_POST)) {
+    $input = array_merge($input, $_POST);
+}
+
+// ---------------------------------------------------------------------------
+// Auth & validation
+// ---------------------------------------------------------------------------
+
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+$userId = $input['user_id'] ?? $_SESSION['user_id'] ?? null;
+if ($userId === null || $userId === '') {
+    json_out(401, ['success' => false, 'error' => 'Authentication required.']);
+}
+if (!filter_var($userId, FILTER_VALIDATE_INT)) {
+    json_out(400, ['success' => false, 'error' => 'Invalid user_id.']);
+}
+$userId = (int) $userId;
+
+$taskType = (string) ($input['task_type'] ?? '');
+if (!in_array($taskType, ['HIFZ_JADID', 'RABT', 'MURAJAAH'], true)) {
+    json_out(400, [
+        'success' => false,
+        'errors'  => ['task_type' => 'task_type must be one of: HIFZ_JADID, RABT, MURAJAAH.'],
+    ]);
+}
+
+$completedPage = $input['completed_page'] ?? null;
+if (is_string($completedPage) && ctype_digit($completedPage)) {
+    $completedPage = (int) $completedPage;
+}
+if (!is_int($completedPage) || $completedPage < 1 || $completedPage > 604) {
+    json_out(400, [
+        'success' => false,
+        'errors'  => ['completed_page' => 'completed_page must be an integer between 1 and 604.'],
+    ]);
+}
+
+try {
+    // -----------------------------------------------------------------------
+    // Load profile & activation gates
+    // -----------------------------------------------------------------------
+
+    $stmt = $pdo->prepare('SELECT `id`, `user_type`, `current_hifz_page`, COALESCE(`rabt_extra_pages`, 0) AS `rabt_extra_pages`, COALESCE(`murajaah_days`, 6) AS `murajaah_days` FROM `users` WHERE `id` = :id');
+    $stmt->execute([':id' => $userId]);
+    $user = $stmt->fetch();
+    if (!$user) {
+        json_out(401, ['success' => false, 'error' => 'Authentication required.']);
+    }
+
+    $current   = (int) $user['current_hifz_page'];
+    $utype     = (string) $user['user_type'];
+    $rabtExtra = (int) ($user['rabt_extra_pages'] ?? 0);
+    $today     = date('Y-m-d');
+
+    if ($utype === 'COMPLETE' && $taskType !== 'MURAJAAH') {
+        json_out(400, ['success' => false, 'error' => $taskType . ' is disabled for COMPLETE users.']);
+    }
+    if ($taskType === 'RABT' && $utype === 'NEW' && $current <= 1) {
+        json_out(400, ['success' => false, 'error' => 'Rabt is not active yet.']);
+    }
+    if ($taskType === 'MURAJAAH' && $utype === 'NEW' && $current <= 30) {
+        json_out(400, ['success' => false, 'error' => "Muraja'ah is not active yet."]);
+    }
+
+    // -----------------------------------------------------------------------
+    // Apply completion
+    // -----------------------------------------------------------------------
+
+    $pdo->beginTransaction();
+    $row = findLogRow($pdo, $userId, $taskType, $today);
+
+    $newCurrent      = $current;
+    $alreadyProcessed = false;
+    $affectedTask    = null;
+
+    if ($taskType === 'HIFZ_JADID') {
+        if ($completedPage > $current + 1) {
+            $pdo->rollBack();
+            json_out(400, [
+                'success' => false,
+                'error'   => 'completed_page must be the next memorized page (current_hifz_page + 1).',
+            ]);
+        }
+
+        if ($completedPage <= $current) {
+            // Page already counted - idempotent no-op
+            $alreadyProcessed = true;
+        } else {
+            $newCurrent = $completedPage;
+
+            // When a new page is memorized and user already has at least 30 pages memorized,
+            // the Rabt window grows by 1 page (31, 32...) until the current Murajaah cycle finishes.
+            if ($current >= 30) {
+                $rabtExtra++;
+                $stmt = $pdo->prepare('UPDATE `users` SET `current_hifz_page` = :p, `rabt_extra_pages` = :extra WHERE `id` = :id');
+                $stmt->execute([':p' => $newCurrent, ':extra' => $rabtExtra, ':id' => $userId]);
+            } else {
+                $stmt = $pdo->prepare('UPDATE `users` SET `current_hifz_page` = :p WHERE `id` = :id');
+                $stmt->execute([':p' => $newCurrent, ':id' => $userId]);
+            }
+
+            if ($row) {
+                $compJson = json_encode([$newCurrent]);
+                $stmt = $pdo->prepare('UPDATE `daily_task_logs` SET `is_completed` = 1, `completed_pages` = :p WHERE `id` = :id');
+                $stmt->execute([':p' => $compJson, ':id' => $row['id']]);
+                $row['is_completed'] = 1;
+                $row['completed_pages'] = $compJson;
+                $affectedTask = $row;
+            } else {
+                $affectedTask = insertLogRow($pdo, $userId, 'HIFZ_JADID', $newCurrent, $newCurrent, $today, true, [$newCurrent]);
+            }
+
+            // Auto-update the Rabt window row: window size = 30 + rabtExtra ending at newCurrent
+            $rabtActive = ($utype === 'EXISTING') || ($utype === 'NEW' && $newCurrent > 1);
+            if ($rabtActive) {
+                $rabtWindow = 30 + $rabtExtra;
+                $rabtStart  = max(1, $newCurrent - ($rabtWindow - 1));
+                $rabtEnd    = min($newCurrent, 604);
+                $rrow       = findLogRow($pdo, $userId, 'RABT', $today);
+
+                if ($rrow) {
+                    if (!(int) $rrow['is_completed']) {
+                        $stmt = $pdo->prepare(
+                            'UPDATE `daily_task_logs` SET `start_page` = :s, `end_page` = :e WHERE `id` = :id'
+                        );
+                        $stmt->execute([':s' => $rabtStart, ':e' => $rabtEnd, ':id' => $rrow['id']]);
+                    }
+                } else {
+                    insertLogRow($pdo, $userId, 'RABT', $rabtStart, $rabtEnd, $today, false);
+                }
+            }
+        }
+    } else {
+        // RABT / MURAJAAH - page-by-page completion
+        if ($row === null) {
+            if ($taskType === 'RABT') {
+                $stmt = $pdo->prepare(
+                    "SELECT `id`, `is_completed` FROM `daily_task_logs`
+                     WHERE `user_id` = :u AND `task_type` = 'HIFZ_JADID' AND `task_date` = :d
+                     ORDER BY `id` ASC LIMIT 1"
+                );
+                $stmt->execute([':u' => $userId, ':d' => $today]);
+                $hz = $stmt->fetch();
+
+                $frontier  = ($hz && (int) $hz['is_completed']) ? $current : min($current + 1, 604);
+                $rabtStart = max(1, $frontier - 29);
+                $rabtEnd   = $frontier;
+
+                if ($completedPage < $rabtStart || $completedPage > $rabtEnd) {
+                    $pdo->rollBack();
+                    json_out(400, [
+                        'success' => false,
+                        'error'   => "completed_page is outside today's Rabt window ({$rabtStart}-{$rabtEnd}).",
+                    ]);
+                }
+                $isTaskDone = ($rabtStart === $rabtEnd);
+                $affectedTask = insertLogRow($pdo, $userId, 'RABT', $rabtStart, $rabtEnd, $today, $isTaskDone, [$completedPage]);
+            } else {
+                // Muraja'ah
+                $affectedTask = insertLogRow($pdo, $userId, 'MURAJAAH', $completedPage, $completedPage, $today, true, [$completedPage]);
+            }
+        } else {
+            $start = (int) $row['start_page'];
+            $end   = (int) $row['end_page'];
+
+            if ($completedPage < $start || $completedPage > $end) {
+                $pdo->rollBack();
+                json_out(400, [
+                    'success' => false,
+                    'error'   => "completed_page is outside the active task range ({$start}-{$end}).",
+                ]);
+            }
+
+            $currentList = [];
+            if (!empty($row['completed_pages'])) {
+                $dec = json_decode((string) $row['completed_pages'], true);
+                if (is_array($dec)) {
+                    $currentList = array_map('intval', $dec);
+                }
+            }
+
+            if (in_array($completedPage, $currentList, true)) {
+                $alreadyProcessed = true;
+            } else {
+                $currentList[] = $completedPage;
+            }
+
+            $currentList = array_values(array_unique($currentList));
+            $totalNeeded = max(1, $end - $start + 1);
+            $totalDone   = count($currentList);
+            $isTaskDone  = ($totalDone >= $totalNeeded) ? 1 : (int) $row['is_completed'];
+
+            $compJson = json_encode($currentList);
+            $stmt = $pdo->prepare('UPDATE `daily_task_logs` SET `completed_pages` = :p, `is_completed` = :c WHERE `id` = :id');
+            $stmt->execute([':p' => $compJson, ':c' => $isTaskDone, ':id' => $row['id']]);
+
+            $row['completed_pages'] = $compJson;
+            $row['is_completed']    = $isTaskDone;
+            $affectedTask = $row;
+
+            // If Murajaah task is completed and end_page reaches or exceeds the current Murajaah boundary,
+            // the revision cycle has finished! Roll accumulated extra pages into Murajaah and reset rabt_extra_pages to 0.
+            if ($taskType === 'MURAJAAH' && $isTaskDone) {
+                $murajaahLimit = 604;
+                if ($utype === 'NEW' || $utype === 'EXISTING') {
+                    $rabtWin = 30 + $rabtExtra;
+                    $murajaahLimit = max(0, $newCurrent - $rabtWin);
+                }
+                if ($end >= $murajaahLimit && $rabtExtra > 0) {
+                    $pdo->prepare('UPDATE `users` SET `rabt_extra_pages` = 0 WHERE `id` = :id')
+                        ->execute([':id' => $userId]);
+                    $rabtExtra = 0;
+                }
+            }
+        }
+    }
+
+    $pdo->commit();
+
+    json_out(200, [
+        'success'           => true,
+        'message'           => $alreadyProcessed ? 'Already processed.' : 'Task marked complete.',
+        'already_processed' => $alreadyProcessed,
+        'user'              => [
+            'id'                => $userId,
+            'user_type'         => $utype,
+            'current_hifz_page' => $newCurrent,
+        ],
+        'task'              => $affectedTask !== null ? formatLogRow($affectedTask) : null,
+    ]);
+} catch (PDOException $e) {
+    if (isset($pdo) && $pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
+    error_log('[UpdateProgress Failed] ' . $e->getMessage());
+    json_out(500, ['success' => false, 'error' => 'Server error. Please try again.']);
+}

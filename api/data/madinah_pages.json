@@ -1,0 +1,4834 @@
+[
+    {
+        "page_number":  1,
+        "juz_number":  1,
+        "hizb_number":  1,
+        "rub_el_hizb":  1,
+        "start_surah_id":  1,
+        "start_ayah_id":  1
+    },
+    {
+        "page_number":  2,
+        "juz_number":  1,
+        "hizb_number":  1,
+        "rub_el_hizb":  1,
+        "start_surah_id":  2,
+        "start_ayah_id":  1
+    },
+    {
+        "page_number":  3,
+        "juz_number":  1,
+        "hizb_number":  1,
+        "rub_el_hizb":  1,
+        "start_surah_id":  2,
+        "start_ayah_id":  6
+    },
+    {
+        "page_number":  4,
+        "juz_number":  1,
+        "hizb_number":  1,
+        "rub_el_hizb":  1,
+        "start_surah_id":  2,
+        "start_ayah_id":  17
+    },
+    {
+        "page_number":  5,
+        "juz_number":  1,
+        "hizb_number":  1,
+        "rub_el_hizb":  1,
+        "start_surah_id":  2,
+        "start_ayah_id":  25
+    },
+    {
+        "page_number":  6,
+        "juz_number":  1,
+        "hizb_number":  1,
+        "rub_el_hizb":  2,
+        "start_surah_id":  2,
+        "start_ayah_id":  30
+    },
+    {
+        "page_number":  7,
+        "juz_number":  1,
+        "hizb_number":  1,
+        "rub_el_hizb":  2,
+        "start_surah_id":  2,
+        "start_ayah_id":  38
+    },
+    {
+        "page_number":  8,
+        "juz_number":  1,
+        "hizb_number":  1,
+        "rub_el_hizb":  3,
+        "start_surah_id":  2,
+        "start_ayah_id":  49
+    },
+    {
+        "page_number":  9,
+        "juz_number":  1,
+        "hizb_number":  1,
+        "rub_el_hizb":  3,
+        "start_surah_id":  2,
+        "start_ayah_id":  58
+    },
+    {
+        "page_number":  10,
+        "juz_number":  1,
+        "hizb_number":  1,
+        "rub_el_hizb":  4,
+        "start_surah_id":  2,
+        "start_ayah_id":  62
+    },
+    {
+        "page_number":  11,
+        "juz_number":  1,
+        "hizb_number":  1,
+        "rub_el_hizb":  4,
+        "start_surah_id":  2,
+        "start_ayah_id":  70
+    },
+    {
+        "page_number":  12,
+        "juz_number":  1,
+        "hizb_number":  2,
+        "rub_el_hizb":  1,
+        "start_surah_id":  2,
+        "start_ayah_id":  77
+    },
+    {
+        "page_number":  13,
+        "juz_number":  1,
+        "hizb_number":  2,
+        "rub_el_hizb":  1,
+        "start_surah_id":  2,
+        "start_ayah_id":  84
+    },
+    {
+        "page_number":  14,
+        "juz_number":  1,
+        "hizb_number":  2,
+        "rub_el_hizb":  1,
+        "start_surah_id":  2,
+        "start_ayah_id":  89
+    },
+    {
+        "page_number":  15,
+        "juz_number":  1,
+        "hizb_number":  2,
+        "rub_el_hizb":  2,
+        "start_surah_id":  2,
+        "start_ayah_id":  94
+    },
+    {
+        "page_number":  16,
+        "juz_number":  1,
+        "hizb_number":  2,
+        "rub_el_hizb":  2,
+        "start_surah_id":  2,
+        "start_ayah_id":  102
+    },
+    {
+        "page_number":  17,
+        "juz_number":  1,
+        "hizb_number":  2,
+        "rub_el_hizb":  3,
+        "start_surah_id":  2,
+        "start_ayah_id":  106
+    },
+    {
+        "page_number":  18,
+        "juz_number":  1,
+        "hizb_number":  2,
+        "rub_el_hizb":  3,
+        "start_surah_id":  2,
+        "start_ayah_id":  113
+    },
+    {
+        "page_number":  19,
+        "juz_number":  1,
+        "hizb_number":  2,
+        "rub_el_hizb":  3,
+        "start_surah_id":  2,
+        "start_ayah_id":  120
+    },
+    {
+        "page_number":  20,
+        "juz_number":  1,
+        "hizb_number":  2,
+        "rub_el_hizb":  4,
+        "start_surah_id":  2,
+        "start_ayah_id":  127
+    },
+    {
+        "page_number":  21,
+        "juz_number":  1,
+        "hizb_number":  2,
+        "rub_el_hizb":  4,
+        "start_surah_id":  2,
+        "start_ayah_id":  135
+    },
+    {
+        "page_number":  22,
+        "juz_number":  2,
+        "hizb_number":  3,
+        "rub_el_hizb":  1,
+        "start_surah_id":  2,
+        "start_ayah_id":  142
+    },
+    {
+        "page_number":  23,
+        "juz_number":  2,
+        "hizb_number":  3,
+        "rub_el_hizb":  1,
+        "start_surah_id":  2,
+        "start_ayah_id":  146
+    },
+    {
+        "page_number":  24,
+        "juz_number":  2,
+        "hizb_number":  3,
+        "rub_el_hizb":  1,
+        "start_surah_id":  2,
+        "start_ayah_id":  154
+    },
+    {
+        "page_number":  25,
+        "juz_number":  2,
+        "hizb_number":  3,
+        "rub_el_hizb":  2,
+        "start_surah_id":  2,
+        "start_ayah_id":  164
+    },
+    {
+        "page_number":  26,
+        "juz_number":  2,
+        "hizb_number":  3,
+        "rub_el_hizb":  2,
+        "start_surah_id":  2,
+        "start_ayah_id":  170
+    },
+    {
+        "page_number":  27,
+        "juz_number":  2,
+        "hizb_number":  3,
+        "rub_el_hizb":  3,
+        "start_surah_id":  2,
+        "start_ayah_id":  177
+    },
+    {
+        "page_number":  28,
+        "juz_number":  2,
+        "hizb_number":  3,
+        "rub_el_hizb":  3,
+        "start_surah_id":  2,
+        "start_ayah_id":  182
+    },
+    {
+        "page_number":  29,
+        "juz_number":  2,
+        "hizb_number":  3,
+        "rub_el_hizb":  3,
+        "start_surah_id":  2,
+        "start_ayah_id":  187
+    },
+    {
+        "page_number":  30,
+        "juz_number":  2,
+        "hizb_number":  3,
+        "rub_el_hizb":  4,
+        "start_surah_id":  2,
+        "start_ayah_id":  191
+    },
+    {
+        "page_number":  31,
+        "juz_number":  2,
+        "hizb_number":  3,
+        "rub_el_hizb":  4,
+        "start_surah_id":  2,
+        "start_ayah_id":  197
+    },
+    {
+        "page_number":  32,
+        "juz_number":  2,
+        "hizb_number":  4,
+        "rub_el_hizb":  1,
+        "start_surah_id":  2,
+        "start_ayah_id":  203
+    },
+    {
+        "page_number":  33,
+        "juz_number":  2,
+        "hizb_number":  4,
+        "rub_el_hizb":  1,
+        "start_surah_id":  2,
+        "start_ayah_id":  211
+    },
+    {
+        "page_number":  34,
+        "juz_number":  2,
+        "hizb_number":  4,
+        "rub_el_hizb":  1,
+        "start_surah_id":  2,
+        "start_ayah_id":  216
+    },
+    {
+        "page_number":  35,
+        "juz_number":  2,
+        "hizb_number":  4,
+        "rub_el_hizb":  2,
+        "start_surah_id":  2,
+        "start_ayah_id":  220
+    },
+    {
+        "page_number":  36,
+        "juz_number":  2,
+        "hizb_number":  4,
+        "rub_el_hizb":  2,
+        "start_surah_id":  2,
+        "start_ayah_id":  225
+    },
+    {
+        "page_number":  37,
+        "juz_number":  2,
+        "hizb_number":  4,
+        "rub_el_hizb":  2,
+        "start_surah_id":  2,
+        "start_ayah_id":  231
+    },
+    {
+        "page_number":  38,
+        "juz_number":  2,
+        "hizb_number":  4,
+        "rub_el_hizb":  3,
+        "start_surah_id":  2,
+        "start_ayah_id":  234
+    },
+    {
+        "page_number":  39,
+        "juz_number":  2,
+        "hizb_number":  4,
+        "rub_el_hizb":  3,
+        "start_surah_id":  2,
+        "start_ayah_id":  238
+    },
+    {
+        "page_number":  40,
+        "juz_number":  2,
+        "hizb_number":  4,
+        "rub_el_hizb":  4,
+        "start_surah_id":  2,
+        "start_ayah_id":  246
+    },
+    {
+        "page_number":  41,
+        "juz_number":  2,
+        "hizb_number":  4,
+        "rub_el_hizb":  4,
+        "start_surah_id":  2,
+        "start_ayah_id":  249
+    },
+    {
+        "page_number":  42,
+        "juz_number":  3,
+        "hizb_number":  5,
+        "rub_el_hizb":  1,
+        "start_surah_id":  2,
+        "start_ayah_id":  253
+    },
+    {
+        "page_number":  43,
+        "juz_number":  3,
+        "hizb_number":  5,
+        "rub_el_hizb":  1,
+        "start_surah_id":  2,
+        "start_ayah_id":  257
+    },
+    {
+        "page_number":  44,
+        "juz_number":  3,
+        "hizb_number":  5,
+        "rub_el_hizb":  1,
+        "start_surah_id":  2,
+        "start_ayah_id":  260
+    },
+    {
+        "page_number":  45,
+        "juz_number":  3,
+        "hizb_number":  5,
+        "rub_el_hizb":  2,
+        "start_surah_id":  2,
+        "start_ayah_id":  265
+    },
+    {
+        "page_number":  46,
+        "juz_number":  3,
+        "hizb_number":  5,
+        "rub_el_hizb":  2,
+        "start_surah_id":  2,
+        "start_ayah_id":  270
+    },
+    {
+        "page_number":  47,
+        "juz_number":  3,
+        "hizb_number":  5,
+        "rub_el_hizb":  3,
+        "start_surah_id":  2,
+        "start_ayah_id":  275
+    },
+    {
+        "page_number":  48,
+        "juz_number":  3,
+        "hizb_number":  5,
+        "rub_el_hizb":  3,
+        "start_surah_id":  2,
+        "start_ayah_id":  282
+    },
+    {
+        "page_number":  49,
+        "juz_number":  3,
+        "hizb_number":  5,
+        "rub_el_hizb":  4,
+        "start_surah_id":  2,
+        "start_ayah_id":  283
+    },
+    {
+        "page_number":  50,
+        "juz_number":  3,
+        "hizb_number":  5,
+        "rub_el_hizb":  4,
+        "start_surah_id":  3,
+        "start_ayah_id":  1
+    },
+    {
+        "page_number":  51,
+        "juz_number":  3,
+        "hizb_number":  5,
+        "rub_el_hizb":  4,
+        "start_surah_id":  3,
+        "start_ayah_id":  10
+    },
+    {
+        "page_number":  52,
+        "juz_number":  3,
+        "hizb_number":  6,
+        "rub_el_hizb":  1,
+        "start_surah_id":  3,
+        "start_ayah_id":  16
+    },
+    {
+        "page_number":  53,
+        "juz_number":  3,
+        "hizb_number":  6,
+        "rub_el_hizb":  1,
+        "start_surah_id":  3,
+        "start_ayah_id":  23
+    },
+    {
+        "page_number":  54,
+        "juz_number":  3,
+        "hizb_number":  6,
+        "rub_el_hizb":  1,
+        "start_surah_id":  3,
+        "start_ayah_id":  30
+    },
+    {
+        "page_number":  55,
+        "juz_number":  3,
+        "hizb_number":  6,
+        "rub_el_hizb":  2,
+        "start_surah_id":  3,
+        "start_ayah_id":  38
+    },
+    {
+        "page_number":  56,
+        "juz_number":  3,
+        "hizb_number":  6,
+        "rub_el_hizb":  2,
+        "start_surah_id":  3,
+        "start_ayah_id":  46
+    },
+    {
+        "page_number":  57,
+        "juz_number":  3,
+        "hizb_number":  6,
+        "rub_el_hizb":  3,
+        "start_surah_id":  3,
+        "start_ayah_id":  53
+    },
+    {
+        "page_number":  58,
+        "juz_number":  3,
+        "hizb_number":  6,
+        "rub_el_hizb":  3,
+        "start_surah_id":  3,
+        "start_ayah_id":  62
+    },
+    {
+        "page_number":  59,
+        "juz_number":  3,
+        "hizb_number":  6,
+        "rub_el_hizb":  3,
+        "start_surah_id":  3,
+        "start_ayah_id":  71
+    },
+    {
+        "page_number":  60,
+        "juz_number":  3,
+        "hizb_number":  6,
+        "rub_el_hizb":  4,
+        "start_surah_id":  3,
+        "start_ayah_id":  78
+    },
+    {
+        "page_number":  61,
+        "juz_number":  3,
+        "hizb_number":  6,
+        "rub_el_hizb":  4,
+        "start_surah_id":  3,
+        "start_ayah_id":  84
+    },
+    {
+        "page_number":  62,
+        "juz_number":  3,
+        "hizb_number":  6,
+        "rub_el_hizb":  4,
+        "start_surah_id":  3,
+        "start_ayah_id":  92
+    },
+    {
+        "page_number":  63,
+        "juz_number":  4,
+        "hizb_number":  7,
+        "rub_el_hizb":  1,
+        "start_surah_id":  3,
+        "start_ayah_id":  101
+    },
+    {
+        "page_number":  64,
+        "juz_number":  4,
+        "hizb_number":  7,
+        "rub_el_hizb":  1,
+        "start_surah_id":  3,
+        "start_ayah_id":  109
+    },
+    {
+        "page_number":  65,
+        "juz_number":  4,
+        "hizb_number":  7,
+        "rub_el_hizb":  2,
+        "start_surah_id":  3,
+        "start_ayah_id":  116
+    },
+    {
+        "page_number":  66,
+        "juz_number":  4,
+        "hizb_number":  7,
+        "rub_el_hizb":  2,
+        "start_surah_id":  3,
+        "start_ayah_id":  122
+    },
+    {
+        "page_number":  67,
+        "juz_number":  4,
+        "hizb_number":  7,
+        "rub_el_hizb":  3,
+        "start_surah_id":  3,
+        "start_ayah_id":  133
+    },
+    {
+        "page_number":  68,
+        "juz_number":  4,
+        "hizb_number":  7,
+        "rub_el_hizb":  3,
+        "start_surah_id":  3,
+        "start_ayah_id":  141
+    },
+    {
+        "page_number":  69,
+        "juz_number":  4,
+        "hizb_number":  7,
+        "rub_el_hizb":  3,
+        "start_surah_id":  3,
+        "start_ayah_id":  149
+    },
+    {
+        "page_number":  70,
+        "juz_number":  4,
+        "hizb_number":  7,
+        "rub_el_hizb":  4,
+        "start_surah_id":  3,
+        "start_ayah_id":  154
+    },
+    {
+        "page_number":  71,
+        "juz_number":  4,
+        "hizb_number":  7,
+        "rub_el_hizb":  4,
+        "start_surah_id":  3,
+        "start_ayah_id":  158
+    },
+    {
+        "page_number":  72,
+        "juz_number":  4,
+        "hizb_number":  7,
+        "rub_el_hizb":  4,
+        "start_surah_id":  3,
+        "start_ayah_id":  166
+    },
+    {
+        "page_number":  73,
+        "juz_number":  4,
+        "hizb_number":  8,
+        "rub_el_hizb":  1,
+        "start_surah_id":  3,
+        "start_ayah_id":  174
+    },
+    {
+        "page_number":  74,
+        "juz_number":  4,
+        "hizb_number":  8,
+        "rub_el_hizb":  1,
+        "start_surah_id":  3,
+        "start_ayah_id":  181
+    },
+    {
+        "page_number":  75,
+        "juz_number":  4,
+        "hizb_number":  8,
+        "rub_el_hizb":  2,
+        "start_surah_id":  3,
+        "start_ayah_id":  187
+    },
+    {
+        "page_number":  76,
+        "juz_number":  4,
+        "hizb_number":  8,
+        "rub_el_hizb":  2,
+        "start_surah_id":  3,
+        "start_ayah_id":  195
+    },
+    {
+        "page_number":  77,
+        "juz_number":  4,
+        "hizb_number":  8,
+        "rub_el_hizb":  3,
+        "start_surah_id":  4,
+        "start_ayah_id":  1
+    },
+    {
+        "page_number":  78,
+        "juz_number":  4,
+        "hizb_number":  8,
+        "rub_el_hizb":  3,
+        "start_surah_id":  4,
+        "start_ayah_id":  7
+    },
+    {
+        "page_number":  79,
+        "juz_number":  4,
+        "hizb_number":  8,
+        "rub_el_hizb":  4,
+        "start_surah_id":  4,
+        "start_ayah_id":  12
+    },
+    {
+        "page_number":  80,
+        "juz_number":  4,
+        "hizb_number":  8,
+        "rub_el_hizb":  4,
+        "start_surah_id":  4,
+        "start_ayah_id":  15
+    },
+    {
+        "page_number":  81,
+        "juz_number":  4,
+        "hizb_number":  8,
+        "rub_el_hizb":  4,
+        "start_surah_id":  4,
+        "start_ayah_id":  20
+    },
+    {
+        "page_number":  82,
+        "juz_number":  5,
+        "hizb_number":  9,
+        "rub_el_hizb":  1,
+        "start_surah_id":  4,
+        "start_ayah_id":  24
+    },
+    {
+        "page_number":  83,
+        "juz_number":  5,
+        "hizb_number":  9,
+        "rub_el_hizb":  1,
+        "start_surah_id":  4,
+        "start_ayah_id":  27
+    },
+    {
+        "page_number":  84,
+        "juz_number":  5,
+        "hizb_number":  9,
+        "rub_el_hizb":  1,
+        "start_surah_id":  4,
+        "start_ayah_id":  34
+    },
+    {
+        "page_number":  85,
+        "juz_number":  5,
+        "hizb_number":  9,
+        "rub_el_hizb":  2,
+        "start_surah_id":  4,
+        "start_ayah_id":  38
+    },
+    {
+        "page_number":  86,
+        "juz_number":  5,
+        "hizb_number":  9,
+        "rub_el_hizb":  2,
+        "start_surah_id":  4,
+        "start_ayah_id":  45
+    },
+    {
+        "page_number":  87,
+        "juz_number":  5,
+        "hizb_number":  9,
+        "rub_el_hizb":  2,
+        "start_surah_id":  4,
+        "start_ayah_id":  52
+    },
+    {
+        "page_number":  88,
+        "juz_number":  5,
+        "hizb_number":  9,
+        "rub_el_hizb":  3,
+        "start_surah_id":  4,
+        "start_ayah_id":  60
+    },
+    {
+        "page_number":  89,
+        "juz_number":  5,
+        "hizb_number":  9,
+        "rub_el_hizb":  3,
+        "start_surah_id":  4,
+        "start_ayah_id":  66
+    },
+    {
+        "page_number":  90,
+        "juz_number":  5,
+        "hizb_number":  9,
+        "rub_el_hizb":  4,
+        "start_surah_id":  4,
+        "start_ayah_id":  75
+    },
+    {
+        "page_number":  91,
+        "juz_number":  5,
+        "hizb_number":  9,
+        "rub_el_hizb":  4,
+        "start_surah_id":  4,
+        "start_ayah_id":  80
+    },
+    {
+        "page_number":  92,
+        "juz_number":  5,
+        "hizb_number":  9,
+        "rub_el_hizb":  4,
+        "start_surah_id":  4,
+        "start_ayah_id":  87
+    },
+    {
+        "page_number":  93,
+        "juz_number":  5,
+        "hizb_number":  10,
+        "rub_el_hizb":  1,
+        "start_surah_id":  4,
+        "start_ayah_id":  92
+    },
+    {
+        "page_number":  94,
+        "juz_number":  5,
+        "hizb_number":  10,
+        "rub_el_hizb":  1,
+        "start_surah_id":  4,
+        "start_ayah_id":  95
+    },
+    {
+        "page_number":  95,
+        "juz_number":  5,
+        "hizb_number":  10,
+        "rub_el_hizb":  2,
+        "start_surah_id":  4,
+        "start_ayah_id":  102
+    },
+    {
+        "page_number":  96,
+        "juz_number":  5,
+        "hizb_number":  10,
+        "rub_el_hizb":  2,
+        "start_surah_id":  4,
+        "start_ayah_id":  106
+    },
+    {
+        "page_number":  97,
+        "juz_number":  5,
+        "hizb_number":  10,
+        "rub_el_hizb":  3,
+        "start_surah_id":  4,
+        "start_ayah_id":  114
+    },
+    {
+        "page_number":  98,
+        "juz_number":  5,
+        "hizb_number":  10,
+        "rub_el_hizb":  3,
+        "start_surah_id":  4,
+        "start_ayah_id":  122
+    },
+    {
+        "page_number":  99,
+        "juz_number":  5,
+        "hizb_number":  10,
+        "rub_el_hizb":  3,
+        "start_surah_id":  4,
+        "start_ayah_id":  128
+    },
+    {
+        "page_number":  100,
+        "juz_number":  5,
+        "hizb_number":  10,
+        "rub_el_hizb":  4,
+        "start_surah_id":  4,
+        "start_ayah_id":  135
+    },
+    {
+        "page_number":  101,
+        "juz_number":  5,
+        "hizb_number":  10,
+        "rub_el_hizb":  4,
+        "start_surah_id":  4,
+        "start_ayah_id":  141
+    },
+    {
+        "page_number":  102,
+        "juz_number":  6,
+        "hizb_number":  11,
+        "rub_el_hizb":  1,
+        "start_surah_id":  4,
+        "start_ayah_id":  148
+    },
+    {
+        "page_number":  103,
+        "juz_number":  6,
+        "hizb_number":  11,
+        "rub_el_hizb":  1,
+        "start_surah_id":  4,
+        "start_ayah_id":  155
+    },
+    {
+        "page_number":  104,
+        "juz_number":  6,
+        "hizb_number":  11,
+        "rub_el_hizb":  2,
+        "start_surah_id":  4,
+        "start_ayah_id":  163
+    },
+    {
+        "page_number":  105,
+        "juz_number":  6,
+        "hizb_number":  11,
+        "rub_el_hizb":  2,
+        "start_surah_id":  4,
+        "start_ayah_id":  171
+    },
+    {
+        "page_number":  106,
+        "juz_number":  6,
+        "hizb_number":  11,
+        "rub_el_hizb":  2,
+        "start_surah_id":  4,
+        "start_ayah_id":  176
+    },
+    {
+        "page_number":  107,
+        "juz_number":  6,
+        "hizb_number":  11,
+        "rub_el_hizb":  3,
+        "start_surah_id":  5,
+        "start_ayah_id":  3
+    },
+    {
+        "page_number":  108,
+        "juz_number":  6,
+        "hizb_number":  11,
+        "rub_el_hizb":  3,
+        "start_surah_id":  5,
+        "start_ayah_id":  6
+    },
+    {
+        "page_number":  109,
+        "juz_number":  6,
+        "hizb_number":  11,
+        "rub_el_hizb":  3,
+        "start_surah_id":  5,
+        "start_ayah_id":  10
+    },
+    {
+        "page_number":  110,
+        "juz_number":  6,
+        "hizb_number":  11,
+        "rub_el_hizb":  4,
+        "start_surah_id":  5,
+        "start_ayah_id":  14
+    },
+    {
+        "page_number":  111,
+        "juz_number":  6,
+        "hizb_number":  11,
+        "rub_el_hizb":  4,
+        "start_surah_id":  5,
+        "start_ayah_id":  18
+    },
+    {
+        "page_number":  112,
+        "juz_number":  6,
+        "hizb_number":  11,
+        "rub_el_hizb":  4,
+        "start_surah_id":  5,
+        "start_ayah_id":  24
+    },
+    {
+        "page_number":  113,
+        "juz_number":  6,
+        "hizb_number":  12,
+        "rub_el_hizb":  1,
+        "start_surah_id":  5,
+        "start_ayah_id":  32
+    },
+    {
+        "page_number":  114,
+        "juz_number":  6,
+        "hizb_number":  12,
+        "rub_el_hizb":  1,
+        "start_surah_id":  5,
+        "start_ayah_id":  37
+    },
+    {
+        "page_number":  115,
+        "juz_number":  6,
+        "hizb_number":  12,
+        "rub_el_hizb":  2,
+        "start_surah_id":  5,
+        "start_ayah_id":  42
+    },
+    {
+        "page_number":  116,
+        "juz_number":  6,
+        "hizb_number":  12,
+        "rub_el_hizb":  2,
+        "start_surah_id":  5,
+        "start_ayah_id":  46
+    },
+    {
+        "page_number":  117,
+        "juz_number":  6,
+        "hizb_number":  12,
+        "rub_el_hizb":  3,
+        "start_surah_id":  5,
+        "start_ayah_id":  51
+    },
+    {
+        "page_number":  118,
+        "juz_number":  6,
+        "hizb_number":  12,
+        "rub_el_hizb":  3,
+        "start_surah_id":  5,
+        "start_ayah_id":  58
+    },
+    {
+        "page_number":  119,
+        "juz_number":  6,
+        "hizb_number":  12,
+        "rub_el_hizb":  3,
+        "start_surah_id":  5,
+        "start_ayah_id":  65
+    },
+    {
+        "page_number":  120,
+        "juz_number":  6,
+        "hizb_number":  12,
+        "rub_el_hizb":  4,
+        "start_surah_id":  5,
+        "start_ayah_id":  71
+    },
+    {
+        "page_number":  121,
+        "juz_number":  6,
+        "hizb_number":  12,
+        "rub_el_hizb":  4,
+        "start_surah_id":  5,
+        "start_ayah_id":  77
+    },
+    {
+        "page_number":  122,
+        "juz_number":  7,
+        "hizb_number":  13,
+        "rub_el_hizb":  1,
+        "start_surah_id":  5,
+        "start_ayah_id":  83
+    },
+    {
+        "page_number":  123,
+        "juz_number":  7,
+        "hizb_number":  13,
+        "rub_el_hizb":  1,
+        "start_surah_id":  5,
+        "start_ayah_id":  90
+    },
+    {
+        "page_number":  124,
+        "juz_number":  7,
+        "hizb_number":  13,
+        "rub_el_hizb":  1,
+        "start_surah_id":  5,
+        "start_ayah_id":  96
+    },
+    {
+        "page_number":  125,
+        "juz_number":  7,
+        "hizb_number":  13,
+        "rub_el_hizb":  2,
+        "start_surah_id":  5,
+        "start_ayah_id":  104
+    },
+    {
+        "page_number":  126,
+        "juz_number":  7,
+        "hizb_number":  13,
+        "rub_el_hizb":  3,
+        "start_surah_id":  5,
+        "start_ayah_id":  109
+    },
+    {
+        "page_number":  127,
+        "juz_number":  7,
+        "hizb_number":  13,
+        "rub_el_hizb":  3,
+        "start_surah_id":  5,
+        "start_ayah_id":  114
+    },
+    {
+        "page_number":  128,
+        "juz_number":  7,
+        "hizb_number":  13,
+        "rub_el_hizb":  3,
+        "start_surah_id":  6,
+        "start_ayah_id":  1
+    },
+    {
+        "page_number":  129,
+        "juz_number":  7,
+        "hizb_number":  13,
+        "rub_el_hizb":  3,
+        "start_surah_id":  6,
+        "start_ayah_id":  9
+    },
+    {
+        "page_number":  130,
+        "juz_number":  7,
+        "hizb_number":  13,
+        "rub_el_hizb":  4,
+        "start_surah_id":  6,
+        "start_ayah_id":  19
+    },
+    {
+        "page_number":  131,
+        "juz_number":  7,
+        "hizb_number":  13,
+        "rub_el_hizb":  4,
+        "start_surah_id":  6,
+        "start_ayah_id":  28
+    },
+    {
+        "page_number":  132,
+        "juz_number":  7,
+        "hizb_number":  14,
+        "rub_el_hizb":  1,
+        "start_surah_id":  6,
+        "start_ayah_id":  36
+    },
+    {
+        "page_number":  133,
+        "juz_number":  7,
+        "hizb_number":  14,
+        "rub_el_hizb":  1,
+        "start_surah_id":  6,
+        "start_ayah_id":  45
+    },
+    {
+        "page_number":  134,
+        "juz_number":  7,
+        "hizb_number":  14,
+        "rub_el_hizb":  1,
+        "start_surah_id":  6,
+        "start_ayah_id":  53
+    },
+    {
+        "page_number":  135,
+        "juz_number":  7,
+        "hizb_number":  14,
+        "rub_el_hizb":  2,
+        "start_surah_id":  6,
+        "start_ayah_id":  60
+    },
+    {
+        "page_number":  136,
+        "juz_number":  7,
+        "hizb_number":  14,
+        "rub_el_hizb":  2,
+        "start_surah_id":  6,
+        "start_ayah_id":  69
+    },
+    {
+        "page_number":  137,
+        "juz_number":  7,
+        "hizb_number":  14,
+        "rub_el_hizb":  3,
+        "start_surah_id":  6,
+        "start_ayah_id":  74
+    },
+    {
+        "page_number":  138,
+        "juz_number":  7,
+        "hizb_number":  14,
+        "rub_el_hizb":  3,
+        "start_surah_id":  6,
+        "start_ayah_id":  82
+    },
+    {
+        "page_number":  139,
+        "juz_number":  7,
+        "hizb_number":  14,
+        "rub_el_hizb":  3,
+        "start_surah_id":  6,
+        "start_ayah_id":  91
+    },
+    {
+        "page_number":  140,
+        "juz_number":  7,
+        "hizb_number":  14,
+        "rub_el_hizb":  4,
+        "start_surah_id":  6,
+        "start_ayah_id":  95
+    },
+    {
+        "page_number":  141,
+        "juz_number":  7,
+        "hizb_number":  14,
+        "rub_el_hizb":  4,
+        "start_surah_id":  6,
+        "start_ayah_id":  102
+    },
+    {
+        "page_number":  142,
+        "juz_number":  8,
+        "hizb_number":  15,
+        "rub_el_hizb":  1,
+        "start_surah_id":  6,
+        "start_ayah_id":  111
+    },
+    {
+        "page_number":  143,
+        "juz_number":  8,
+        "hizb_number":  15,
+        "rub_el_hizb":  1,
+        "start_surah_id":  6,
+        "start_ayah_id":  119
+    },
+    {
+        "page_number":  144,
+        "juz_number":  8,
+        "hizb_number":  15,
+        "rub_el_hizb":  1,
+        "start_surah_id":  6,
+        "start_ayah_id":  125
+    },
+    {
+        "page_number":  145,
+        "juz_number":  8,
+        "hizb_number":  15,
+        "rub_el_hizb":  2,
+        "start_surah_id":  6,
+        "start_ayah_id":  132
+    },
+    {
+        "page_number":  146,
+        "juz_number":  8,
+        "hizb_number":  15,
+        "rub_el_hizb":  2,
+        "start_surah_id":  6,
+        "start_ayah_id":  138
+    },
+    {
+        "page_number":  147,
+        "juz_number":  8,
+        "hizb_number":  15,
+        "rub_el_hizb":  3,
+        "start_surah_id":  6,
+        "start_ayah_id":  143
+    },
+    {
+        "page_number":  148,
+        "juz_number":  8,
+        "hizb_number":  15,
+        "rub_el_hizb":  3,
+        "start_surah_id":  6,
+        "start_ayah_id":  147
+    },
+    {
+        "page_number":  149,
+        "juz_number":  8,
+        "hizb_number":  15,
+        "rub_el_hizb":  4,
+        "start_surah_id":  6,
+        "start_ayah_id":  152
+    },
+    {
+        "page_number":  150,
+        "juz_number":  8,
+        "hizb_number":  15,
+        "rub_el_hizb":  4,
+        "start_surah_id":  6,
+        "start_ayah_id":  158
+    },
+    {
+        "page_number":  151,
+        "juz_number":  8,
+        "hizb_number":  16,
+        "rub_el_hizb":  1,
+        "start_surah_id":  7,
+        "start_ayah_id":  1
+    },
+    {
+        "page_number":  152,
+        "juz_number":  8,
+        "hizb_number":  16,
+        "rub_el_hizb":  1,
+        "start_surah_id":  7,
+        "start_ayah_id":  12
+    },
+    {
+        "page_number":  153,
+        "juz_number":  8,
+        "hizb_number":  16,
+        "rub_el_hizb":  1,
+        "start_surah_id":  7,
+        "start_ayah_id":  23
+    },
+    {
+        "page_number":  154,
+        "juz_number":  8,
+        "hizb_number":  16,
+        "rub_el_hizb":  2,
+        "start_surah_id":  7,
+        "start_ayah_id":  31
+    },
+    {
+        "page_number":  155,
+        "juz_number":  8,
+        "hizb_number":  16,
+        "rub_el_hizb":  2,
+        "start_surah_id":  7,
+        "start_ayah_id":  38
+    },
+    {
+        "page_number":  156,
+        "juz_number":  8,
+        "hizb_number":  16,
+        "rub_el_hizb":  2,
+        "start_surah_id":  7,
+        "start_ayah_id":  44
+    },
+    {
+        "page_number":  157,
+        "juz_number":  8,
+        "hizb_number":  16,
+        "rub_el_hizb":  3,
+        "start_surah_id":  7,
+        "start_ayah_id":  52
+    },
+    {
+        "page_number":  158,
+        "juz_number":  8,
+        "hizb_number":  16,
+        "rub_el_hizb":  3,
+        "start_surah_id":  7,
+        "start_ayah_id":  58
+    },
+    {
+        "page_number":  159,
+        "juz_number":  8,
+        "hizb_number":  16,
+        "rub_el_hizb":  4,
+        "start_surah_id":  7,
+        "start_ayah_id":  68
+    },
+    {
+        "page_number":  160,
+        "juz_number":  8,
+        "hizb_number":  16,
+        "rub_el_hizb":  4,
+        "start_surah_id":  7,
+        "start_ayah_id":  74
+    },
+    {
+        "page_number":  161,
+        "juz_number":  8,
+        "hizb_number":  16,
+        "rub_el_hizb":  4,
+        "start_surah_id":  7,
+        "start_ayah_id":  82
+    },
+    {
+        "page_number":  162,
+        "juz_number":  9,
+        "hizb_number":  17,
+        "rub_el_hizb":  1,
+        "start_surah_id":  7,
+        "start_ayah_id":  88
+    },
+    {
+        "page_number":  163,
+        "juz_number":  9,
+        "hizb_number":  17,
+        "rub_el_hizb":  1,
+        "start_surah_id":  7,
+        "start_ayah_id":  96
+    },
+    {
+        "page_number":  164,
+        "juz_number":  9,
+        "hizb_number":  17,
+        "rub_el_hizb":  1,
+        "start_surah_id":  7,
+        "start_ayah_id":  105
+    },
+    {
+        "page_number":  165,
+        "juz_number":  9,
+        "hizb_number":  17,
+        "rub_el_hizb":  2,
+        "start_surah_id":  7,
+        "start_ayah_id":  121
+    },
+    {
+        "page_number":  166,
+        "juz_number":  9,
+        "hizb_number":  17,
+        "rub_el_hizb":  2,
+        "start_surah_id":  7,
+        "start_ayah_id":  131
+    },
+    {
+        "page_number":  167,
+        "juz_number":  9,
+        "hizb_number":  17,
+        "rub_el_hizb":  2,
+        "start_surah_id":  7,
+        "start_ayah_id":  138
+    },
+    {
+        "page_number":  168,
+        "juz_number":  9,
+        "hizb_number":  17,
+        "rub_el_hizb":  3,
+        "start_surah_id":  7,
+        "start_ayah_id":  144
+    },
+    {
+        "page_number":  169,
+        "juz_number":  9,
+        "hizb_number":  17,
+        "rub_el_hizb":  3,
+        "start_surah_id":  7,
+        "start_ayah_id":  150
+    },
+    {
+        "page_number":  170,
+        "juz_number":  9,
+        "hizb_number":  17,
+        "rub_el_hizb":  4,
+        "start_surah_id":  7,
+        "start_ayah_id":  156
+    },
+    {
+        "page_number":  171,
+        "juz_number":  9,
+        "hizb_number":  17,
+        "rub_el_hizb":  4,
+        "start_surah_id":  7,
+        "start_ayah_id":  160
+    },
+    {
+        "page_number":  172,
+        "juz_number":  9,
+        "hizb_number":  17,
+        "rub_el_hizb":  4,
+        "start_surah_id":  7,
+        "start_ayah_id":  164
+    },
+    {
+        "page_number":  173,
+        "juz_number":  9,
+        "hizb_number":  18,
+        "rub_el_hizb":  1,
+        "start_surah_id":  7,
+        "start_ayah_id":  171
+    },
+    {
+        "page_number":  174,
+        "juz_number":  9,
+        "hizb_number":  18,
+        "rub_el_hizb":  1,
+        "start_surah_id":  7,
+        "start_ayah_id":  179
+    },
+    {
+        "page_number":  175,
+        "juz_number":  9,
+        "hizb_number":  18,
+        "rub_el_hizb":  1,
+        "start_surah_id":  7,
+        "start_ayah_id":  188
+    },
+    {
+        "page_number":  176,
+        "juz_number":  9,
+        "hizb_number":  18,
+        "rub_el_hizb":  2,
+        "start_surah_id":  7,
+        "start_ayah_id":  196
+    },
+    {
+        "page_number":  177,
+        "juz_number":  9,
+        "hizb_number":  18,
+        "rub_el_hizb":  3,
+        "start_surah_id":  8,
+        "start_ayah_id":  1
+    },
+    {
+        "page_number":  178,
+        "juz_number":  9,
+        "hizb_number":  18,
+        "rub_el_hizb":  3,
+        "start_surah_id":  8,
+        "start_ayah_id":  9
+    },
+    {
+        "page_number":  179,
+        "juz_number":  9,
+        "hizb_number":  18,
+        "rub_el_hizb":  3,
+        "start_surah_id":  8,
+        "start_ayah_id":  17
+    },
+    {
+        "page_number":  180,
+        "juz_number":  9,
+        "hizb_number":  18,
+        "rub_el_hizb":  4,
+        "start_surah_id":  8,
+        "start_ayah_id":  26
+    },
+    {
+        "page_number":  181,
+        "juz_number":  9,
+        "hizb_number":  18,
+        "rub_el_hizb":  4,
+        "start_surah_id":  8,
+        "start_ayah_id":  34
+    },
+    {
+        "page_number":  182,
+        "juz_number":  10,
+        "hizb_number":  19,
+        "rub_el_hizb":  1,
+        "start_surah_id":  8,
+        "start_ayah_id":  41
+    },
+    {
+        "page_number":  183,
+        "juz_number":  10,
+        "hizb_number":  19,
+        "rub_el_hizb":  1,
+        "start_surah_id":  8,
+        "start_ayah_id":  46
+    },
+    {
+        "page_number":  184,
+        "juz_number":  10,
+        "hizb_number":  19,
+        "rub_el_hizb":  1,
+        "start_surah_id":  8,
+        "start_ayah_id":  53
+    },
+    {
+        "page_number":  185,
+        "juz_number":  10,
+        "hizb_number":  19,
+        "rub_el_hizb":  2,
+        "start_surah_id":  8,
+        "start_ayah_id":  62
+    },
+    {
+        "page_number":  186,
+        "juz_number":  10,
+        "hizb_number":  19,
+        "rub_el_hizb":  2,
+        "start_surah_id":  8,
+        "start_ayah_id":  70
+    },
+    {
+        "page_number":  187,
+        "juz_number":  10,
+        "hizb_number":  19,
+        "rub_el_hizb":  3,
+        "start_surah_id":  9,
+        "start_ayah_id":  1
+    },
+    {
+        "page_number":  188,
+        "juz_number":  10,
+        "hizb_number":  19,
+        "rub_el_hizb":  3,
+        "start_surah_id":  9,
+        "start_ayah_id":  7
+    },
+    {
+        "page_number":  189,
+        "juz_number":  10,
+        "hizb_number":  19,
+        "rub_el_hizb":  3,
+        "start_surah_id":  9,
+        "start_ayah_id":  14
+    },
+    {
+        "page_number":  190,
+        "juz_number":  10,
+        "hizb_number":  19,
+        "rub_el_hizb":  4,
+        "start_surah_id":  9,
+        "start_ayah_id":  21
+    },
+    {
+        "page_number":  191,
+        "juz_number":  10,
+        "hizb_number":  19,
+        "rub_el_hizb":  4,
+        "start_surah_id":  9,
+        "start_ayah_id":  27
+    },
+    {
+        "page_number":  192,
+        "juz_number":  10,
+        "hizb_number":  19,
+        "rub_el_hizb":  4,
+        "start_surah_id":  9,
+        "start_ayah_id":  32
+    },
+    {
+        "page_number":  193,
+        "juz_number":  10,
+        "hizb_number":  20,
+        "rub_el_hizb":  1,
+        "start_surah_id":  9,
+        "start_ayah_id":  37
+    },
+    {
+        "page_number":  194,
+        "juz_number":  10,
+        "hizb_number":  20,
+        "rub_el_hizb":  1,
+        "start_surah_id":  9,
+        "start_ayah_id":  41
+    },
+    {
+        "page_number":  195,
+        "juz_number":  10,
+        "hizb_number":  20,
+        "rub_el_hizb":  2,
+        "start_surah_id":  9,
+        "start_ayah_id":  48
+    },
+    {
+        "page_number":  196,
+        "juz_number":  10,
+        "hizb_number":  20,
+        "rub_el_hizb":  2,
+        "start_surah_id":  9,
+        "start_ayah_id":  55
+    },
+    {
+        "page_number":  197,
+        "juz_number":  10,
+        "hizb_number":  20,
+        "rub_el_hizb":  3,
+        "start_surah_id":  9,
+        "start_ayah_id":  62
+    },
+    {
+        "page_number":  198,
+        "juz_number":  10,
+        "hizb_number":  20,
+        "rub_el_hizb":  3,
+        "start_surah_id":  9,
+        "start_ayah_id":  69
+    },
+    {
+        "page_number":  199,
+        "juz_number":  10,
+        "hizb_number":  20,
+        "rub_el_hizb":  3,
+        "start_surah_id":  9,
+        "start_ayah_id":  73
+    },
+    {
+        "page_number":  200,
+        "juz_number":  10,
+        "hizb_number":  20,
+        "rub_el_hizb":  4,
+        "start_surah_id":  9,
+        "start_ayah_id":  80
+    },
+    {
+        "page_number":  201,
+        "juz_number":  10,
+        "hizb_number":  20,
+        "rub_el_hizb":  4,
+        "start_surah_id":  9,
+        "start_ayah_id":  87
+    },
+    {
+        "page_number":  202,
+        "juz_number":  11,
+        "hizb_number":  21,
+        "rub_el_hizb":  1,
+        "start_surah_id":  9,
+        "start_ayah_id":  94
+    },
+    {
+        "page_number":  203,
+        "juz_number":  11,
+        "hizb_number":  21,
+        "rub_el_hizb":  1,
+        "start_surah_id":  9,
+        "start_ayah_id":  100
+    },
+    {
+        "page_number":  204,
+        "juz_number":  11,
+        "hizb_number":  21,
+        "rub_el_hizb":  1,
+        "start_surah_id":  9,
+        "start_ayah_id":  107
+    },
+    {
+        "page_number":  205,
+        "juz_number":  11,
+        "hizb_number":  21,
+        "rub_el_hizb":  2,
+        "start_surah_id":  9,
+        "start_ayah_id":  112
+    },
+    {
+        "page_number":  206,
+        "juz_number":  11,
+        "hizb_number":  21,
+        "rub_el_hizb":  2,
+        "start_surah_id":  9,
+        "start_ayah_id":  118
+    },
+    {
+        "page_number":  207,
+        "juz_number":  11,
+        "hizb_number":  21,
+        "rub_el_hizb":  3,
+        "start_surah_id":  9,
+        "start_ayah_id":  123
+    },
+    {
+        "page_number":  208,
+        "juz_number":  11,
+        "hizb_number":  21,
+        "rub_el_hizb":  3,
+        "start_surah_id":  10,
+        "start_ayah_id":  1
+    },
+    {
+        "page_number":  209,
+        "juz_number":  11,
+        "hizb_number":  21,
+        "rub_el_hizb":  3,
+        "start_surah_id":  10,
+        "start_ayah_id":  7
+    },
+    {
+        "page_number":  210,
+        "juz_number":  11,
+        "hizb_number":  21,
+        "rub_el_hizb":  4,
+        "start_surah_id":  10,
+        "start_ayah_id":  15
+    },
+    {
+        "page_number":  211,
+        "juz_number":  11,
+        "hizb_number":  21,
+        "rub_el_hizb":  4,
+        "start_surah_id":  10,
+        "start_ayah_id":  21
+    },
+    {
+        "page_number":  212,
+        "juz_number":  11,
+        "hizb_number":  22,
+        "rub_el_hizb":  1,
+        "start_surah_id":  10,
+        "start_ayah_id":  26
+    },
+    {
+        "page_number":  213,
+        "juz_number":  11,
+        "hizb_number":  22,
+        "rub_el_hizb":  1,
+        "start_surah_id":  10,
+        "start_ayah_id":  34
+    },
+    {
+        "page_number":  214,
+        "juz_number":  11,
+        "hizb_number":  22,
+        "rub_el_hizb":  1,
+        "start_surah_id":  10,
+        "start_ayah_id":  43
+    },
+    {
+        "page_number":  215,
+        "juz_number":  11,
+        "hizb_number":  22,
+        "rub_el_hizb":  2,
+        "start_surah_id":  10,
+        "start_ayah_id":  54
+    },
+    {
+        "page_number":  216,
+        "juz_number":  11,
+        "hizb_number":  22,
+        "rub_el_hizb":  2,
+        "start_surah_id":  10,
+        "start_ayah_id":  62
+    },
+    {
+        "page_number":  217,
+        "juz_number":  11,
+        "hizb_number":  22,
+        "rub_el_hizb":  3,
+        "start_surah_id":  10,
+        "start_ayah_id":  71
+    },
+    {
+        "page_number":  218,
+        "juz_number":  11,
+        "hizb_number":  22,
+        "rub_el_hizb":  3,
+        "start_surah_id":  10,
+        "start_ayah_id":  79
+    },
+    {
+        "page_number":  219,
+        "juz_number":  11,
+        "hizb_number":  22,
+        "rub_el_hizb":  3,
+        "start_surah_id":  10,
+        "start_ayah_id":  89
+    },
+    {
+        "page_number":  220,
+        "juz_number":  11,
+        "hizb_number":  22,
+        "rub_el_hizb":  4,
+        "start_surah_id":  10,
+        "start_ayah_id":  98
+    },
+    {
+        "page_number":  221,
+        "juz_number":  11,
+        "hizb_number":  22,
+        "rub_el_hizb":  4,
+        "start_surah_id":  10,
+        "start_ayah_id":  107
+    },
+    {
+        "page_number":  222,
+        "juz_number":  12,
+        "hizb_number":  23,
+        "rub_el_hizb":  1,
+        "start_surah_id":  11,
+        "start_ayah_id":  6
+    },
+    {
+        "page_number":  223,
+        "juz_number":  12,
+        "hizb_number":  23,
+        "rub_el_hizb":  1,
+        "start_surah_id":  11,
+        "start_ayah_id":  13
+    },
+    {
+        "page_number":  224,
+        "juz_number":  12,
+        "hizb_number":  23,
+        "rub_el_hizb":  1,
+        "start_surah_id":  11,
+        "start_ayah_id":  20
+    },
+    {
+        "page_number":  225,
+        "juz_number":  12,
+        "hizb_number":  23,
+        "rub_el_hizb":  2,
+        "start_surah_id":  11,
+        "start_ayah_id":  29
+    },
+    {
+        "page_number":  226,
+        "juz_number":  12,
+        "hizb_number":  23,
+        "rub_el_hizb":  2,
+        "start_surah_id":  11,
+        "start_ayah_id":  38
+    },
+    {
+        "page_number":  227,
+        "juz_number":  12,
+        "hizb_number":  23,
+        "rub_el_hizb":  3,
+        "start_surah_id":  11,
+        "start_ayah_id":  46
+    },
+    {
+        "page_number":  228,
+        "juz_number":  12,
+        "hizb_number":  23,
+        "rub_el_hizb":  3,
+        "start_surah_id":  11,
+        "start_ayah_id":  54
+    },
+    {
+        "page_number":  229,
+        "juz_number":  12,
+        "hizb_number":  23,
+        "rub_el_hizb":  4,
+        "start_surah_id":  11,
+        "start_ayah_id":  63
+    },
+    {
+        "page_number":  230,
+        "juz_number":  12,
+        "hizb_number":  23,
+        "rub_el_hizb":  4,
+        "start_surah_id":  11,
+        "start_ayah_id":  72
+    },
+    {
+        "page_number":  231,
+        "juz_number":  12,
+        "hizb_number":  23,
+        "rub_el_hizb":  4,
+        "start_surah_id":  11,
+        "start_ayah_id":  82
+    },
+    {
+        "page_number":  232,
+        "juz_number":  12,
+        "hizb_number":  24,
+        "rub_el_hizb":  1,
+        "start_surah_id":  11,
+        "start_ayah_id":  89
+    },
+    {
+        "page_number":  233,
+        "juz_number":  12,
+        "hizb_number":  24,
+        "rub_el_hizb":  1,
+        "start_surah_id":  11,
+        "start_ayah_id":  98
+    },
+    {
+        "page_number":  234,
+        "juz_number":  12,
+        "hizb_number":  24,
+        "rub_el_hizb":  2,
+        "start_surah_id":  11,
+        "start_ayah_id":  109
+    },
+    {
+        "page_number":  235,
+        "juz_number":  12,
+        "hizb_number":  24,
+        "rub_el_hizb":  2,
+        "start_surah_id":  11,
+        "start_ayah_id":  118
+    },
+    {
+        "page_number":  236,
+        "juz_number":  12,
+        "hizb_number":  24,
+        "rub_el_hizb":  2,
+        "start_surah_id":  12,
+        "start_ayah_id":  5
+    },
+    {
+        "page_number":  237,
+        "juz_number":  12,
+        "hizb_number":  24,
+        "rub_el_hizb":  3,
+        "start_surah_id":  12,
+        "start_ayah_id":  15
+    },
+    {
+        "page_number":  238,
+        "juz_number":  12,
+        "hizb_number":  24,
+        "rub_el_hizb":  3,
+        "start_surah_id":  12,
+        "start_ayah_id":  23
+    },
+    {
+        "page_number":  239,
+        "juz_number":  12,
+        "hizb_number":  24,
+        "rub_el_hizb":  4,
+        "start_surah_id":  12,
+        "start_ayah_id":  31
+    },
+    {
+        "page_number":  240,
+        "juz_number":  12,
+        "hizb_number":  24,
+        "rub_el_hizb":  4,
+        "start_surah_id":  12,
+        "start_ayah_id":  38
+    },
+    {
+        "page_number":  241,
+        "juz_number":  12,
+        "hizb_number":  24,
+        "rub_el_hizb":  4,
+        "start_surah_id":  12,
+        "start_ayah_id":  44
+    },
+    {
+        "page_number":  242,
+        "juz_number":  13,
+        "hizb_number":  25,
+        "rub_el_hizb":  1,
+        "start_surah_id":  12,
+        "start_ayah_id":  53
+    },
+    {
+        "page_number":  243,
+        "juz_number":  13,
+        "hizb_number":  25,
+        "rub_el_hizb":  1,
+        "start_surah_id":  12,
+        "start_ayah_id":  64
+    },
+    {
+        "page_number":  244,
+        "juz_number":  13,
+        "hizb_number":  25,
+        "rub_el_hizb":  1,
+        "start_surah_id":  12,
+        "start_ayah_id":  70
+    },
+    {
+        "page_number":  245,
+        "juz_number":  13,
+        "hizb_number":  25,
+        "rub_el_hizb":  2,
+        "start_surah_id":  12,
+        "start_ayah_id":  79
+    },
+    {
+        "page_number":  246,
+        "juz_number":  13,
+        "hizb_number":  25,
+        "rub_el_hizb":  2,
+        "start_surah_id":  12,
+        "start_ayah_id":  87
+    },
+    {
+        "page_number":  247,
+        "juz_number":  13,
+        "hizb_number":  25,
+        "rub_el_hizb":  2,
+        "start_surah_id":  12,
+        "start_ayah_id":  96
+    },
+    {
+        "page_number":  248,
+        "juz_number":  13,
+        "hizb_number":  25,
+        "rub_el_hizb":  3,
+        "start_surah_id":  12,
+        "start_ayah_id":  104
+    },
+    {
+        "page_number":  249,
+        "juz_number":  13,
+        "hizb_number":  25,
+        "rub_el_hizb":  3,
+        "start_surah_id":  13,
+        "start_ayah_id":  1
+    },
+    {
+        "page_number":  250,
+        "juz_number":  13,
+        "hizb_number":  25,
+        "rub_el_hizb":  4,
+        "start_surah_id":  13,
+        "start_ayah_id":  6
+    },
+    {
+        "page_number":  251,
+        "juz_number":  13,
+        "hizb_number":  25,
+        "rub_el_hizb":  4,
+        "start_surah_id":  13,
+        "start_ayah_id":  14
+    },
+    {
+        "page_number":  252,
+        "juz_number":  13,
+        "hizb_number":  26,
+        "rub_el_hizb":  1,
+        "start_surah_id":  13,
+        "start_ayah_id":  19
+    },
+    {
+        "page_number":  253,
+        "juz_number":  13,
+        "hizb_number":  26,
+        "rub_el_hizb":  1,
+        "start_surah_id":  13,
+        "start_ayah_id":  29
+    },
+    {
+        "page_number":  254,
+        "juz_number":  13,
+        "hizb_number":  26,
+        "rub_el_hizb":  2,
+        "start_surah_id":  13,
+        "start_ayah_id":  35
+    },
+    {
+        "page_number":  255,
+        "juz_number":  13,
+        "hizb_number":  26,
+        "rub_el_hizb":  2,
+        "start_surah_id":  13,
+        "start_ayah_id":  43
+    },
+    {
+        "page_number":  256,
+        "juz_number":  13,
+        "hizb_number":  26,
+        "rub_el_hizb":  2,
+        "start_surah_id":  14,
+        "start_ayah_id":  6
+    },
+    {
+        "page_number":  257,
+        "juz_number":  13,
+        "hizb_number":  26,
+        "rub_el_hizb":  3,
+        "start_surah_id":  14,
+        "start_ayah_id":  11
+    },
+    {
+        "page_number":  258,
+        "juz_number":  13,
+        "hizb_number":  26,
+        "rub_el_hizb":  3,
+        "start_surah_id":  14,
+        "start_ayah_id":  19
+    },
+    {
+        "page_number":  259,
+        "juz_number":  13,
+        "hizb_number":  26,
+        "rub_el_hizb":  3,
+        "start_surah_id":  14,
+        "start_ayah_id":  25
+    },
+    {
+        "page_number":  260,
+        "juz_number":  13,
+        "hizb_number":  26,
+        "rub_el_hizb":  4,
+        "start_surah_id":  14,
+        "start_ayah_id":  34
+    },
+    {
+        "page_number":  261,
+        "juz_number":  13,
+        "hizb_number":  26,
+        "rub_el_hizb":  4,
+        "start_surah_id":  14,
+        "start_ayah_id":  43
+    },
+    {
+        "page_number":  262,
+        "juz_number":  14,
+        "hizb_number":  27,
+        "rub_el_hizb":  1,
+        "start_surah_id":  15,
+        "start_ayah_id":  1
+    },
+    {
+        "page_number":  263,
+        "juz_number":  14,
+        "hizb_number":  27,
+        "rub_el_hizb":  1,
+        "start_surah_id":  15,
+        "start_ayah_id":  16
+    },
+    {
+        "page_number":  264,
+        "juz_number":  14,
+        "hizb_number":  27,
+        "rub_el_hizb":  1,
+        "start_surah_id":  15,
+        "start_ayah_id":  32
+    },
+    {
+        "page_number":  265,
+        "juz_number":  14,
+        "hizb_number":  27,
+        "rub_el_hizb":  2,
+        "start_surah_id":  15,
+        "start_ayah_id":  52
+    },
+    {
+        "page_number":  266,
+        "juz_number":  14,
+        "hizb_number":  27,
+        "rub_el_hizb":  2,
+        "start_surah_id":  15,
+        "start_ayah_id":  71
+    },
+    {
+        "page_number":  267,
+        "juz_number":  14,
+        "hizb_number":  27,
+        "rub_el_hizb":  2,
+        "start_surah_id":  15,
+        "start_ayah_id":  91
+    },
+    {
+        "page_number":  268,
+        "juz_number":  14,
+        "hizb_number":  27,
+        "rub_el_hizb":  3,
+        "start_surah_id":  16,
+        "start_ayah_id":  7
+    },
+    {
+        "page_number":  269,
+        "juz_number":  14,
+        "hizb_number":  27,
+        "rub_el_hizb":  3,
+        "start_surah_id":  16,
+        "start_ayah_id":  15
+    },
+    {
+        "page_number":  270,
+        "juz_number":  14,
+        "hizb_number":  27,
+        "rub_el_hizb":  3,
+        "start_surah_id":  16,
+        "start_ayah_id":  27
+    },
+    {
+        "page_number":  271,
+        "juz_number":  14,
+        "hizb_number":  27,
+        "rub_el_hizb":  4,
+        "start_surah_id":  16,
+        "start_ayah_id":  35
+    },
+    {
+        "page_number":  272,
+        "juz_number":  14,
+        "hizb_number":  27,
+        "rub_el_hizb":  4,
+        "start_surah_id":  16,
+        "start_ayah_id":  43
+    },
+    {
+        "page_number":  273,
+        "juz_number":  14,
+        "hizb_number":  28,
+        "rub_el_hizb":  1,
+        "start_surah_id":  16,
+        "start_ayah_id":  55
+    },
+    {
+        "page_number":  274,
+        "juz_number":  14,
+        "hizb_number":  28,
+        "rub_el_hizb":  1,
+        "start_surah_id":  16,
+        "start_ayah_id":  65
+    },
+    {
+        "page_number":  275,
+        "juz_number":  14,
+        "hizb_number":  28,
+        "rub_el_hizb":  1,
+        "start_surah_id":  16,
+        "start_ayah_id":  73
+    },
+    {
+        "page_number":  276,
+        "juz_number":  14,
+        "hizb_number":  28,
+        "rub_el_hizb":  2,
+        "start_surah_id":  16,
+        "start_ayah_id":  80
+    },
+    {
+        "page_number":  277,
+        "juz_number":  14,
+        "hizb_number":  28,
+        "rub_el_hizb":  2,
+        "start_surah_id":  16,
+        "start_ayah_id":  88
+    },
+    {
+        "page_number":  278,
+        "juz_number":  14,
+        "hizb_number":  28,
+        "rub_el_hizb":  3,
+        "start_surah_id":  16,
+        "start_ayah_id":  94
+    },
+    {
+        "page_number":  279,
+        "juz_number":  14,
+        "hizb_number":  28,
+        "rub_el_hizb":  3,
+        "start_surah_id":  16,
+        "start_ayah_id":  103
+    },
+    {
+        "page_number":  280,
+        "juz_number":  14,
+        "hizb_number":  28,
+        "rub_el_hizb":  4,
+        "start_surah_id":  16,
+        "start_ayah_id":  111
+    },
+    {
+        "page_number":  281,
+        "juz_number":  14,
+        "hizb_number":  28,
+        "rub_el_hizb":  4,
+        "start_surah_id":  16,
+        "start_ayah_id":  119
+    },
+    {
+        "page_number":  282,
+        "juz_number":  15,
+        "hizb_number":  29,
+        "rub_el_hizb":  1,
+        "start_surah_id":  17,
+        "start_ayah_id":  1
+    },
+    {
+        "page_number":  283,
+        "juz_number":  15,
+        "hizb_number":  29,
+        "rub_el_hizb":  1,
+        "start_surah_id":  17,
+        "start_ayah_id":  8
+    },
+    {
+        "page_number":  284,
+        "juz_number":  15,
+        "hizb_number":  29,
+        "rub_el_hizb":  1,
+        "start_surah_id":  17,
+        "start_ayah_id":  18
+    },
+    {
+        "page_number":  285,
+        "juz_number":  15,
+        "hizb_number":  29,
+        "rub_el_hizb":  2,
+        "start_surah_id":  17,
+        "start_ayah_id":  28
+    },
+    {
+        "page_number":  286,
+        "juz_number":  15,
+        "hizb_number":  29,
+        "rub_el_hizb":  2,
+        "start_surah_id":  17,
+        "start_ayah_id":  39
+    },
+    {
+        "page_number":  287,
+        "juz_number":  15,
+        "hizb_number":  29,
+        "rub_el_hizb":  3,
+        "start_surah_id":  17,
+        "start_ayah_id":  50
+    },
+    {
+        "page_number":  288,
+        "juz_number":  15,
+        "hizb_number":  29,
+        "rub_el_hizb":  3,
+        "start_surah_id":  17,
+        "start_ayah_id":  59
+    },
+    {
+        "page_number":  289,
+        "juz_number":  15,
+        "hizb_number":  29,
+        "rub_el_hizb":  3,
+        "start_surah_id":  17,
+        "start_ayah_id":  67
+    },
+    {
+        "page_number":  290,
+        "juz_number":  15,
+        "hizb_number":  29,
+        "rub_el_hizb":  4,
+        "start_surah_id":  17,
+        "start_ayah_id":  76
+    },
+    {
+        "page_number":  291,
+        "juz_number":  15,
+        "hizb_number":  29,
+        "rub_el_hizb":  4,
+        "start_surah_id":  17,
+        "start_ayah_id":  87
+    },
+    {
+        "page_number":  292,
+        "juz_number":  15,
+        "hizb_number":  29,
+        "rub_el_hizb":  4,
+        "start_surah_id":  17,
+        "start_ayah_id":  97
+    },
+    {
+        "page_number":  293,
+        "juz_number":  15,
+        "hizb_number":  30,
+        "rub_el_hizb":  1,
+        "start_surah_id":  17,
+        "start_ayah_id":  105
+    },
+    {
+        "page_number":  294,
+        "juz_number":  15,
+        "hizb_number":  30,
+        "rub_el_hizb":  1,
+        "start_surah_id":  18,
+        "start_ayah_id":  5
+    },
+    {
+        "page_number":  295,
+        "juz_number":  15,
+        "hizb_number":  30,
+        "rub_el_hizb":  1,
+        "start_surah_id":  18,
+        "start_ayah_id":  16
+    },
+    {
+        "page_number":  296,
+        "juz_number":  15,
+        "hizb_number":  30,
+        "rub_el_hizb":  2,
+        "start_surah_id":  18,
+        "start_ayah_id":  21
+    },
+    {
+        "page_number":  297,
+        "juz_number":  15,
+        "hizb_number":  30,
+        "rub_el_hizb":  2,
+        "start_surah_id":  18,
+        "start_ayah_id":  28
+    },
+    {
+        "page_number":  298,
+        "juz_number":  15,
+        "hizb_number":  30,
+        "rub_el_hizb":  3,
+        "start_surah_id":  18,
+        "start_ayah_id":  35
+    },
+    {
+        "page_number":  299,
+        "juz_number":  15,
+        "hizb_number":  30,
+        "rub_el_hizb":  3,
+        "start_surah_id":  18,
+        "start_ayah_id":  46
+    },
+    {
+        "page_number":  300,
+        "juz_number":  15,
+        "hizb_number":  30,
+        "rub_el_hizb":  4,
+        "start_surah_id":  18,
+        "start_ayah_id":  54
+    },
+    {
+        "page_number":  301,
+        "juz_number":  15,
+        "hizb_number":  30,
+        "rub_el_hizb":  4,
+        "start_surah_id":  18,
+        "start_ayah_id":  62
+    },
+    {
+        "page_number":  302,
+        "juz_number":  16,
+        "hizb_number":  31,
+        "rub_el_hizb":  1,
+        "start_surah_id":  18,
+        "start_ayah_id":  75
+    },
+    {
+        "page_number":  303,
+        "juz_number":  16,
+        "hizb_number":  31,
+        "rub_el_hizb":  1,
+        "start_surah_id":  18,
+        "start_ayah_id":  84
+    },
+    {
+        "page_number":  304,
+        "juz_number":  16,
+        "hizb_number":  31,
+        "rub_el_hizb":  1,
+        "start_surah_id":  18,
+        "start_ayah_id":  98
+    },
+    {
+        "page_number":  305,
+        "juz_number":  16,
+        "hizb_number":  31,
+        "rub_el_hizb":  2,
+        "start_surah_id":  19,
+        "start_ayah_id":  1
+    },
+    {
+        "page_number":  306,
+        "juz_number":  16,
+        "hizb_number":  31,
+        "rub_el_hizb":  2,
+        "start_surah_id":  19,
+        "start_ayah_id":  12
+    },
+    {
+        "page_number":  307,
+        "juz_number":  16,
+        "hizb_number":  31,
+        "rub_el_hizb":  3,
+        "start_surah_id":  19,
+        "start_ayah_id":  26
+    },
+    {
+        "page_number":  308,
+        "juz_number":  16,
+        "hizb_number":  31,
+        "rub_el_hizb":  3,
+        "start_surah_id":  19,
+        "start_ayah_id":  39
+    },
+    {
+        "page_number":  309,
+        "juz_number":  16,
+        "hizb_number":  31,
+        "rub_el_hizb":  3,
+        "start_surah_id":  19,
+        "start_ayah_id":  52
+    },
+    {
+        "page_number":  310,
+        "juz_number":  16,
+        "hizb_number":  31,
+        "rub_el_hizb":  4,
+        "start_surah_id":  19,
+        "start_ayah_id":  65
+    },
+    {
+        "page_number":  311,
+        "juz_number":  16,
+        "hizb_number":  31,
+        "rub_el_hizb":  4,
+        "start_surah_id":  19,
+        "start_ayah_id":  77
+    },
+    {
+        "page_number":  312,
+        "juz_number":  16,
+        "hizb_number":  31,
+        "rub_el_hizb":  4,
+        "start_surah_id":  19,
+        "start_ayah_id":  96
+    },
+    {
+        "page_number":  313,
+        "juz_number":  16,
+        "hizb_number":  32,
+        "rub_el_hizb":  1,
+        "start_surah_id":  20,
+        "start_ayah_id":  13
+    },
+    {
+        "page_number":  314,
+        "juz_number":  16,
+        "hizb_number":  32,
+        "rub_el_hizb":  1,
+        "start_surah_id":  20,
+        "start_ayah_id":  38
+    },
+    {
+        "page_number":  315,
+        "juz_number":  16,
+        "hizb_number":  32,
+        "rub_el_hizb":  1,
+        "start_surah_id":  20,
+        "start_ayah_id":  52
+    },
+    {
+        "page_number":  316,
+        "juz_number":  16,
+        "hizb_number":  32,
+        "rub_el_hizb":  2,
+        "start_surah_id":  20,
+        "start_ayah_id":  65
+    },
+    {
+        "page_number":  317,
+        "juz_number":  16,
+        "hizb_number":  32,
+        "rub_el_hizb":  2,
+        "start_surah_id":  20,
+        "start_ayah_id":  77
+    },
+    {
+        "page_number":  318,
+        "juz_number":  16,
+        "hizb_number":  32,
+        "rub_el_hizb":  3,
+        "start_surah_id":  20,
+        "start_ayah_id":  88
+    },
+    {
+        "page_number":  319,
+        "juz_number":  16,
+        "hizb_number":  32,
+        "rub_el_hizb":  3,
+        "start_surah_id":  20,
+        "start_ayah_id":  99
+    },
+    {
+        "page_number":  320,
+        "juz_number":  16,
+        "hizb_number":  32,
+        "rub_el_hizb":  4,
+        "start_surah_id":  20,
+        "start_ayah_id":  114
+    },
+    {
+        "page_number":  321,
+        "juz_number":  16,
+        "hizb_number":  32,
+        "rub_el_hizb":  4,
+        "start_surah_id":  20,
+        "start_ayah_id":  126
+    },
+    {
+        "page_number":  322,
+        "juz_number":  17,
+        "hizb_number":  33,
+        "rub_el_hizb":  1,
+        "start_surah_id":  21,
+        "start_ayah_id":  1
+    },
+    {
+        "page_number":  323,
+        "juz_number":  17,
+        "hizb_number":  33,
+        "rub_el_hizb":  1,
+        "start_surah_id":  21,
+        "start_ayah_id":  11
+    },
+    {
+        "page_number":  324,
+        "juz_number":  17,
+        "hizb_number":  33,
+        "rub_el_hizb":  1,
+        "start_surah_id":  21,
+        "start_ayah_id":  25
+    },
+    {
+        "page_number":  325,
+        "juz_number":  17,
+        "hizb_number":  33,
+        "rub_el_hizb":  2,
+        "start_surah_id":  21,
+        "start_ayah_id":  36
+    },
+    {
+        "page_number":  326,
+        "juz_number":  17,
+        "hizb_number":  33,
+        "rub_el_hizb":  2,
+        "start_surah_id":  21,
+        "start_ayah_id":  45
+    },
+    {
+        "page_number":  327,
+        "juz_number":  17,
+        "hizb_number":  33,
+        "rub_el_hizb":  3,
+        "start_surah_id":  21,
+        "start_ayah_id":  58
+    },
+    {
+        "page_number":  328,
+        "juz_number":  17,
+        "hizb_number":  33,
+        "rub_el_hizb":  3,
+        "start_surah_id":  21,
+        "start_ayah_id":  73
+    },
+    {
+        "page_number":  329,
+        "juz_number":  17,
+        "hizb_number":  33,
+        "rub_el_hizb":  3,
+        "start_surah_id":  21,
+        "start_ayah_id":  82
+    },
+    {
+        "page_number":  330,
+        "juz_number":  17,
+        "hizb_number":  33,
+        "rub_el_hizb":  4,
+        "start_surah_id":  21,
+        "start_ayah_id":  91
+    },
+    {
+        "page_number":  331,
+        "juz_number":  17,
+        "hizb_number":  33,
+        "rub_el_hizb":  4,
+        "start_surah_id":  21,
+        "start_ayah_id":  102
+    },
+    {
+        "page_number":  332,
+        "juz_number":  17,
+        "hizb_number":  34,
+        "rub_el_hizb":  1,
+        "start_surah_id":  22,
+        "start_ayah_id":  1
+    },
+    {
+        "page_number":  333,
+        "juz_number":  17,
+        "hizb_number":  34,
+        "rub_el_hizb":  1,
+        "start_surah_id":  22,
+        "start_ayah_id":  6
+    },
+    {
+        "page_number":  334,
+        "juz_number":  17,
+        "hizb_number":  34,
+        "rub_el_hizb":  1,
+        "start_surah_id":  22,
+        "start_ayah_id":  16
+    },
+    {
+        "page_number":  335,
+        "juz_number":  17,
+        "hizb_number":  34,
+        "rub_el_hizb":  2,
+        "start_surah_id":  22,
+        "start_ayah_id":  24
+    },
+    {
+        "page_number":  336,
+        "juz_number":  17,
+        "hizb_number":  34,
+        "rub_el_hizb":  2,
+        "start_surah_id":  22,
+        "start_ayah_id":  31
+    },
+    {
+        "page_number":  337,
+        "juz_number":  17,
+        "hizb_number":  34,
+        "rub_el_hizb":  3,
+        "start_surah_id":  22,
+        "start_ayah_id":  39
+    },
+    {
+        "page_number":  338,
+        "juz_number":  17,
+        "hizb_number":  34,
+        "rub_el_hizb":  3,
+        "start_surah_id":  22,
+        "start_ayah_id":  47
+    },
+    {
+        "page_number":  339,
+        "juz_number":  17,
+        "hizb_number":  34,
+        "rub_el_hizb":  3,
+        "start_surah_id":  22,
+        "start_ayah_id":  56
+    },
+    {
+        "page_number":  340,
+        "juz_number":  17,
+        "hizb_number":  34,
+        "rub_el_hizb":  4,
+        "start_surah_id":  22,
+        "start_ayah_id":  65
+    },
+    {
+        "page_number":  341,
+        "juz_number":  17,
+        "hizb_number":  34,
+        "rub_el_hizb":  4,
+        "start_surah_id":  22,
+        "start_ayah_id":  73
+    },
+    {
+        "page_number":  342,
+        "juz_number":  18,
+        "hizb_number":  35,
+        "rub_el_hizb":  1,
+        "start_surah_id":  23,
+        "start_ayah_id":  1
+    },
+    {
+        "page_number":  343,
+        "juz_number":  18,
+        "hizb_number":  35,
+        "rub_el_hizb":  1,
+        "start_surah_id":  23,
+        "start_ayah_id":  18
+    },
+    {
+        "page_number":  344,
+        "juz_number":  18,
+        "hizb_number":  35,
+        "rub_el_hizb":  1,
+        "start_surah_id":  23,
+        "start_ayah_id":  28
+    },
+    {
+        "page_number":  345,
+        "juz_number":  18,
+        "hizb_number":  35,
+        "rub_el_hizb":  2,
+        "start_surah_id":  23,
+        "start_ayah_id":  43
+    },
+    {
+        "page_number":  346,
+        "juz_number":  18,
+        "hizb_number":  35,
+        "rub_el_hizb":  2,
+        "start_surah_id":  23,
+        "start_ayah_id":  60
+    },
+    {
+        "page_number":  347,
+        "juz_number":  18,
+        "hizb_number":  35,
+        "rub_el_hizb":  3,
+        "start_surah_id":  23,
+        "start_ayah_id":  75
+    },
+    {
+        "page_number":  348,
+        "juz_number":  18,
+        "hizb_number":  35,
+        "rub_el_hizb":  3,
+        "start_surah_id":  23,
+        "start_ayah_id":  90
+    },
+    {
+        "page_number":  349,
+        "juz_number":  18,
+        "hizb_number":  35,
+        "rub_el_hizb":  3,
+        "start_surah_id":  23,
+        "start_ayah_id":  105
+    },
+    {
+        "page_number":  350,
+        "juz_number":  18,
+        "hizb_number":  35,
+        "rub_el_hizb":  4,
+        "start_surah_id":  24,
+        "start_ayah_id":  1
+    },
+    {
+        "page_number":  351,
+        "juz_number":  18,
+        "hizb_number":  35,
+        "rub_el_hizb":  4,
+        "start_surah_id":  24,
+        "start_ayah_id":  11
+    },
+    {
+        "page_number":  352,
+        "juz_number":  18,
+        "hizb_number":  36,
+        "rub_el_hizb":  1,
+        "start_surah_id":  24,
+        "start_ayah_id":  21
+    },
+    {
+        "page_number":  353,
+        "juz_number":  18,
+        "hizb_number":  36,
+        "rub_el_hizb":  1,
+        "start_surah_id":  24,
+        "start_ayah_id":  28
+    },
+    {
+        "page_number":  354,
+        "juz_number":  18,
+        "hizb_number":  36,
+        "rub_el_hizb":  1,
+        "start_surah_id":  24,
+        "start_ayah_id":  32
+    },
+    {
+        "page_number":  355,
+        "juz_number":  18,
+        "hizb_number":  36,
+        "rub_el_hizb":  2,
+        "start_surah_id":  24,
+        "start_ayah_id":  37
+    },
+    {
+        "page_number":  356,
+        "juz_number":  18,
+        "hizb_number":  36,
+        "rub_el_hizb":  2,
+        "start_surah_id":  24,
+        "start_ayah_id":  44
+    },
+    {
+        "page_number":  357,
+        "juz_number":  18,
+        "hizb_number":  36,
+        "rub_el_hizb":  3,
+        "start_surah_id":  24,
+        "start_ayah_id":  54
+    },
+    {
+        "page_number":  358,
+        "juz_number":  18,
+        "hizb_number":  36,
+        "rub_el_hizb":  3,
+        "start_surah_id":  24,
+        "start_ayah_id":  59
+    },
+    {
+        "page_number":  359,
+        "juz_number":  18,
+        "hizb_number":  36,
+        "rub_el_hizb":  3,
+        "start_surah_id":  24,
+        "start_ayah_id":  62
+    },
+    {
+        "page_number":  360,
+        "juz_number":  18,
+        "hizb_number":  36,
+        "rub_el_hizb":  4,
+        "start_surah_id":  25,
+        "start_ayah_id":  3
+    },
+    {
+        "page_number":  361,
+        "juz_number":  18,
+        "hizb_number":  36,
+        "rub_el_hizb":  4,
+        "start_surah_id":  25,
+        "start_ayah_id":  12
+    },
+    {
+        "page_number":  362,
+        "juz_number":  19,
+        "hizb_number":  37,
+        "rub_el_hizb":  1,
+        "start_surah_id":  25,
+        "start_ayah_id":  21
+    },
+    {
+        "page_number":  363,
+        "juz_number":  19,
+        "hizb_number":  37,
+        "rub_el_hizb":  1,
+        "start_surah_id":  25,
+        "start_ayah_id":  33
+    },
+    {
+        "page_number":  364,
+        "juz_number":  19,
+        "hizb_number":  37,
+        "rub_el_hizb":  1,
+        "start_surah_id":  25,
+        "start_ayah_id":  44
+    },
+    {
+        "page_number":  365,
+        "juz_number":  19,
+        "hizb_number":  37,
+        "rub_el_hizb":  2,
+        "start_surah_id":  25,
+        "start_ayah_id":  56
+    },
+    {
+        "page_number":  366,
+        "juz_number":  19,
+        "hizb_number":  37,
+        "rub_el_hizb":  2,
+        "start_surah_id":  25,
+        "start_ayah_id":  68
+    },
+    {
+        "page_number":  367,
+        "juz_number":  19,
+        "hizb_number":  37,
+        "rub_el_hizb":  3,
+        "start_surah_id":  26,
+        "start_ayah_id":  1
+    },
+    {
+        "page_number":  368,
+        "juz_number":  19,
+        "hizb_number":  37,
+        "rub_el_hizb":  3,
+        "start_surah_id":  26,
+        "start_ayah_id":  20
+    },
+    {
+        "page_number":  369,
+        "juz_number":  19,
+        "hizb_number":  37,
+        "rub_el_hizb":  3,
+        "start_surah_id":  26,
+        "start_ayah_id":  40
+    },
+    {
+        "page_number":  370,
+        "juz_number":  19,
+        "hizb_number":  37,
+        "rub_el_hizb":  4,
+        "start_surah_id":  26,
+        "start_ayah_id":  61
+    },
+    {
+        "page_number":  371,
+        "juz_number":  19,
+        "hizb_number":  37,
+        "rub_el_hizb":  4,
+        "start_surah_id":  26,
+        "start_ayah_id":  84
+    },
+    {
+        "page_number":  372,
+        "juz_number":  19,
+        "hizb_number":  38,
+        "rub_el_hizb":  1,
+        "start_surah_id":  26,
+        "start_ayah_id":  112
+    },
+    {
+        "page_number":  373,
+        "juz_number":  19,
+        "hizb_number":  38,
+        "rub_el_hizb":  1,
+        "start_surah_id":  26,
+        "start_ayah_id":  137
+    },
+    {
+        "page_number":  374,
+        "juz_number":  19,
+        "hizb_number":  38,
+        "rub_el_hizb":  1,
+        "start_surah_id":  26,
+        "start_ayah_id":  160
+    },
+    {
+        "page_number":  375,
+        "juz_number":  19,
+        "hizb_number":  38,
+        "rub_el_hizb":  2,
+        "start_surah_id":  26,
+        "start_ayah_id":  184
+    },
+    {
+        "page_number":  376,
+        "juz_number":  19,
+        "hizb_number":  38,
+        "rub_el_hizb":  2,
+        "start_surah_id":  26,
+        "start_ayah_id":  207
+    },
+    {
+        "page_number":  377,
+        "juz_number":  19,
+        "hizb_number":  38,
+        "rub_el_hizb":  3,
+        "start_surah_id":  27,
+        "start_ayah_id":  1
+    },
+    {
+        "page_number":  378,
+        "juz_number":  19,
+        "hizb_number":  38,
+        "rub_el_hizb":  3,
+        "start_surah_id":  27,
+        "start_ayah_id":  14
+    },
+    {
+        "page_number":  379,
+        "juz_number":  19,
+        "hizb_number":  38,
+        "rub_el_hizb":  3,
+        "start_surah_id":  27,
+        "start_ayah_id":  23
+    },
+    {
+        "page_number":  380,
+        "juz_number":  19,
+        "hizb_number":  38,
+        "rub_el_hizb":  4,
+        "start_surah_id":  27,
+        "start_ayah_id":  36
+    },
+    {
+        "page_number":  381,
+        "juz_number":  19,
+        "hizb_number":  38,
+        "rub_el_hizb":  4,
+        "start_surah_id":  27,
+        "start_ayah_id":  45
+    },
+    {
+        "page_number":  382,
+        "juz_number":  20,
+        "hizb_number":  39,
+        "rub_el_hizb":  1,
+        "start_surah_id":  27,
+        "start_ayah_id":  56
+    },
+    {
+        "page_number":  383,
+        "juz_number":  20,
+        "hizb_number":  39,
+        "rub_el_hizb":  1,
+        "start_surah_id":  27,
+        "start_ayah_id":  64
+    },
+    {
+        "page_number":  384,
+        "juz_number":  20,
+        "hizb_number":  39,
+        "rub_el_hizb":  1,
+        "start_surah_id":  27,
+        "start_ayah_id":  77
+    },
+    {
+        "page_number":  385,
+        "juz_number":  20,
+        "hizb_number":  39,
+        "rub_el_hizb":  2,
+        "start_surah_id":  27,
+        "start_ayah_id":  89
+    },
+    {
+        "page_number":  386,
+        "juz_number":  20,
+        "hizb_number":  39,
+        "rub_el_hizb":  2,
+        "start_surah_id":  28,
+        "start_ayah_id":  6
+    },
+    {
+        "page_number":  387,
+        "juz_number":  20,
+        "hizb_number":  39,
+        "rub_el_hizb":  3,
+        "start_surah_id":  28,
+        "start_ayah_id":  14
+    },
+    {
+        "page_number":  388,
+        "juz_number":  20,
+        "hizb_number":  39,
+        "rub_el_hizb":  3,
+        "start_surah_id":  28,
+        "start_ayah_id":  22
+    },
+    {
+        "page_number":  389,
+        "juz_number":  20,
+        "hizb_number":  39,
+        "rub_el_hizb":  4,
+        "start_surah_id":  28,
+        "start_ayah_id":  29
+    },
+    {
+        "page_number":  390,
+        "juz_number":  20,
+        "hizb_number":  39,
+        "rub_el_hizb":  4,
+        "start_surah_id":  28,
+        "start_ayah_id":  36
+    },
+    {
+        "page_number":  391,
+        "juz_number":  20,
+        "hizb_number":  39,
+        "rub_el_hizb":  4,
+        "start_surah_id":  28,
+        "start_ayah_id":  44
+    },
+    {
+        "page_number":  392,
+        "juz_number":  20,
+        "hizb_number":  40,
+        "rub_el_hizb":  1,
+        "start_surah_id":  28,
+        "start_ayah_id":  51
+    },
+    {
+        "page_number":  393,
+        "juz_number":  20,
+        "hizb_number":  40,
+        "rub_el_hizb":  1,
+        "start_surah_id":  28,
+        "start_ayah_id":  60
+    },
+    {
+        "page_number":  394,
+        "juz_number":  20,
+        "hizb_number":  40,
+        "rub_el_hizb":  1,
+        "start_surah_id":  28,
+        "start_ayah_id":  71
+    },
+    {
+        "page_number":  395,
+        "juz_number":  20,
+        "hizb_number":  40,
+        "rub_el_hizb":  2,
+        "start_surah_id":  28,
+        "start_ayah_id":  78
+    },
+    {
+        "page_number":  396,
+        "juz_number":  20,
+        "hizb_number":  40,
+        "rub_el_hizb":  2,
+        "start_surah_id":  28,
+        "start_ayah_id":  85
+    },
+    {
+        "page_number":  397,
+        "juz_number":  20,
+        "hizb_number":  40,
+        "rub_el_hizb":  3,
+        "start_surah_id":  29,
+        "start_ayah_id":  7
+    },
+    {
+        "page_number":  398,
+        "juz_number":  20,
+        "hizb_number":  40,
+        "rub_el_hizb":  3,
+        "start_surah_id":  29,
+        "start_ayah_id":  15
+    },
+    {
+        "page_number":  399,
+        "juz_number":  20,
+        "hizb_number":  40,
+        "rub_el_hizb":  3,
+        "start_surah_id":  29,
+        "start_ayah_id":  24
+    },
+    {
+        "page_number":  400,
+        "juz_number":  20,
+        "hizb_number":  40,
+        "rub_el_hizb":  4,
+        "start_surah_id":  29,
+        "start_ayah_id":  31
+    },
+    {
+        "page_number":  401,
+        "juz_number":  20,
+        "hizb_number":  40,
+        "rub_el_hizb":  4,
+        "start_surah_id":  29,
+        "start_ayah_id":  39
+    },
+    {
+        "page_number":  402,
+        "juz_number":  21,
+        "hizb_number":  41,
+        "rub_el_hizb":  1,
+        "start_surah_id":  29,
+        "start_ayah_id":  46
+    },
+    {
+        "page_number":  403,
+        "juz_number":  21,
+        "hizb_number":  41,
+        "rub_el_hizb":  1,
+        "start_surah_id":  29,
+        "start_ayah_id":  53
+    },
+    {
+        "page_number":  404,
+        "juz_number":  21,
+        "hizb_number":  41,
+        "rub_el_hizb":  1,
+        "start_surah_id":  29,
+        "start_ayah_id":  64
+    },
+    {
+        "page_number":  405,
+        "juz_number":  21,
+        "hizb_number":  41,
+        "rub_el_hizb":  2,
+        "start_surah_id":  30,
+        "start_ayah_id":  6
+    },
+    {
+        "page_number":  406,
+        "juz_number":  21,
+        "hizb_number":  41,
+        "rub_el_hizb":  2,
+        "start_surah_id":  30,
+        "start_ayah_id":  16
+    },
+    {
+        "page_number":  407,
+        "juz_number":  21,
+        "hizb_number":  41,
+        "rub_el_hizb":  2,
+        "start_surah_id":  30,
+        "start_ayah_id":  25
+    },
+    {
+        "page_number":  408,
+        "juz_number":  21,
+        "hizb_number":  41,
+        "rub_el_hizb":  3,
+        "start_surah_id":  30,
+        "start_ayah_id":  33
+    },
+    {
+        "page_number":  409,
+        "juz_number":  21,
+        "hizb_number":  41,
+        "rub_el_hizb":  3,
+        "start_surah_id":  30,
+        "start_ayah_id":  42
+    },
+    {
+        "page_number":  410,
+        "juz_number":  21,
+        "hizb_number":  41,
+        "rub_el_hizb":  3,
+        "start_surah_id":  30,
+        "start_ayah_id":  51
+    },
+    {
+        "page_number":  411,
+        "juz_number":  21,
+        "hizb_number":  41,
+        "rub_el_hizb":  4,
+        "start_surah_id":  31,
+        "start_ayah_id":  1
+    },
+    {
+        "page_number":  412,
+        "juz_number":  21,
+        "hizb_number":  41,
+        "rub_el_hizb":  4,
+        "start_surah_id":  31,
+        "start_ayah_id":  12
+    },
+    {
+        "page_number":  413,
+        "juz_number":  21,
+        "hizb_number":  41,
+        "rub_el_hizb":  4,
+        "start_surah_id":  31,
+        "start_ayah_id":  20
+    },
+    {
+        "page_number":  414,
+        "juz_number":  21,
+        "hizb_number":  42,
+        "rub_el_hizb":  1,
+        "start_surah_id":  31,
+        "start_ayah_id":  29
+    },
+    {
+        "page_number":  415,
+        "juz_number":  21,
+        "hizb_number":  42,
+        "rub_el_hizb":  1,
+        "start_surah_id":  32,
+        "start_ayah_id":  1
+    },
+    {
+        "page_number":  416,
+        "juz_number":  21,
+        "hizb_number":  42,
+        "rub_el_hizb":  2,
+        "start_surah_id":  32,
+        "start_ayah_id":  12
+    },
+    {
+        "page_number":  417,
+        "juz_number":  21,
+        "hizb_number":  42,
+        "rub_el_hizb":  2,
+        "start_surah_id":  32,
+        "start_ayah_id":  21
+    },
+    {
+        "page_number":  418,
+        "juz_number":  21,
+        "hizb_number":  42,
+        "rub_el_hizb":  3,
+        "start_surah_id":  33,
+        "start_ayah_id":  1
+    },
+    {
+        "page_number":  419,
+        "juz_number":  21,
+        "hizb_number":  42,
+        "rub_el_hizb":  3,
+        "start_surah_id":  33,
+        "start_ayah_id":  7
+    },
+    {
+        "page_number":  420,
+        "juz_number":  21,
+        "hizb_number":  42,
+        "rub_el_hizb":  3,
+        "start_surah_id":  33,
+        "start_ayah_id":  16
+    },
+    {
+        "page_number":  421,
+        "juz_number":  21,
+        "hizb_number":  42,
+        "rub_el_hizb":  4,
+        "start_surah_id":  33,
+        "start_ayah_id":  23
+    },
+    {
+        "page_number":  422,
+        "juz_number":  22,
+        "hizb_number":  43,
+        "rub_el_hizb":  1,
+        "start_surah_id":  33,
+        "start_ayah_id":  31
+    },
+    {
+        "page_number":  423,
+        "juz_number":  22,
+        "hizb_number":  43,
+        "rub_el_hizb":  1,
+        "start_surah_id":  33,
+        "start_ayah_id":  36
+    },
+    {
+        "page_number":  424,
+        "juz_number":  22,
+        "hizb_number":  43,
+        "rub_el_hizb":  1,
+        "start_surah_id":  33,
+        "start_ayah_id":  44
+    },
+    {
+        "page_number":  425,
+        "juz_number":  22,
+        "hizb_number":  43,
+        "rub_el_hizb":  2,
+        "start_surah_id":  33,
+        "start_ayah_id":  51
+    },
+    {
+        "page_number":  426,
+        "juz_number":  22,
+        "hizb_number":  43,
+        "rub_el_hizb":  2,
+        "start_surah_id":  33,
+        "start_ayah_id":  55
+    },
+    {
+        "page_number":  427,
+        "juz_number":  22,
+        "hizb_number":  43,
+        "rub_el_hizb":  3,
+        "start_surah_id":  33,
+        "start_ayah_id":  63
+    },
+    {
+        "page_number":  428,
+        "juz_number":  22,
+        "hizb_number":  43,
+        "rub_el_hizb":  3,
+        "start_surah_id":  34,
+        "start_ayah_id":  1
+    },
+    {
+        "page_number":  429,
+        "juz_number":  22,
+        "hizb_number":  43,
+        "rub_el_hizb":  3,
+        "start_surah_id":  34,
+        "start_ayah_id":  8
+    },
+    {
+        "page_number":  430,
+        "juz_number":  22,
+        "hizb_number":  43,
+        "rub_el_hizb":  4,
+        "start_surah_id":  34,
+        "start_ayah_id":  15
+    },
+    {
+        "page_number":  431,
+        "juz_number":  22,
+        "hizb_number":  43,
+        "rub_el_hizb":  4,
+        "start_surah_id":  34,
+        "start_ayah_id":  23
+    },
+    {
+        "page_number":  432,
+        "juz_number":  22,
+        "hizb_number":  44,
+        "rub_el_hizb":  1,
+        "start_surah_id":  34,
+        "start_ayah_id":  32
+    },
+    {
+        "page_number":  433,
+        "juz_number":  22,
+        "hizb_number":  44,
+        "rub_el_hizb":  1,
+        "start_surah_id":  34,
+        "start_ayah_id":  40
+    },
+    {
+        "page_number":  434,
+        "juz_number":  22,
+        "hizb_number":  44,
+        "rub_el_hizb":  2,
+        "start_surah_id":  34,
+        "start_ayah_id":  49
+    },
+    {
+        "page_number":  435,
+        "juz_number":  22,
+        "hizb_number":  44,
+        "rub_el_hizb":  2,
+        "start_surah_id":  35,
+        "start_ayah_id":  4
+    },
+    {
+        "page_number":  436,
+        "juz_number":  22,
+        "hizb_number":  44,
+        "rub_el_hizb":  2,
+        "start_surah_id":  35,
+        "start_ayah_id":  12
+    },
+    {
+        "page_number":  437,
+        "juz_number":  22,
+        "hizb_number":  44,
+        "rub_el_hizb":  3,
+        "start_surah_id":  35,
+        "start_ayah_id":  19
+    },
+    {
+        "page_number":  438,
+        "juz_number":  22,
+        "hizb_number":  44,
+        "rub_el_hizb":  3,
+        "start_surah_id":  35,
+        "start_ayah_id":  31
+    },
+    {
+        "page_number":  439,
+        "juz_number":  22,
+        "hizb_number":  44,
+        "rub_el_hizb":  3,
+        "start_surah_id":  35,
+        "start_ayah_id":  39
+    },
+    {
+        "page_number":  440,
+        "juz_number":  22,
+        "hizb_number":  44,
+        "rub_el_hizb":  4,
+        "start_surah_id":  35,
+        "start_ayah_id":  45
+    },
+    {
+        "page_number":  441,
+        "juz_number":  22,
+        "hizb_number":  44,
+        "rub_el_hizb":  4,
+        "start_surah_id":  36,
+        "start_ayah_id":  13
+    },
+    {
+        "page_number":  442,
+        "juz_number":  23,
+        "hizb_number":  45,
+        "rub_el_hizb":  1,
+        "start_surah_id":  36,
+        "start_ayah_id":  28
+    },
+    {
+        "page_number":  443,
+        "juz_number":  23,
+        "hizb_number":  45,
+        "rub_el_hizb":  1,
+        "start_surah_id":  36,
+        "start_ayah_id":  41
+    },
+    {
+        "page_number":  444,
+        "juz_number":  23,
+        "hizb_number":  45,
+        "rub_el_hizb":  1,
+        "start_surah_id":  36,
+        "start_ayah_id":  55
+    },
+    {
+        "page_number":  445,
+        "juz_number":  23,
+        "hizb_number":  45,
+        "rub_el_hizb":  2,
+        "start_surah_id":  36,
+        "start_ayah_id":  71
+    },
+    {
+        "page_number":  446,
+        "juz_number":  23,
+        "hizb_number":  45,
+        "rub_el_hizb":  2,
+        "start_surah_id":  37,
+        "start_ayah_id":  1
+    },
+    {
+        "page_number":  447,
+        "juz_number":  23,
+        "hizb_number":  45,
+        "rub_el_hizb":  3,
+        "start_surah_id":  37,
+        "start_ayah_id":  25
+    },
+    {
+        "page_number":  448,
+        "juz_number":  23,
+        "hizb_number":  45,
+        "rub_el_hizb":  3,
+        "start_surah_id":  37,
+        "start_ayah_id":  52
+    },
+    {
+        "page_number":  449,
+        "juz_number":  23,
+        "hizb_number":  45,
+        "rub_el_hizb":  3,
+        "start_surah_id":  37,
+        "start_ayah_id":  77
+    },
+    {
+        "page_number":  450,
+        "juz_number":  23,
+        "hizb_number":  45,
+        "rub_el_hizb":  4,
+        "start_surah_id":  37,
+        "start_ayah_id":  103
+    },
+    {
+        "page_number":  451,
+        "juz_number":  23,
+        "hizb_number":  45,
+        "rub_el_hizb":  4,
+        "start_surah_id":  37,
+        "start_ayah_id":  127
+    },
+    {
+        "page_number":  452,
+        "juz_number":  23,
+        "hizb_number":  46,
+        "rub_el_hizb":  1,
+        "start_surah_id":  37,
+        "start_ayah_id":  154
+    },
+    {
+        "page_number":  453,
+        "juz_number":  23,
+        "hizb_number":  46,
+        "rub_el_hizb":  1,
+        "start_surah_id":  38,
+        "start_ayah_id":  1
+    },
+    {
+        "page_number":  454,
+        "juz_number":  23,
+        "hizb_number":  46,
+        "rub_el_hizb":  1,
+        "start_surah_id":  38,
+        "start_ayah_id":  17
+    },
+    {
+        "page_number":  455,
+        "juz_number":  23,
+        "hizb_number":  46,
+        "rub_el_hizb":  2,
+        "start_surah_id":  38,
+        "start_ayah_id":  27
+    },
+    {
+        "page_number":  456,
+        "juz_number":  23,
+        "hizb_number":  46,
+        "rub_el_hizb":  2,
+        "start_surah_id":  38,
+        "start_ayah_id":  43
+    },
+    {
+        "page_number":  457,
+        "juz_number":  23,
+        "hizb_number":  46,
+        "rub_el_hizb":  3,
+        "start_surah_id":  38,
+        "start_ayah_id":  62
+    },
+    {
+        "page_number":  458,
+        "juz_number":  23,
+        "hizb_number":  46,
+        "rub_el_hizb":  3,
+        "start_surah_id":  38,
+        "start_ayah_id":  84
+    },
+    {
+        "page_number":  459,
+        "juz_number":  23,
+        "hizb_number":  46,
+        "rub_el_hizb":  3,
+        "start_surah_id":  39,
+        "start_ayah_id":  6
+    },
+    {
+        "page_number":  460,
+        "juz_number":  23,
+        "hizb_number":  46,
+        "rub_el_hizb":  4,
+        "start_surah_id":  39,
+        "start_ayah_id":  11
+    },
+    {
+        "page_number":  461,
+        "juz_number":  23,
+        "hizb_number":  46,
+        "rub_el_hizb":  4,
+        "start_surah_id":  39,
+        "start_ayah_id":  22
+    },
+    {
+        "page_number":  462,
+        "juz_number":  24,
+        "hizb_number":  47,
+        "rub_el_hizb":  1,
+        "start_surah_id":  39,
+        "start_ayah_id":  32
+    },
+    {
+        "page_number":  463,
+        "juz_number":  24,
+        "hizb_number":  47,
+        "rub_el_hizb":  1,
+        "start_surah_id":  39,
+        "start_ayah_id":  41
+    },
+    {
+        "page_number":  464,
+        "juz_number":  24,
+        "hizb_number":  47,
+        "rub_el_hizb":  1,
+        "start_surah_id":  39,
+        "start_ayah_id":  48
+    },
+    {
+        "page_number":  465,
+        "juz_number":  24,
+        "hizb_number":  47,
+        "rub_el_hizb":  2,
+        "start_surah_id":  39,
+        "start_ayah_id":  57
+    },
+    {
+        "page_number":  466,
+        "juz_number":  24,
+        "hizb_number":  47,
+        "rub_el_hizb":  2,
+        "start_surah_id":  39,
+        "start_ayah_id":  68
+    },
+    {
+        "page_number":  467,
+        "juz_number":  24,
+        "hizb_number":  47,
+        "rub_el_hizb":  2,
+        "start_surah_id":  39,
+        "start_ayah_id":  75
+    },
+    {
+        "page_number":  468,
+        "juz_number":  24,
+        "hizb_number":  47,
+        "rub_el_hizb":  3,
+        "start_surah_id":  40,
+        "start_ayah_id":  8
+    },
+    {
+        "page_number":  469,
+        "juz_number":  24,
+        "hizb_number":  47,
+        "rub_el_hizb":  3,
+        "start_surah_id":  40,
+        "start_ayah_id":  17
+    },
+    {
+        "page_number":  470,
+        "juz_number":  24,
+        "hizb_number":  47,
+        "rub_el_hizb":  4,
+        "start_surah_id":  40,
+        "start_ayah_id":  26
+    },
+    {
+        "page_number":  471,
+        "juz_number":  24,
+        "hizb_number":  47,
+        "rub_el_hizb":  4,
+        "start_surah_id":  40,
+        "start_ayah_id":  34
+    },
+    {
+        "page_number":  472,
+        "juz_number":  24,
+        "hizb_number":  48,
+        "rub_el_hizb":  1,
+        "start_surah_id":  40,
+        "start_ayah_id":  41
+    },
+    {
+        "page_number":  473,
+        "juz_number":  24,
+        "hizb_number":  48,
+        "rub_el_hizb":  1,
+        "start_surah_id":  40,
+        "start_ayah_id":  50
+    },
+    {
+        "page_number":  474,
+        "juz_number":  24,
+        "hizb_number":  48,
+        "rub_el_hizb":  1,
+        "start_surah_id":  40,
+        "start_ayah_id":  59
+    },
+    {
+        "page_number":  475,
+        "juz_number":  24,
+        "hizb_number":  48,
+        "rub_el_hizb":  2,
+        "start_surah_id":  40,
+        "start_ayah_id":  67
+    },
+    {
+        "page_number":  476,
+        "juz_number":  24,
+        "hizb_number":  48,
+        "rub_el_hizb":  2,
+        "start_surah_id":  40,
+        "start_ayah_id":  78
+    },
+    {
+        "page_number":  477,
+        "juz_number":  24,
+        "hizb_number":  48,
+        "rub_el_hizb":  2,
+        "start_surah_id":  41,
+        "start_ayah_id":  1
+    },
+    {
+        "page_number":  478,
+        "juz_number":  24,
+        "hizb_number":  48,
+        "rub_el_hizb":  3,
+        "start_surah_id":  41,
+        "start_ayah_id":  12
+    },
+    {
+        "page_number":  479,
+        "juz_number":  24,
+        "hizb_number":  48,
+        "rub_el_hizb":  3,
+        "start_surah_id":  41,
+        "start_ayah_id":  21
+    },
+    {
+        "page_number":  480,
+        "juz_number":  24,
+        "hizb_number":  48,
+        "rub_el_hizb":  4,
+        "start_surah_id":  41,
+        "start_ayah_id":  30
+    },
+    {
+        "page_number":  481,
+        "juz_number":  24,
+        "hizb_number":  48,
+        "rub_el_hizb":  4,
+        "start_surah_id":  41,
+        "start_ayah_id":  39
+    },
+    {
+        "page_number":  482,
+        "juz_number":  25,
+        "hizb_number":  49,
+        "rub_el_hizb":  1,
+        "start_surah_id":  41,
+        "start_ayah_id":  47
+    },
+    {
+        "page_number":  483,
+        "juz_number":  25,
+        "hizb_number":  49,
+        "rub_el_hizb":  1,
+        "start_surah_id":  42,
+        "start_ayah_id":  1
+    },
+    {
+        "page_number":  484,
+        "juz_number":  25,
+        "hizb_number":  49,
+        "rub_el_hizb":  1,
+        "start_surah_id":  42,
+        "start_ayah_id":  11
+    },
+    {
+        "page_number":  485,
+        "juz_number":  25,
+        "hizb_number":  49,
+        "rub_el_hizb":  2,
+        "start_surah_id":  42,
+        "start_ayah_id":  16
+    },
+    {
+        "page_number":  486,
+        "juz_number":  25,
+        "hizb_number":  49,
+        "rub_el_hizb":  2,
+        "start_surah_id":  42,
+        "start_ayah_id":  23
+    },
+    {
+        "page_number":  487,
+        "juz_number":  25,
+        "hizb_number":  49,
+        "rub_el_hizb":  3,
+        "start_surah_id":  42,
+        "start_ayah_id":  32
+    },
+    {
+        "page_number":  488,
+        "juz_number":  25,
+        "hizb_number":  49,
+        "rub_el_hizb":  3,
+        "start_surah_id":  42,
+        "start_ayah_id":  45
+    },
+    {
+        "page_number":  489,
+        "juz_number":  25,
+        "hizb_number":  49,
+        "rub_el_hizb":  4,
+        "start_surah_id":  42,
+        "start_ayah_id":  52
+    },
+    {
+        "page_number":  490,
+        "juz_number":  25,
+        "hizb_number":  49,
+        "rub_el_hizb":  4,
+        "start_surah_id":  43,
+        "start_ayah_id":  11
+    },
+    {
+        "page_number":  491,
+        "juz_number":  25,
+        "hizb_number":  49,
+        "rub_el_hizb":  4,
+        "start_surah_id":  43,
+        "start_ayah_id":  23
+    },
+    {
+        "page_number":  492,
+        "juz_number":  25,
+        "hizb_number":  50,
+        "rub_el_hizb":  1,
+        "start_surah_id":  43,
+        "start_ayah_id":  34
+    },
+    {
+        "page_number":  493,
+        "juz_number":  25,
+        "hizb_number":  50,
+        "rub_el_hizb":  1,
+        "start_surah_id":  43,
+        "start_ayah_id":  48
+    },
+    {
+        "page_number":  494,
+        "juz_number":  25,
+        "hizb_number":  50,
+        "rub_el_hizb":  2,
+        "start_surah_id":  43,
+        "start_ayah_id":  61
+    },
+    {
+        "page_number":  495,
+        "juz_number":  25,
+        "hizb_number":  50,
+        "rub_el_hizb":  2,
+        "start_surah_id":  43,
+        "start_ayah_id":  74
+    },
+    {
+        "page_number":  496,
+        "juz_number":  25,
+        "hizb_number":  50,
+        "rub_el_hizb":  2,
+        "start_surah_id":  44,
+        "start_ayah_id":  1
+    },
+    {
+        "page_number":  497,
+        "juz_number":  25,
+        "hizb_number":  50,
+        "rub_el_hizb":  3,
+        "start_surah_id":  44,
+        "start_ayah_id":  19
+    },
+    {
+        "page_number":  498,
+        "juz_number":  25,
+        "hizb_number":  50,
+        "rub_el_hizb":  3,
+        "start_surah_id":  44,
+        "start_ayah_id":  40
+    },
+    {
+        "page_number":  499,
+        "juz_number":  25,
+        "hizb_number":  50,
+        "rub_el_hizb":  3,
+        "start_surah_id":  45,
+        "start_ayah_id":  1
+    },
+    {
+        "page_number":  500,
+        "juz_number":  25,
+        "hizb_number":  50,
+        "rub_el_hizb":  4,
+        "start_surah_id":  45,
+        "start_ayah_id":  14
+    },
+    {
+        "page_number":  501,
+        "juz_number":  25,
+        "hizb_number":  50,
+        "rub_el_hizb":  4,
+        "start_surah_id":  45,
+        "start_ayah_id":  23
+    },
+    {
+        "page_number":  502,
+        "juz_number":  25,
+        "hizb_number":  50,
+        "rub_el_hizb":  4,
+        "start_surah_id":  45,
+        "start_ayah_id":  33
+    },
+    {
+        "page_number":  503,
+        "juz_number":  26,
+        "hizb_number":  51,
+        "rub_el_hizb":  1,
+        "start_surah_id":  46,
+        "start_ayah_id":  6
+    },
+    {
+        "page_number":  504,
+        "juz_number":  26,
+        "hizb_number":  51,
+        "rub_el_hizb":  1,
+        "start_surah_id":  46,
+        "start_ayah_id":  15
+    },
+    {
+        "page_number":  505,
+        "juz_number":  26,
+        "hizb_number":  51,
+        "rub_el_hizb":  2,
+        "start_surah_id":  46,
+        "start_ayah_id":  21
+    },
+    {
+        "page_number":  506,
+        "juz_number":  26,
+        "hizb_number":  51,
+        "rub_el_hizb":  2,
+        "start_surah_id":  46,
+        "start_ayah_id":  29
+    },
+    {
+        "page_number":  507,
+        "juz_number":  26,
+        "hizb_number":  51,
+        "rub_el_hizb":  2,
+        "start_surah_id":  47,
+        "start_ayah_id":  1
+    },
+    {
+        "page_number":  508,
+        "juz_number":  26,
+        "hizb_number":  51,
+        "rub_el_hizb":  3,
+        "start_surah_id":  47,
+        "start_ayah_id":  12
+    },
+    {
+        "page_number":  509,
+        "juz_number":  26,
+        "hizb_number":  51,
+        "rub_el_hizb":  3,
+        "start_surah_id":  47,
+        "start_ayah_id":  20
+    },
+    {
+        "page_number":  510,
+        "juz_number":  26,
+        "hizb_number":  51,
+        "rub_el_hizb":  3,
+        "start_surah_id":  47,
+        "start_ayah_id":  30
+    },
+    {
+        "page_number":  511,
+        "juz_number":  26,
+        "hizb_number":  51,
+        "rub_el_hizb":  4,
+        "start_surah_id":  48,
+        "start_ayah_id":  1
+    },
+    {
+        "page_number":  512,
+        "juz_number":  26,
+        "hizb_number":  51,
+        "rub_el_hizb":  4,
+        "start_surah_id":  48,
+        "start_ayah_id":  10
+    },
+    {
+        "page_number":  513,
+        "juz_number":  26,
+        "hizb_number":  51,
+        "rub_el_hizb":  4,
+        "start_surah_id":  48,
+        "start_ayah_id":  16
+    },
+    {
+        "page_number":  514,
+        "juz_number":  26,
+        "hizb_number":  52,
+        "rub_el_hizb":  1,
+        "start_surah_id":  48,
+        "start_ayah_id":  24
+    },
+    {
+        "page_number":  515,
+        "juz_number":  26,
+        "hizb_number":  52,
+        "rub_el_hizb":  1,
+        "start_surah_id":  48,
+        "start_ayah_id":  29
+    },
+    {
+        "page_number":  516,
+        "juz_number":  26,
+        "hizb_number":  52,
+        "rub_el_hizb":  2,
+        "start_surah_id":  49,
+        "start_ayah_id":  5
+    },
+    {
+        "page_number":  517,
+        "juz_number":  26,
+        "hizb_number":  52,
+        "rub_el_hizb":  2,
+        "start_surah_id":  49,
+        "start_ayah_id":  12
+    },
+    {
+        "page_number":  518,
+        "juz_number":  26,
+        "hizb_number":  52,
+        "rub_el_hizb":  3,
+        "start_surah_id":  50,
+        "start_ayah_id":  1
+    },
+    {
+        "page_number":  519,
+        "juz_number":  26,
+        "hizb_number":  52,
+        "rub_el_hizb":  3,
+        "start_surah_id":  50,
+        "start_ayah_id":  16
+    },
+    {
+        "page_number":  520,
+        "juz_number":  26,
+        "hizb_number":  52,
+        "rub_el_hizb":  4,
+        "start_surah_id":  50,
+        "start_ayah_id":  36
+    },
+    {
+        "page_number":  521,
+        "juz_number":  26,
+        "hizb_number":  52,
+        "rub_el_hizb":  4,
+        "start_surah_id":  51,
+        "start_ayah_id":  7
+    },
+    {
+        "page_number":  522,
+        "juz_number":  27,
+        "hizb_number":  53,
+        "rub_el_hizb":  1,
+        "start_surah_id":  51,
+        "start_ayah_id":  31
+    },
+    {
+        "page_number":  523,
+        "juz_number":  27,
+        "hizb_number":  53,
+        "rub_el_hizb":  1,
+        "start_surah_id":  51,
+        "start_ayah_id":  52
+    },
+    {
+        "page_number":  524,
+        "juz_number":  27,
+        "hizb_number":  53,
+        "rub_el_hizb":  1,
+        "start_surah_id":  52,
+        "start_ayah_id":  15
+    },
+    {
+        "page_number":  525,
+        "juz_number":  27,
+        "hizb_number":  53,
+        "rub_el_hizb":  2,
+        "start_surah_id":  52,
+        "start_ayah_id":  32
+    },
+    {
+        "page_number":  526,
+        "juz_number":  27,
+        "hizb_number":  53,
+        "rub_el_hizb":  2,
+        "start_surah_id":  53,
+        "start_ayah_id":  1
+    },
+    {
+        "page_number":  527,
+        "juz_number":  27,
+        "hizb_number":  53,
+        "rub_el_hizb":  3,
+        "start_surah_id":  53,
+        "start_ayah_id":  27
+    },
+    {
+        "page_number":  528,
+        "juz_number":  27,
+        "hizb_number":  53,
+        "rub_el_hizb":  3,
+        "start_surah_id":  53,
+        "start_ayah_id":  45
+    },
+    {
+        "page_number":  529,
+        "juz_number":  27,
+        "hizb_number":  53,
+        "rub_el_hizb":  3,
+        "start_surah_id":  54,
+        "start_ayah_id":  7
+    },
+    {
+        "page_number":  530,
+        "juz_number":  27,
+        "hizb_number":  53,
+        "rub_el_hizb":  4,
+        "start_surah_id":  54,
+        "start_ayah_id":  28
+    },
+    {
+        "page_number":  531,
+        "juz_number":  27,
+        "hizb_number":  53,
+        "rub_el_hizb":  4,
+        "start_surah_id":  54,
+        "start_ayah_id":  50
+    },
+    {
+        "page_number":  532,
+        "juz_number":  27,
+        "hizb_number":  54,
+        "rub_el_hizb":  1,
+        "start_surah_id":  55,
+        "start_ayah_id":  17
+    },
+    {
+        "page_number":  533,
+        "juz_number":  27,
+        "hizb_number":  54,
+        "rub_el_hizb":  1,
+        "start_surah_id":  55,
+        "start_ayah_id":  41
+    },
+    {
+        "page_number":  534,
+        "juz_number":  27,
+        "hizb_number":  54,
+        "rub_el_hizb":  1,
+        "start_surah_id":  55,
+        "start_ayah_id":  68
+    },
+    {
+        "page_number":  535,
+        "juz_number":  27,
+        "hizb_number":  54,
+        "rub_el_hizb":  2,
+        "start_surah_id":  56,
+        "start_ayah_id":  17
+    },
+    {
+        "page_number":  536,
+        "juz_number":  27,
+        "hizb_number":  54,
+        "rub_el_hizb":  2,
+        "start_surah_id":  56,
+        "start_ayah_id":  51
+    },
+    {
+        "page_number":  537,
+        "juz_number":  27,
+        "hizb_number":  54,
+        "rub_el_hizb":  3,
+        "start_surah_id":  56,
+        "start_ayah_id":  77
+    },
+    {
+        "page_number":  538,
+        "juz_number":  27,
+        "hizb_number":  54,
+        "rub_el_hizb":  3,
+        "start_surah_id":  57,
+        "start_ayah_id":  4
+    },
+    {
+        "page_number":  539,
+        "juz_number":  27,
+        "hizb_number":  54,
+        "rub_el_hizb":  3,
+        "start_surah_id":  57,
+        "start_ayah_id":  12
+    },
+    {
+        "page_number":  540,
+        "juz_number":  27,
+        "hizb_number":  54,
+        "rub_el_hizb":  4,
+        "start_surah_id":  57,
+        "start_ayah_id":  19
+    },
+    {
+        "page_number":  541,
+        "juz_number":  27,
+        "hizb_number":  54,
+        "rub_el_hizb":  4,
+        "start_surah_id":  57,
+        "start_ayah_id":  25
+    },
+    {
+        "page_number":  542,
+        "juz_number":  28,
+        "hizb_number":  55,
+        "rub_el_hizb":  1,
+        "start_surah_id":  58,
+        "start_ayah_id":  1
+    },
+    {
+        "page_number":  543,
+        "juz_number":  28,
+        "hizb_number":  55,
+        "rub_el_hizb":  1,
+        "start_surah_id":  58,
+        "start_ayah_id":  7
+    },
+    {
+        "page_number":  544,
+        "juz_number":  28,
+        "hizb_number":  55,
+        "rub_el_hizb":  1,
+        "start_surah_id":  58,
+        "start_ayah_id":  12
+    },
+    {
+        "page_number":  545,
+        "juz_number":  28,
+        "hizb_number":  55,
+        "rub_el_hizb":  2,
+        "start_surah_id":  58,
+        "start_ayah_id":  22
+    },
+    {
+        "page_number":  546,
+        "juz_number":  28,
+        "hizb_number":  55,
+        "rub_el_hizb":  2,
+        "start_surah_id":  59,
+        "start_ayah_id":  4
+    },
+    {
+        "page_number":  547,
+        "juz_number":  28,
+        "hizb_number":  55,
+        "rub_el_hizb":  2,
+        "start_surah_id":  59,
+        "start_ayah_id":  10
+    },
+    {
+        "page_number":  548,
+        "juz_number":  28,
+        "hizb_number":  55,
+        "rub_el_hizb":  3,
+        "start_surah_id":  59,
+        "start_ayah_id":  17
+    },
+    {
+        "page_number":  549,
+        "juz_number":  28,
+        "hizb_number":  55,
+        "rub_el_hizb":  3,
+        "start_surah_id":  60,
+        "start_ayah_id":  1
+    },
+    {
+        "page_number":  550,
+        "juz_number":  28,
+        "hizb_number":  55,
+        "rub_el_hizb":  3,
+        "start_surah_id":  60,
+        "start_ayah_id":  6
+    },
+    {
+        "page_number":  551,
+        "juz_number":  28,
+        "hizb_number":  55,
+        "rub_el_hizb":  4,
+        "start_surah_id":  60,
+        "start_ayah_id":  12
+    },
+    {
+        "page_number":  552,
+        "juz_number":  28,
+        "hizb_number":  55,
+        "rub_el_hizb":  4,
+        "start_surah_id":  61,
+        "start_ayah_id":  6
+    },
+    {
+        "page_number":  553,
+        "juz_number":  28,
+        "hizb_number":  56,
+        "rub_el_hizb":  1,
+        "start_surah_id":  62,
+        "start_ayah_id":  1
+    },
+    {
+        "page_number":  554,
+        "juz_number":  28,
+        "hizb_number":  56,
+        "rub_el_hizb":  1,
+        "start_surah_id":  62,
+        "start_ayah_id":  9
+    },
+    {
+        "page_number":  555,
+        "juz_number":  28,
+        "hizb_number":  56,
+        "rub_el_hizb":  2,
+        "start_surah_id":  63,
+        "start_ayah_id":  5
+    },
+    {
+        "page_number":  556,
+        "juz_number":  28,
+        "hizb_number":  56,
+        "rub_el_hizb":  2,
+        "start_surah_id":  64,
+        "start_ayah_id":  1
+    },
+    {
+        "page_number":  557,
+        "juz_number":  28,
+        "hizb_number":  56,
+        "rub_el_hizb":  2,
+        "start_surah_id":  64,
+        "start_ayah_id":  10
+    },
+    {
+        "page_number":  558,
+        "juz_number":  28,
+        "hizb_number":  56,
+        "rub_el_hizb":  3,
+        "start_surah_id":  65,
+        "start_ayah_id":  1
+    },
+    {
+        "page_number":  559,
+        "juz_number":  28,
+        "hizb_number":  56,
+        "rub_el_hizb":  3,
+        "start_surah_id":  65,
+        "start_ayah_id":  6
+    },
+    {
+        "page_number":  560,
+        "juz_number":  28,
+        "hizb_number":  56,
+        "rub_el_hizb":  4,
+        "start_surah_id":  66,
+        "start_ayah_id":  1
+    },
+    {
+        "page_number":  561,
+        "juz_number":  28,
+        "hizb_number":  56,
+        "rub_el_hizb":  4,
+        "start_surah_id":  66,
+        "start_ayah_id":  8
+    },
+    {
+        "page_number":  562,
+        "juz_number":  29,
+        "hizb_number":  57,
+        "rub_el_hizb":  1,
+        "start_surah_id":  67,
+        "start_ayah_id":  1
+    },
+    {
+        "page_number":  563,
+        "juz_number":  29,
+        "hizb_number":  57,
+        "rub_el_hizb":  1,
+        "start_surah_id":  67,
+        "start_ayah_id":  13
+    },
+    {
+        "page_number":  564,
+        "juz_number":  29,
+        "hizb_number":  57,
+        "rub_el_hizb":  1,
+        "start_surah_id":  67,
+        "start_ayah_id":  27
+    },
+    {
+        "page_number":  565,
+        "juz_number":  29,
+        "hizb_number":  57,
+        "rub_el_hizb":  2,
+        "start_surah_id":  68,
+        "start_ayah_id":  16
+    },
+    {
+        "page_number":  566,
+        "juz_number":  29,
+        "hizb_number":  57,
+        "rub_el_hizb":  2,
+        "start_surah_id":  68,
+        "start_ayah_id":  43
+    },
+    {
+        "page_number":  567,
+        "juz_number":  29,
+        "hizb_number":  57,
+        "rub_el_hizb":  3,
+        "start_surah_id":  69,
+        "start_ayah_id":  9
+    },
+    {
+        "page_number":  568,
+        "juz_number":  29,
+        "hizb_number":  57,
+        "rub_el_hizb":  3,
+        "start_surah_id":  69,
+        "start_ayah_id":  35
+    },
+    {
+        "page_number":  569,
+        "juz_number":  29,
+        "hizb_number":  57,
+        "rub_el_hizb":  3,
+        "start_surah_id":  70,
+        "start_ayah_id":  11
+    },
+    {
+        "page_number":  570,
+        "juz_number":  29,
+        "hizb_number":  57,
+        "rub_el_hizb":  4,
+        "start_surah_id":  70,
+        "start_ayah_id":  40
+    },
+    {
+        "page_number":  571,
+        "juz_number":  29,
+        "hizb_number":  57,
+        "rub_el_hizb":  4,
+        "start_surah_id":  71,
+        "start_ayah_id":  11
+    },
+    {
+        "page_number":  572,
+        "juz_number":  29,
+        "hizb_number":  58,
+        "rub_el_hizb":  1,
+        "start_surah_id":  72,
+        "start_ayah_id":  1
+    },
+    {
+        "page_number":  573,
+        "juz_number":  29,
+        "hizb_number":  58,
+        "rub_el_hizb":  1,
+        "start_surah_id":  72,
+        "start_ayah_id":  14
+    },
+    {
+        "page_number":  574,
+        "juz_number":  29,
+        "hizb_number":  58,
+        "rub_el_hizb":  1,
+        "start_surah_id":  73,
+        "start_ayah_id":  1
+    },
+    {
+        "page_number":  575,
+        "juz_number":  29,
+        "hizb_number":  58,
+        "rub_el_hizb":  2,
+        "start_surah_id":  73,
+        "start_ayah_id":  20
+    },
+    {
+        "page_number":  576,
+        "juz_number":  29,
+        "hizb_number":  58,
+        "rub_el_hizb":  2,
+        "start_surah_id":  74,
+        "start_ayah_id":  18
+    },
+    {
+        "page_number":  577,
+        "juz_number":  29,
+        "hizb_number":  58,
+        "rub_el_hizb":  2,
+        "start_surah_id":  74,
+        "start_ayah_id":  48
+    },
+    {
+        "page_number":  578,
+        "juz_number":  29,
+        "hizb_number":  58,
+        "rub_el_hizb":  3,
+        "start_surah_id":  75,
+        "start_ayah_id":  20
+    },
+    {
+        "page_number":  579,
+        "juz_number":  29,
+        "hizb_number":  58,
+        "rub_el_hizb":  3,
+        "start_surah_id":  76,
+        "start_ayah_id":  6
+    },
+    {
+        "page_number":  580,
+        "juz_number":  29,
+        "hizb_number":  58,
+        "rub_el_hizb":  4,
+        "start_surah_id":  76,
+        "start_ayah_id":  26
+    },
+    {
+        "page_number":  581,
+        "juz_number":  29,
+        "hizb_number":  58,
+        "rub_el_hizb":  4,
+        "start_surah_id":  77,
+        "start_ayah_id":  20
+    },
+    {
+        "page_number":  582,
+        "juz_number":  30,
+        "hizb_number":  59,
+        "rub_el_hizb":  1,
+        "start_surah_id":  78,
+        "start_ayah_id":  1
+    },
+    {
+        "page_number":  583,
+        "juz_number":  30,
+        "hizb_number":  59,
+        "rub_el_hizb":  1,
+        "start_surah_id":  78,
+        "start_ayah_id":  31
+    },
+    {
+        "page_number":  584,
+        "juz_number":  30,
+        "hizb_number":  59,
+        "rub_el_hizb":  1,
+        "start_surah_id":  79,
+        "start_ayah_id":  16
+    },
+    {
+        "page_number":  585,
+        "juz_number":  30,
+        "hizb_number":  59,
+        "rub_el_hizb":  2,
+        "start_surah_id":  80,
+        "start_ayah_id":  1
+    },
+    {
+        "page_number":  586,
+        "juz_number":  30,
+        "hizb_number":  59,
+        "rub_el_hizb":  2,
+        "start_surah_id":  81,
+        "start_ayah_id":  1
+    },
+    {
+        "page_number":  587,
+        "juz_number":  30,
+        "hizb_number":  59,
+        "rub_el_hizb":  3,
+        "start_surah_id":  82,
+        "start_ayah_id":  1
+    },
+    {
+        "page_number":  588,
+        "juz_number":  30,
+        "hizb_number":  59,
+        "rub_el_hizb":  3,
+        "start_surah_id":  83,
+        "start_ayah_id":  7
+    },
+    {
+        "page_number":  589,
+        "juz_number":  30,
+        "hizb_number":  59,
+        "rub_el_hizb":  3,
+        "start_surah_id":  83,
+        "start_ayah_id":  35
+    },
+    {
+        "page_number":  590,
+        "juz_number":  30,
+        "hizb_number":  59,
+        "rub_el_hizb":  4,
+        "start_surah_id":  85,
+        "start_ayah_id":  1
+    },
+    {
+        "page_number":  591,
+        "juz_number":  30,
+        "hizb_number":  59,
+        "rub_el_hizb":  4,
+        "start_surah_id":  86,
+        "start_ayah_id":  1
+    },
+    {
+        "page_number":  592,
+        "juz_number":  30,
+        "hizb_number":  60,
+        "rub_el_hizb":  1,
+        "start_surah_id":  87,
+        "start_ayah_id":  16
+    },
+    {
+        "page_number":  593,
+        "juz_number":  30,
+        "hizb_number":  60,
+        "rub_el_hizb":  1,
+        "start_surah_id":  89,
+        "start_ayah_id":  1
+    },
+    {
+        "page_number":  594,
+        "juz_number":  30,
+        "hizb_number":  60,
+        "rub_el_hizb":  1,
+        "start_surah_id":  89,
+        "start_ayah_id":  24
+    },
+    {
+        "page_number":  595,
+        "juz_number":  30,
+        "hizb_number":  60,
+        "rub_el_hizb":  2,
+        "start_surah_id":  91,
+        "start_ayah_id":  1
+    },
+    {
+        "page_number":  596,
+        "juz_number":  30,
+        "hizb_number":  60,
+        "rub_el_hizb":  2,
+        "start_surah_id":  92,
+        "start_ayah_id":  15
+    },
+    {
+        "page_number":  597,
+        "juz_number":  30,
+        "hizb_number":  60,
+        "rub_el_hizb":  3,
+        "start_surah_id":  95,
+        "start_ayah_id":  1
+    },
+    {
+        "page_number":  598,
+        "juz_number":  30,
+        "hizb_number":  60,
+        "rub_el_hizb":  3,
+        "start_surah_id":  97,
+        "start_ayah_id":  1
+    },
+    {
+        "page_number":  599,
+        "juz_number":  30,
+        "hizb_number":  60,
+        "rub_el_hizb":  3,
+        "start_surah_id":  98,
+        "start_ayah_id":  8
+    },
+    {
+        "page_number":  600,
+        "juz_number":  30,
+        "hizb_number":  60,
+        "rub_el_hizb":  4,
+        "start_surah_id":  100,
+        "start_ayah_id":  10
+    },
+    {
+        "page_number":  601,
+        "juz_number":  30,
+        "hizb_number":  60,
+        "rub_el_hizb":  4,
+        "start_surah_id":  103,
+        "start_ayah_id":  1
+    },
+    {
+        "page_number":  602,
+        "juz_number":  30,
+        "hizb_number":  60,
+        "rub_el_hizb":  4,
+        "start_surah_id":  106,
+        "start_ayah_id":  1
+    },
+    {
+        "page_number":  603,
+        "juz_number":  30,
+        "hizb_number":  60,
+        "rub_el_hizb":  4,
+        "start_surah_id":  109,
+        "start_ayah_id":  1
+    },
+    {
+        "page_number":  604,
+        "juz_number":  30,
+        "hizb_number":  60,
+        "rub_el_hizb":  4,
+        "start_surah_id":  112,
+        "start_ayah_id":  1
+    }
+]

@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0f766e">
+  <title>رفيق الحفظ — دفتر اليوم</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- App Header -->
+  <header class="app-header">
+    <div class="header-inner">
+      <a href="dashboard.html" class="header-brand">
+        <span class="brand-mark">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+          </svg>
+        </span>
+        <span class="brand-name">رفيق الحفظ</span>
+      </a>
+
+      <div class="header-actions">
+        <!-- Quick Theme Toggle -->
+        <button type="button" class="theme-toggle-btn header-action-btn" title="تبديل المظهر" aria-label="تبديل المظهر">
+          <svg class="icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="4.5" fill="currentColor"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+          <svg class="icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+        </button>
+
+        <!-- Quick Sound Feedback Toggle -->
+        <button type="button" class="sound-toggle-btn header-action-btn" data-sound="on" title="المؤثرات الصوتية" aria-label="المؤثرات الصوتية">
+          <svg class="icon-sound-on" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+          </svg>
+          <svg class="icon-sound-off" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <line x1="23" y1="9" x2="17" y2="15"></line>
+            <line x1="17" y1="9" x2="23" y2="15"></line>
+          </svg>
+        </button>
+
+        <!-- History / Logbook Button -->
+        <a href="history.html" class="header-action-btn" title="سجل الأخطاء وتاريخ الإتقان" aria-label="سجل الأخطاء وتاريخ الإتقان">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
+          </svg>
+        </a>
+
+        <!-- Streamlined Settings & Controls Menu Dropdown -->
+        <div class="header-menu-container">
+          <button type="button" id="btn-header-menu" class="header-action-btn" title="الإعدادات والخيارات" aria-label="الإعدادات والخيارات" aria-expanded="false">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+          </button>
+
+          <div id="header-dropdown-menu" class="header-dropdown-menu hidden" role="menu">
+            <button type="button" class="header-dropdown-item" id="btn-open-plan">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+              <span>تعديل خطة المراجعة والحفظ</span>
+            </button>
+
+            <!-- Screen Stay-Awake Toggle in Menu -->
+            <button type="button" class="header-dropdown-item wakelock-toggle-btn" data-wakelock="on">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                <line x1="8" y1="21" x2="16" y2="21"></line>
+                <line x1="12" y1="17" x2="12" y2="21"></line>
+                <circle cx="12" cy="10" r="2.5" fill="currentColor"></circle>
+              </svg>
+              <span>إبقاء الشاشة مضاءة دائماً</span>
+            </button>
+
+            <div class="header-dropdown-divider"></div>
+
+            <button type="button" class="header-dropdown-item danger-item" id="btn-open-reset">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                <path d="M3 3v5h5"></path>
+              </svg>
+              <span>تصفير الحساب والبدء من الصفر</span>
+            </button>
+
+            <button type="button" class="header-dropdown-item" id="logout-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                <polyline points="16 17 21 12 16 7"></polyline>
+                <line x1="21" y1="12" x2="9" y2="12"></line>
+              </svg>
+              <span>تسجيل الخروج</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- Daily Focus Card -->
+    <section class="daily-focus-card" aria-label="التركيز اليومي">
+      <div style="display:flex; align-items:center; gap:0.75rem;">
+        <span class="streak-badge">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path>
+          </svg>
+          التزام مستمر
+        </span>
+        <div>
+          <strong style="font-size:1.05rem;">خطة تلاوة اليوم</strong>
+          <p class="hint" style="margin:0;">أكمل تلاوة صفحات المهام وسجل أي تعثرات لتدريبها في بطاقات المعالجة</p>
+        </div>
+      </div>
+      <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+        <button type="button" id="btn-quick-plan" class="btn btn-ghost" style="font-size:0.82rem; padding:0.45rem 0.85rem;" title="تعديل خطة المراجعة اليومية">
+          ⚙️ تعديل الخطة
+        </button>
+        <a href="hifz.html" class="btn btn-primary" style="font-size:0.85rem; padding:0.45rem 0.95rem;">
+          ابدأ بالحفظ الجديد ←
+        </a>
+      </div>
+    </section>
+
+    <!-- Fikra Stats Summary Banner -->
+    <section class="stats-banner" aria-label="ملخص إنجاز الحفظ">
+      <div class="stat-item">
+        <div class="stat-icon" style="background:var(--task-green-bg); color:var(--task-green); border-color:var(--task-green-border);">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+          </svg>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">صفحة الحفظ الحالية</span>
+          <span class="stat-value" id="stat-current-hifz">—</span>
+        </div>
+      </div>
+
+      <div class="stat-item" id="btn-target-stat" style="cursor:pointer;" title="انقر لتعديل خطة المراجعة">
+        <div class="stat-icon" style="background:var(--task-purple-bg); color:var(--task-purple); border-color:var(--task-purple-border);">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <circle cx="12" cy="12" r="6"></circle>
+            <circle cx="12" cy="12" r="2"></circle>
+          </svg>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">خطة المراجعة (انقر لتعديل المدة)</span>
+          <span class="stat-value" id="stat-target">—</span>
+        </div>
+      </div>
+
+      <a href="history.html" class="stat-item" style="text-decoration:none; color:inherit; cursor:pointer;" title="انقر لعرض سجل الأخطاء وتاريخ الإتقان">
+        <div class="stat-icon" style="background:var(--task-red-bg); color:var(--task-red); border-color:var(--task-red-border);">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+            <polyline points="2 17 12 22 22 17"></polyline>
+            <polyline points="2 12 12 17 22 12"></polyline>
+          </svg>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">أخطاء قيد المعالجة (عرض السجل)</span>
+          <span class="stat-value" id="stat-active-mistakes">—</span>
+        </div>
+      </a>
+    </section>
+
+    <!-- Daily Focus Head -->
+    <div class="section-head">
+      <div>
+        <h2 id="greeting">مهام التلاوة لليوم</h2>
+        <span class="hint">انقر على أي مهمة للانتقال إلى صفحتها المستقلة ومتابعة تلاوة صفحاتها</span>
+      </div>
+      <div class="date-chip">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="16" y1="2" x2="16" y2="6"></line>
+          <line x1="8" y1="2" x2="8" y2="6"></line>
+          <line x1="3" y1="10" x2="21" y2="10"></line>
+        </svg>
+        <span id="tasks-date">جاري التحميل…</span>
+      </div>
+    </div>
+
+    <!-- 4 Dedicated Task Cards Grid -->
+    <section id="tasks-grid" class="tasks-grid" aria-label="مهام اليوم">
+      <div class="loading" style="grid-column: 1 / -1; text-align: center; padding: 2.5rem;">جاري إعداد مهام اليوم…</div>
+    </section>
+
+  </main>
+
+  <!-- Revision Plan Modal -->
+  <div id="plan-modal" class="modal-overlay hidden">
+    <div class="modal" role="dialog" aria-modal="true">
+      <div class="modal-head">
+        <div style="display:flex; align-items:center; gap:0.5rem;">
+          <span style="font-size:1.2rem;">⚙️</span>
+          <h3>تعديل خطة المراجعة والحفظ</h3>
+        </div>
+        <button type="button" id="plan-modal-close" class="btn btn-ghost" style="padding:0.25rem 0.5rem; font-size:1.1rem;" aria-label="إغلاق">✕</button>
+      </div>
+
+      <form id="plan-form" novalidate>
+        <div class="field">
+          <label>كم يوماً تريد لختم مراجعتك كاملة؟ (١ – ٦ أيام كحد أقصى)</label>
+          <div class="days-chip-grid" id="days-chip-grid">
+            <button type="button" class="day-chip" data-days="1">
+              <span class="day-num">١</span>
+              <span class="day-lbl">يوم واحد</span>
+            </button>
+            <button type="button" class="day-chip" data-days="2">
+              <span class="day-num">٢</span>
+              <span class="day-lbl">يومان</span>
+            </button>
+            <button type="button" class="day-chip" data-days="3">
+              <span class="day-num">٣</span>
+              <span class="day-lbl">٣ أيام</span>
+            </button>
+            <button type="button" class="day-chip" data-days="4">
+              <span class="day-num">٤</span>
+              <span class="day-lbl">٤ أيام</span>
+            </button>
+            <button type="button" class="day-chip" data-days="5">
+              <span class="day-num">٥</span>
+              <span class="day-lbl">٥ أيام</span>
+            </button>
+            <button type="button" class="day-chip active" data-days="6">
+              <span class="day-num">٦</span>
+              <span class="day-lbl">٦ أيام</span>
+            </button>
+          </div>
+          <input type="hidden" id="plan-days" value="6">
+          <div class="plan-calc-preview" id="plan-calc-preview">
+            📊 <strong>الحساب التلقائي:</strong> سيتم قسمة صفحات المراجعة المتاحة بالتساوي لتصل إلى هدفك في اليوم الأخير.
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="plan-current-page">صفحة الحفظ الحالية في المصحف (1 - 604)</label>
+          <input type="number" id="plan-current-page" min="0" max="604" placeholder="مثال: 250" required>
+          <span class="hint">نطاق الربط يبدأ من ٣٠ صفحة ويتوسع مع كل صفحة حفظ جديدة حتى اكتمال دورة المراجعة.</span>
+        </div>
+
+        <div class="field">
+          <label for="plan-user-type">تصنيف خطة الحفظ</label>
+          <select id="plan-user-type">
+            <option value="NEW">حافظ جديد (يبدأ من البداية)</option>
+            <option value="EXISTING">حافظ متقدم (حفظ سابق مستمر)</option>
+            <option value="COMPLETE">خاتم لكتاب الله (مراجعة دورية كاملة للمصحف)</option>
+          </select>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" id="plan-modal-cancel" class="btn btn-ghost">إلغاء</button>
+          <button type="submit" id="plan-modal-save" class="btn btn-primary">حفظ وتطبيق الخطة</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Reset Confirmation Modal -->
+  <div id="reset-modal" class="modal-overlay hidden">
+    <div class="modal" role="dialog" aria-modal="true">
+      <div class="modal-head">
+        <div style="display:flex; align-items:center; gap:0.5rem; color:var(--danger);">
+          <span style="font-size:1.3rem;">⚠️</span>
+          <h3>تصفير الحساب والبدء من الصفر</h3>
+        </div>
+        <button type="button" id="reset-modal-close" class="btn btn-ghost" style="padding:0.25rem 0.5rem; font-size:1.1rem;" aria-label="إغلاق">✕</button>
+      </div>
+
+      <div style="font-size:0.95rem; line-height:1.7; color:var(--ink-secondary); margin-bottom:1.5rem;">
+        <p><strong>تنبيه هام لا يمكن التراجع عنه:</strong></p>
+        <p>تصفير الحساب يعني مسح جميع المهام وسجلات التلاوة اليومية، وحذف كافة الأخطاء والبطاقات المسجلة، وإعادة صفحة الحفظ الحالية والهدف إلى نقطة البداية (الصفر).</p>
+        <p style="color:var(--danger); font-weight:700;">هل أنت متأكد تماماً من رغبتك في البدء من جديد؟</p>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" id="reset-modal-cancel" class="btn btn-ghost">إلغاء وتراجع</button>
+        <button type="button" id="btn-confirm-reset" class="btn btn-danger-outline" style="background:var(--danger); color:#fff; border-color:var(--danger);">
+          نعم، صفّر كل شيء وابدأ من جديد
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile Bottom Navigation -->
+  <nav class="mobile-bottom-nav" aria-label="التنقل السريع">
+    <a href="dashboard.html" class="mobile-nav-link active" title="الرئيسية">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+      </svg>
+      <span>الرئيسية</span>
+    </a>
+    <a href="hifz.html" class="mobile-nav-link" title="الحفظ الجديد">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+      </svg>
+      <span>حفظ جديد</span>
+    </a>
+    <a href="rabt.html" class="mobile-nav-link" title="الربط">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+      </svg>
+      <span>الربط</span>
+    </a>
+    <a href="murajaah.html" class="mobile-nav-link" title="المراجعة">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="23 4 23 10 17 10"></polyline>
+        <polyline points="1 20 1 14 7 14"></polyline>
+        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+      </svg>
+      <span>المراجعة</span>
+    </a>
+    <a href="flashcards.html" class="mobile-nav-link" title="البطاقات">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+        <polyline points="2 17 12 22 22 17"></polyline>
+        <polyline points="2 12 12 17 22 12"></polyline>
+      </svg>
+      <span>البطاقات</span>
+    </a>
+    <a href="history.html" class="mobile-nav-link" title="السجل">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+        <polyline points="14 2 14 8 20 8"></polyline>
+        <line x1="16" y1="13" x2="8" y2="13"></line>
+        <line x1="16" y1="17" x2="8" y2="17"></line>
+      </svg>
+      <span>السجل</span>
+    </a>
+  </nav>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
