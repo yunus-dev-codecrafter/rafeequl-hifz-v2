@@ -1,3 +1,4 @@
+# rafeequl-hifz-v2
 # رفيق الحفظ — Rafeequl Hifz
 
 Quran memorization daily logbook: PHP 8 + MySQL backend (`api/`), RTL web frontend (`web/`), and a mobile PWA wrapper (`mobile/`).
