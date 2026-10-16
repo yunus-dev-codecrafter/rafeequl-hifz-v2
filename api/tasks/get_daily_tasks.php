@@ -10,10 +10,11 @@ declare(strict_types=1);
 require __DIR__ . '/../../config/database.php';
 
 const TASK_TITLES = [
-    'HIFZ_JADID' => ['ar' => 'الحفظ الجديد', 'en' => 'New Memorization'],
-    'RABT'       => ['ar' => 'الربط',        'en' => 'Rabt (Linking)'],
-    'MURAJAAH'   => ['ar' => 'المراجعة',     'en' => "Muraja'ah (Review)"],
-    'MISTAKES'   => ['ar' => 'المعالجة',     'en' => 'Remediation'],
+    'HIFZ_JADID' => ['ar' => 'الحفظ الجديد',     'en' => 'New Memorization'],
+    'TIKRAR_AMS' => ['ar' => 'تكرار حفظ الأمس',   'en' => "Yesterday's Repetition"],
+    'RABT'       => ['ar' => 'الربط',            'en' => 'Rabt (Linking)'],
+    'MURAJAAH'   => ['ar' => 'المراجعة',         'en' => "Muraja'ah (Review)"],
+    'MISTAKES'   => ['ar' => 'المعالجة',         'en' => 'Remediation'],
 ];
 
 function json_out(int $code, array $payload): void
@@ -24,15 +25,27 @@ function json_out(int $code, array $payload): void
     exit;
 }
 
-// Ensure completed_pages and revision plan columns exist
+// Ensure completed_pages, repetition_count, and revision plan columns exist
 try {
     $pdo->exec("ALTER TABLE `daily_task_logs` ADD COLUMN `completed_pages` TEXT NULL");
+} catch (Throwable $t) {}
+try {
+    $pdo->exec("ALTER TABLE `daily_task_logs` MODIFY COLUMN `task_type` ENUM('HIFZ_JADID', 'TIKRAR_AMS', 'RABT', 'MURAJAAH') NOT NULL");
+} catch (Throwable $t) {}
+try {
+    $pdo->exec("ALTER TABLE `daily_task_logs` ADD COLUMN `repetition_count` INT NOT NULL DEFAULT 0");
 } catch (Throwable $t) {}
 try {
     $pdo->exec("ALTER TABLE `users` ADD COLUMN `murajaah_days` INT NOT NULL DEFAULT 6");
 } catch (Throwable $t) {}
 try {
     $pdo->exec("ALTER TABLE `users` ADD COLUMN `rabt_extra_pages` INT NOT NULL DEFAULT 0");
+} catch (Throwable $t) {}
+try {
+    $pdo->exec("ALTER TABLE `users` ADD COLUMN `last_tikrar_page` INT NOT NULL DEFAULT 0");
+} catch (Throwable $t) {}
+try {
+    $pdo->exec("UPDATE `users` SET `last_tikrar_page` = `current_hifz_page` WHERE `last_tikrar_page` = 0 AND `current_hifz_page` > 0");
 } catch (Throwable $t) {}
 
 /**
@@ -41,7 +54,7 @@ try {
  */
 function findExistingTask(PDO $pdo, int $userId, string $type, string $today): ?array
 {
-    $base = 'SELECT `id`, `task_date`, `task_type`, `start_page`, `end_page`, `is_completed`, `completed_pages`
+    $base = 'SELECT `id`, `task_date`, `task_type`, `start_page`, `end_page`, `is_completed`, `completed_pages`, COALESCE(`repetition_count`, 0) AS `repetition_count`
              FROM `daily_task_logs`
              WHERE `user_id` = :u AND `task_type` = :t';
 
@@ -101,12 +114,12 @@ function nextMurajaahChunk(PDO $pdo, int $userId, int $rangeStart, int $rangeEnd
     return [$next, min($next + $target - 1, $rangeEnd)];
 }
 
-function insertTask(PDO $pdo, int $userId, string $type, array $bounds, string $date): array
+function insertTask(PDO $pdo, int $userId, string $type, array $bounds, string $date, int $reps = 0): array
 {
     $stmt = $pdo->prepare(
         'INSERT INTO `daily_task_logs`
-            (`user_id`, `task_date`, `task_type`, `start_page`, `end_page`, `is_completed`)
-         VALUES (:u, :d, :t, :s, :e, 0)'
+            (`user_id`, `task_date`, `task_type`, `start_page`, `end_page`, `repetition_count`, `is_completed`)
+         VALUES (:u, :d, :t, :s, :e, :r, 0)'
     );
     $stmt->execute([
         ':u' => $userId,
@@ -114,15 +127,17 @@ function insertTask(PDO $pdo, int $userId, string $type, array $bounds, string $
         ':t' => $type,
         ':s' => $bounds[0],
         ':e' => $bounds[1],
+        ':r' => $reps,
     ]);
 
     return [
-        'id'           => (int) $pdo->lastInsertId(),
-        'task_date'    => $date,
-        'task_type'    => $type,
-        'start_page'   => $bounds[0],
-        'end_page'     => $bounds[1],
-        'is_completed' => 0,
+        'id'               => (int) $pdo->lastInsertId(),
+        'task_date'        => $date,
+        'task_type'        => $type,
+        'start_page'       => $bounds[0],
+        'end_page'         => $bounds[1],
+        'repetition_count' => $reps,
+        'is_completed'     => 0,
     ];
 }
 
@@ -132,6 +147,7 @@ function formatTask(array $row, string $today): array
     $start = isset($row['start_page']) ? (int) $row['start_page'] : null;
     $end = isset($row['end_page']) ? (int) $row['end_page'] : null;
     $isCompleted = (bool) $row['is_completed'];
+    $repetitionCount = isset($row['repetition_count']) ? (int) $row['repetition_count'] : 0;
 
     $completedPages = [];
     if (!empty($row['completed_pages'])) {
@@ -149,13 +165,37 @@ function formatTask(array $row, string $today): array
 
     $totalPages = ($start !== null && $end !== null && $end >= $start) ? ($end - $start + 1) : 0;
     $completedCount = count($completedPages);
+
+    if ($type === 'TIKRAR_AMS') {
+        $targetReps = 10;
+        $currentReps = $isCompleted ? 10 : min(10, $repetitionCount);
+        $percent = (int) round(($currentReps / $targetReps) * 100);
+        return [
+            'id'                  => isset($row['id']) ? (int) $row['id'] : null,
+            'task_type'           => $type,
+            'title_ar'            => TASK_TITLES[$type]['ar'] ?? 'تكرار حفظ الأمس',
+            'title_en'            => TASK_TITLES[$type]['en'] ?? "Yesterday's Repetition",
+            'start_page'          => $start,
+            'end_page'            => $end,
+            'task_date'           => (string) $row['task_date'],
+            'is_completed'        => $isCompleted,
+            'completed_pages'     => $isCompleted && $start !== null ? [$start] : [],
+            'completed_count'     => $isCompleted ? 1 : 0,
+            'total_pages'         => 1,
+            'repetition_count'    => $currentReps,
+            'target_repetitions'  => $targetReps,
+            'progress_percent'    => min(100, $percent),
+            'carried_over'        => (string) $row['task_date'] !== $today,
+        ];
+    }
+
     $percent = $totalPages > 0 ? (int) round(($completedCount / $totalPages) * 100) : ($isCompleted ? 100 : 0);
 
     return [
         'id'               => isset($row['id']) ? (int) $row['id'] : null,
         'task_type'        => $type,
-        'title_ar'         => TASK_TITLES[$type]['ar'],
-        'title_en'         => TASK_TITLES[$type]['en'],
+        'title_ar'         => TASK_TITLES[$type]['ar'] ?? $type,
+        'title_en'         => TASK_TITLES[$type]['en'] ?? $type,
         'start_page'       => $start,
         'end_page'         => $end,
         'task_date'        => (string) $row['task_date'],
@@ -216,7 +256,8 @@ try {
     $stmt = $pdo->prepare(
         'SELECT `id`, `name`, `user_type`, `current_hifz_page`, `daily_murajaah_target_pages`,
                 COALESCE(`murajaah_days`, 6) AS `murajaah_days`,
-                COALESCE(`rabt_extra_pages`, 0) AS `rabt_extra_pages`
+                COALESCE(`rabt_extra_pages`, 0) AS `rabt_extra_pages`,
+                COALESCE(`last_tikrar_page`, 0) AS `last_tikrar_page`
          FROM `users` WHERE `id` = :id'
     );
     $stmt->execute([':id' => $userId]);
@@ -227,12 +268,13 @@ try {
 
     $today       = date('Y-m-d');
     $current     = (int) $user['current_hifz_page'];
+    $lastTikrar  = (int) ($user['last_tikrar_page'] ?? 0);
     $utype       = (string) $user['user_type'];
     $murDays     = max(1, min(6, (int) ($user['murajaah_days'] ?? 6)));
     $rabtExtra   = max(0, (int) ($user['rabt_extra_pages'] ?? 0));
     $rabtWindow  = 30 + $rabtExtra;
 
-    // Active mistakes -> Task 4 (المعالجة), dynamic only (never persisted)
+    // Active mistakes -> Task 5 (المعالجة), dynamic only (never persisted)
     $stmt = $pdo->prepare("SELECT COUNT(*) FROM `mistakes` WHERE `user_id` = :id AND `status` = 'ACTIVE'");
     $stmt->execute([':id' => $userId]);
     $activeMistakes = (int) $stmt->fetchColumn();
@@ -242,8 +284,6 @@ try {
     // -----------------------------------------------------------------------
 
     $fresh     = [];   // task_type => [start, end]
-    // Rabt window begins at current - (rabtWindow - 1)
-    $rabtStart = max(1, min($current + 1, 604) - ($rabtWindow - 1));
 
     if ($utype === 'EXISTING' || $utype === 'NEW') {
         // Task 1 - Hifz Jadid: next page (always active unless finished)
@@ -251,25 +291,50 @@ try {
             $fresh['HIFZ_JADID'] = [$current + 1, $current + 1];
         }
 
-        // Task 2 - Rabt: EXISTING always; NEW only after completed pages > 1
-        $rabtActive = ($utype === 'EXISTING') || ($current > 1);
-        if ($rabtActive) {
-            $fresh['RABT'] = [$rabtStart, min($current + 1, 604)];
+        // Task 2 - Tikrar Ams (تكرار حفظ الأمس):
+        // When a page is completed in Hifz Jadid, it doesn't immediately join Rabt.
+        // It has to go through Tikrar Ams first (recited 10 times).
+        // The last page memorized today will appear here tomorrow.
+        $existingTikrar = findExistingTask($pdo, $userId, 'TIKRAR_AMS', $today);
+        if ($existingTikrar !== null) {
+            $fresh['TIKRAR_AMS'] = [(int) $existingTikrar['start_page'], (int) $existingTikrar['end_page']];
+        } elseif ($lastTikrar < $current) {
+            $nextTikrarPage = $lastTikrar + 1;
+            // Check if $nextTikrarPage was memorized TODAY in HIFZ_JADID
+            $hstmt = $pdo->prepare(
+                "SELECT COUNT(*) FROM `daily_task_logs`
+                 WHERE `user_id` = :u AND `task_type` = 'HIFZ_JADID' AND `start_page` = :p AND `task_date` = :d AND `is_completed` = 1"
+            );
+            $hstmt->execute([':u' => $userId, ':p' => $nextTikrarPage, ':d' => $today]);
+            $memorizedToday = ((int) $hstmt->fetchColumn()) > 0;
+
+            if (!$memorizedToday) {
+                $fresh['TIKRAR_AMS'] = [$nextTikrarPage, $nextTikrarPage];
+            }
+        }
+
+        // Task 3 - Rabt:
+        // Rabt will NOT count any page until it has gone through Tikrar Ams!
+        // Therefore Rabt's frontier is $lastTikrar.
+        $rabtEnd = min($lastTikrar, 604);
+        $rabtActive = ($utype === 'EXISTING' && $rabtEnd >= 1) || ($utype === 'NEW' && $rabtEnd >= 1);
+        if ($rabtActive && $rabtEnd >= 1) {
+            $rabtStart = max(1, $rabtEnd - ($rabtWindow - 1));
+            $fresh['RABT'] = [$rabtStart, $rabtEnd];
         }
     }
 
-    // Task 3 - Muraja'ah range (chunks resolved against logs below)
+    // Task 4 - Muraja'ah range (chunks resolved against logs below)
     $murajaahTotalPages = 0;
     if ($utype === 'COMPLETE') {
         $fresh['MURAJAAH'] = [1, 604];
         $murajaahTotalPages = 604;
     } elseif ($utype === 'EXISTING' || $utype === 'NEW') {
-        // NEW: inactive until completed pages > 30.
-        // Range = everything outside the Rabt window (stops where Rabt begins).
-        $murActive = ($utype === 'EXISTING') || ($current > 30);
-        if ($murActive && $rabtStart > 1) {
-            $fresh['MURAJAAH'] = [1, $rabtStart - 1];
-            $murajaahTotalPages = $rabtStart - 1;
+        $effectiveRabtStart = isset($fresh['RABT']) ? $fresh['RABT'][0] : (max(1, $lastTikrar - ($rabtWindow - 1)));
+        $murActive = ($utype === 'EXISTING') || ($lastTikrar > 30);
+        if ($murActive && $effectiveRabtStart > 1) {
+            $fresh['MURAJAAH'] = [1, $effectiveRabtStart - 1];
+            $murajaahTotalPages = $effectiveRabtStart - 1;
         }
     }
 
@@ -357,6 +422,7 @@ try {
             'id'                          => (int) $user['id'],
             'user_type'                   => $user['user_type'],
             'current_hifz_page'           => $current,
+            'last_tikrar_page'            => $lastTikrar,
             'daily_murajaah_target_pages' => $target,
             'murajaah_days'               => $murDays,
             'rabt_extra_pages'            => $rabtExtra,

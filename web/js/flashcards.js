@@ -87,23 +87,31 @@ function fcRender() {
   const b = card.back;
 
   const counterEl = fcEl('deck-counter');
-  if (counterEl) counterEl.textContent = 'البطاقة ' + (FC.pos + 1) + ' من ' + FC.deck.length;
+  if (counterEl) {
+    counterEl.textContent = window.I18N
+      ? I18N.t('fc_counter_label', { current: FC.pos + 1, total: FC.deck.length })
+      : ('البطاقة ' + (FC.pos + 1) + ' من ' + FC.deck.length);
+  }
 
-  if (fcEl('fc-page')) fcEl('fc-page').textContent = 'صفحة ' + f.page_number;
-  if (fcEl('fc-surah')) fcEl('fc-surah').textContent = f.surah_name;
-  if (fcEl('fc-ayah')) fcEl('fc-ayah').textContent = 'الآية ' + f.ayah_number;
-  if (fcEl('fc-tag')) fcEl('fc-tag').textContent = f.mistake_label;
+  const sName = window.I18N ? I18N.getSurahName(f.surah_number) : f.surah_name;
+  const sDisplay = (window.I18N && I18N.lang === 'en') ? ('Surah ' + sName) : ('سورة ' + sName);
+
+  if (fcEl('fc-page')) fcEl('fc-page').textContent = (window.I18N ? I18N.t('page_prefix') : 'صفحة ') + f.page_number;
+  if (fcEl('fc-surah')) fcEl('fc-surah').textContent = sDisplay;
+  if (fcEl('fc-ayah')) fcEl('fc-ayah').textContent = window.I18N ? I18N.t('ayah_label', { num: f.ayah_number }) : ('الآية ' + f.ayah_number);
+  if (fcEl('fc-tag')) fcEl('fc-tag').textContent = window.I18N ? I18N.getMistakeLabel(f.mistake_type) : f.mistake_label;
 
   const parts = [];
-  if (f.juz_number) parts.push('الجزء ' + f.juz_number);
-  if (f.hizb_number) parts.push('الحزب ' + f.hizb_number);
-  if (f.rub_el_hizb) parts.push('ربع الحزب ' + f.rub_el_hizb);
+  if (f.juz_number) parts.push(window.I18N ? I18N.t('juz_label', { num: f.juz_number }) : ('الجزء ' + f.juz_number));
+  if (f.hizb_number) parts.push(window.I18N ? I18N.t('hizb_label', { num: f.hizb_number }) : ('الحزب ' + f.hizb_number));
+  if (f.rub_el_hizb) parts.push(window.I18N ? I18N.t('rub_label', { num: f.rub_el_hizb }) : ('ربع الحزب ' + f.rub_el_hizb));
   if (fcEl('fc-meta')) fcEl('fc-meta').textContent = parts.join(' · ');
 
-  if (fcEl('fc-notes')) fcEl('fc-notes').textContent = b.notes ? b.notes : 'لا توجد ملاحظات مسجلة لهذه البطاقة.';
+  if (fcEl('fc-notes')) fcEl('fc-notes').textContent = b.notes ? b.notes : (window.I18N ? I18N.t('fc_card_no_notes') : 'لا توجد ملاحظات مسجلة لهذه البطاقة.');
   if (fcEl('fc-mastery')) {
-    fcEl('fc-mastery').textContent = 'مرات الإتقان: ' + b.mastery_count +
-      (b.logged_at ? ' · سُجلت في ' + String(b.logged_at).slice(0, 10) : '');
+    const masteryTxt = window.I18N ? I18N.t('fc_card_mastery', { count: b.mastery_count }) : ('مرات الإتقان: ' + b.mastery_count);
+    const dateTxt = b.logged_at ? (window.I18N ? I18N.t('fc_card_logged_date', { date: String(b.logged_at).slice(0, 10) }) : (' · سُجلت في ' + String(b.logged_at).slice(0, 10))) : '';
+    fcEl('fc-mastery').textContent = masteryTxt + dateTxt;
   }
 
   fcFlip(false);
@@ -160,16 +168,16 @@ async function fcSubmit(action) {
     const [current] = FC.deck.splice(FC.pos, 1);
     if (action === 'DELETE') {
       if (FC.pos >= FC.deck.length) FC.pos = 0;
-      showToast('تم حذف البطاقة نهائياً بنجاح 🗑️');
+      showToast(window.I18N ? I18N.t('fc_toast_deleted') : 'تم حذف البطاقة نهائياً بنجاح 🗑️');
     } else if (mastered) {
       if (FC.pos >= FC.deck.length) FC.pos = 0;
       if (window.AudioEngine) AudioEngine.playCelebration();
-      showToast('أتقنتها بنجاح! انتقلت إلى الأرشيف ✓');
+      showToast(window.I18N ? I18N.t('fc_toast_mastered') : 'أتقنتها بنجاح! انتقلت إلى الأرشيف ✓');
     } else {
       FC.deck.push(current);
       if (FC.pos >= FC.deck.length) FC.pos = 0;
       if (window.AudioEngine) AudioEngine.playSuccess();
-      showToast('البطاقة عادت إلى نهاية رزمة التدريب 🔁');
+      showToast(window.I18N ? I18N.t('fc_toast_recycled') : 'البطاقة عادت إلى نهاية رزمة التدريب 🔁');
     }
 
     if (!FC.deck.length) {
@@ -229,9 +237,16 @@ function initFlashcardsPage() {
   const deleteBtn = fcEl('btn-delete-card');
   if (deleteBtn) {
     deleteBtn.addEventListener('click', () => {
-      if (confirm('هل أنت متأكد من حذف هذه البطاقة وسجل هذا الخطأ نهائياً؟')) {
+      const confirmMsg = window.I18N ? I18N.t('fc_delete_confirm') : 'هل أنت متأكد من حذف هذه البطاقة وسجل هذا الخطأ نهائياً؟';
+      if (confirm(confirmMsg)) {
         fcSubmit('DELETE');
       }
+    });
+  }
+
+  if (window.I18N) {
+    I18N.onChange(() => {
+      if (FC.deck.length) fcRender();
     });
   }
 

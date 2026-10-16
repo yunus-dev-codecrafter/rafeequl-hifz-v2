@@ -9,6 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
+  <script src="js/i18n.js"></script>
   <style>
     .history-filters {
       display: flex;
@@ -90,15 +91,20 @@
   <!-- Header -->
   <header class="app-header">
     <div class="header-inner">
-      <div style="display:flex; align-items:center; gap:0.75rem;">
-        <a href="dashboard.html" class="back-link" title="العودة لدفتر اليوم">
+      <div class="header-nav-title">
+        <a href="dashboard.html" class="back-link" title="العودة لدفتر اليوم" data-i18n-title="back_to_dashboard">
           <span>←</span>
-          <span>العودة للمهام</span>
+          <span data-i18n="back_to_tasks">العودة للمهام</span>
         </a>
-        <span class="greeting">📜 سجل الأخطاء وتاريخ الإتقان</span>
+        <span class="greeting" data-i18n="history_head_title">📜 سجل الأخطاء وتاريخ الإتقان</span>
       </div>
 
       <div class="header-actions">
+        <!-- Language Toggle -->
+        <button type="button" class="lang-toggle-btn header-action-btn" title="English / العربية" aria-label="تبديل اللغة">
+          <span class="lang-code-text">EN</span>
+        </button>
+
         <!-- Screen Stay-Awake Toggle -->
         <button type="button" class="wakelock-toggle-btn header-action-btn" data-wakelock="on" title="إبقاء الشاشة مضاءة">
           <svg class="icon-wakelock-on" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -161,7 +167,7 @@
           </svg>
         </div>
         <div class="stat-content">
-          <span class="stat-label">أخطاء تم إتقانها وأرشفتها</span>
+          <span class="stat-label" data-i18n="history_kpi_archived_label">أخطاء تم إتقانها وأرشفتها</span>
           <span class="stat-value" id="kpi-archived-count">0 خطأ</span>
         </div>
       </div>
@@ -175,7 +181,7 @@
           </svg>
         </div>
         <div class="stat-content">
-          <span class="stat-label">أخطاء لا تزال قيد التدريب</span>
+          <span class="stat-label" data-i18n="history_kpi_active_label">أخطاء لا تزال قيد التدريب</span>
           <span class="stat-value" id="kpi-active-count">0 خطأ</span>
         </div>
       </div>
@@ -188,7 +194,7 @@
           </svg>
         </div>
         <div class="stat-content">
-          <span class="stat-label">نسبة الإتقان العامة</span>
+          <span class="stat-label" data-i18n="history_kpi_rate_label">نسبة الإتقان العامة</span>
           <span class="stat-value" id="kpi-mastery-rate">0%</span>
         </div>
       </div>
@@ -197,20 +203,20 @@
     <!-- Analytics / Weak Points Collapsible Grid -->
     <section class="chips-card">
       <div class="chips-title">
-        <span>تحليلات الأخطاء المتكررة</span>
-        <button type="button" id="btn-toggle-analytics" class="btn btn-ghost" style="padding:0.25rem 0.65rem; font-size:0.8rem;">
+        <span data-i18n="history_btn_analytics">تحليلات الأخطاء المتكررة</span>
+        <button type="button" id="btn-toggle-analytics" class="btn btn-ghost" style="padding:0.25rem 0.65rem; font-size:0.8rem;" data-i18n="history_btn_toggle_analytics">
           إخفاء / إظهار التحليلات
         </button>
       </div>
 
       <div id="analytics-section" class="analytics-grid">
         <div style="background:var(--line-subtle); padding:1rem; border-radius:var(--radius-md);">
-          <strong style="display:block; margin-bottom:0.75rem; font-size:0.92rem; color:var(--ink);">أكثر الآيات تكراراً في السجل:</strong>
+          <strong style="display:block; margin-bottom:0.75rem; font-size:0.92rem; color:var(--ink);" data-i18n="history_top_ayahs">أكثر الآيات تكراراً في السجل:</strong>
           <div id="top-ayahs-list"><p class="hint">لا توجد بيانات كافية</p></div>
         </div>
 
         <div style="background:var(--line-subtle); padding:1rem; border-radius:var(--radius-md);">
-          <strong style="display:block; margin-bottom:0.75rem; font-size:0.92rem; color:var(--ink);">أكثر السور تكراراً في السجل:</strong>
+          <strong style="display:block; margin-bottom:0.75rem; font-size:0.92rem; color:var(--ink);" data-i18n="history_top_surahs">أكثر السور تكراراً في السجل:</strong>
           <div id="top-surahs-list"><p class="hint">لا توجد بيانات كافية</p></div>
         </div>
       </div>
@@ -219,70 +225,79 @@
     <!-- Filter & Search Controls -->
     <div class="history-filters">
       <div class="filter-tabs" id="status-filter-tabs">
-        <button type="button" class="filter-btn active" data-filter="ARCHIVED">الأخطاء المتقنة (المعالجة)</button>
-        <button type="button" class="filter-btn" data-filter="ACTIVE">الأخطاء النشطة حالياً</button>
-        <button type="button" class="filter-btn" data-filter="ALL">جميع السجلات</button>
+        <button type="button" class="filter-btn active" data-filter="ARCHIVED" data-i18n="history_tab_archived">الأخطاء المتقنة (المعالجة)</button>
+        <button type="button" class="filter-btn" data-filter="ACTIVE" data-i18n="history_tab_active">الأخطاء النشطة حالياً</button>
+        <button type="button" class="filter-btn" data-filter="ALL" data-i18n="history_tab_all">جميع السجلات</button>
       </div>
 
       <div class="search-box">
-        <input type="text" id="history-search" placeholder="🔍 ابحث بالسورة، الصفحة، أو الملاحظة..." aria-label="بحث في سجل الأخطاء">
+        <input type="text" id="history-search" placeholder="🔍 ابحث بالسورة، الصفحة، أو الملاحظة..." aria-label="بحث في سجل الأخطاء" data-i18n-placeholder="history_search_ph">
       </div>
     </div>
 
     <!-- History Cards Feed -->
     <section id="history-feed" aria-label="قائمة الأخطاء">
-      <p class="loading">جاري تحميل سجل الأخطاء المتقنة…</p>
+      <p class="loading" data-i18n="history_feed_loading">جاري تحميل سجل الأخطاء المتقنة…</p>
     </section>
 
   </main>
 
   <!-- Mobile Bottom Navigation -->
   <nav class="mobile-bottom-nav" aria-label="التنقل السريع">
-    <a href="dashboard.html" class="mobile-nav-link" title="الرئيسية">
+    <a href="dashboard.html" class="mobile-nav-link" title="الرئيسية" data-i18n-title="nav_home">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
         <polyline points="9 22 9 12 15 12 15 22"></polyline>
       </svg>
-      <span>الرئيسية</span>
+      <span data-i18n="nav_home">الرئيسية</span>
     </a>
-    <a href="hifz.html" class="mobile-nav-link" title="الحفظ الجديد">
+    <a href="hifz.html" class="mobile-nav-link" title="الحفظ الجديد" data-i18n-title="nav_hifz">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
         <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
       </svg>
-      <span>حفظ جديد</span>
+      <span data-i18n="nav_hifz">حفظ جديد</span>
     </a>
-    <a href="rabt.html" class="mobile-nav-link" title="الربط">
+    <a href="tikrar.html" class="mobile-nav-link" title="تكرار الأمس" data-i18n-title="nav_tikrar">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="17 1 21 5 17 9"></polyline>
+        <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
+        <polyline points="7 23 3 19 7 15"></polyline>
+        <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
+      </svg>
+      <span data-i18n="nav_tikrar">تكرار الأمس</span>
+    </a>
+    <a href="rabt.html" class="mobile-nav-link" title="الربط" data-i18n-title="nav_rabt">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
         <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
       </svg>
-      <span>الربط</span>
+      <span data-i18n="nav_rabt">الربط</span>
     </a>
-    <a href="murajaah.html" class="mobile-nav-link" title="المراجعة">
+    <a href="murajaah.html" class="mobile-nav-link" title="المراجعة" data-i18n-title="nav_murajaah">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <polyline points="23 4 23 10 17 10"></polyline>
         <polyline points="1 20 1 14 7 14"></polyline>
         <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
       </svg>
-      <span>المراجعة</span>
+      <span data-i18n="nav_murajaah">المراجعة</span>
     </a>
-    <a href="flashcards.html" class="mobile-nav-link" title="البطاقات">
+    <a href="flashcards.html" class="mobile-nav-link" title="البطاقات" data-i18n-title="nav_flashcards">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
         <polyline points="2 17 12 22 22 17"></polyline>
         <polyline points="2 12 12 17 22 12"></polyline>
       </svg>
-      <span>البطاقات</span>
+      <span data-i18n="nav_flashcards">البطاقات</span>
     </a>
-    <a href="history.html" class="mobile-nav-link active" title="السجل">
+    <a href="history.html" class="mobile-nav-link active" title="السجل" data-i18n-title="nav_history">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
         <polyline points="14 2 14 8 20 8"></polyline>
         <line x1="16" y1="13" x2="8" y2="13"></line>
         <line x1="16" y1="17" x2="8" y2="17"></line>
       </svg>
-      <span>السجل</span>
+      <span data-i18n="nav_history">السجل</span>
     </a>
   </nav>
 
@@ -293,6 +308,7 @@
     let historyRecords = [];
     let currentStatusFilter = 'ARCHIVED';
     let searchQuery = '';
+    let lastAnalyticsData = { topAyahs: [], topSurahs: [] };
 
     const feedEl = document.getElementById('history-feed');
 
@@ -307,12 +323,20 @@
         const total = archivedCount + activeCount;
         const rate = total > 0 ? Math.round((archivedCount / total) * 100) : 0;
 
-        document.getElementById('kpi-archived-count').textContent = archivedCount + ' خطأ';
-        document.getElementById('kpi-active-count').textContent = activeCount + ' خطأ';
+        const countArchivedText = window.I18N ? I18N.t('mistakes_count_label', { count: archivedCount }) : (archivedCount + ' خطأ');
+        const countActiveText = window.I18N ? I18N.t('mistakes_count_label', { count: activeCount }) : (activeCount + ' خطأ');
+
+        document.getElementById('kpi-archived-count').textContent = countArchivedText;
+        document.getElementById('kpi-active-count').textContent = countActiveText;
         document.getElementById('kpi-mastery-rate').textContent = rate + '%';
 
+        lastAnalyticsData = {
+          topAyahs: res.top_ayahs || [],
+          topSurahs: res.top_surahs || []
+        };
+
         // Render Top Weak Ayahs & Surahs
-        renderAnalytics(res.top_ayahs || [], res.top_surahs || []);
+        renderAnalytics(lastAnalyticsData.topAyahs, lastAnalyticsData.topSurahs);
 
         renderFeed();
       } catch (err) {
@@ -323,29 +347,38 @@
     function renderAnalytics(topAyahs, topSurahs) {
       const ayahsWrap = document.getElementById('top-ayahs-list');
       if (ayahsWrap) {
-        if (!topAyahs.length) {
-          ayahsWrap.innerHTML = '<p class="hint">لا توجد آيات متكررة</p>';
+        if (!topAyahs || !topAyahs.length) {
+          ayahsWrap.innerHTML = '<p class="hint">' + (window.I18N ? I18N.t('history_no_weak_ayahs') : 'لا توجد آيات متكررة') + '</p>';
         } else {
-          ayahsWrap.innerHTML = topAyahs.slice(0, 5).map(a => `
-            <div class="weak-item">
-              <span>سورة ${esc(a.surah_name)} — آية ${a.ayah_number}</span>
-              <strong style="color:var(--danger);">${a.count} مرات</strong>
-            </div>
-          `).join('');
+          ayahsWrap.innerHTML = topAyahs.slice(0, 5).map(a => {
+            const surahName = window.I18N ? I18N.getSurahName(a.surah_id, a.surah_name) : a.surah_name;
+            const ayahLabel = window.I18N ? I18N.t('ayah_label', { num: a.ayah_number }) : ('آية ' + a.ayah_number);
+            const countLabel = window.I18N ? I18N.t('times_count', { count: a.count }) : (a.count + ' مرات');
+            return `
+              <div class="weak-item">
+                <span>${esc(surahName)} — ${esc(ayahLabel)}</span>
+                <strong style="color:var(--danger);">${esc(countLabel)}</strong>
+              </div>
+            `;
+          }).join('');
         }
       }
 
       const surahsWrap = document.getElementById('top-surahs-list');
       if (surahsWrap) {
-        if (!topSurahs.length) {
-          surahsWrap.innerHTML = '<p class="hint">لا توجد سور متكررة</p>';
+        if (!topSurahs || !topSurahs.length) {
+          surahsWrap.innerHTML = '<p class="hint">' + (window.I18N ? I18N.t('history_no_weak_surahs') : 'لا توجد سور متكررة') + '</p>';
         } else {
-          surahsWrap.innerHTML = topSurahs.slice(0, 5).map(s => `
-            <div class="weak-item">
-              <span>سورة ${esc(s.surah_name)}</span>
-              <strong style="color:var(--accent);">${s.count} أخطاء</strong>
-            </div>
-          `).join('');
+          surahsWrap.innerHTML = topSurahs.slice(0, 5).map(s => {
+            const surahName = window.I18N ? I18N.getSurahName(s.surah_id, s.surah_name) : s.surah_name;
+            const countLabel = window.I18N ? I18N.t('mistakes_count_label', { count: s.count }) : (s.count + ' أخطاء');
+            return `
+              <div class="weak-item">
+                <span>${esc(surahName)}</span>
+                <strong style="color:var(--accent);">${esc(countLabel)}</strong>
+              </div>
+            `;
+          }).join('');
         }
       }
     }
@@ -373,11 +406,11 @@
       });
 
       if (!filtered.length) {
+        const emptyMsg = window.I18N ? I18N.t('history_empty_feed') : 'لا توجد سجلات تطابق الفلتر الحالي.';
         feedEl.innerHTML = `
           <div class="chips-card" style="text-align:center; padding:2.5rem 1rem;">
             <div style="font-size:2.5rem; margin-bottom:0.5rem;">🍃</div>
-            <h3>لا توجد سجلات مطابقة في هذا التصنيف</h3>
-            <p class="hint">يمكنك مراجعة التصنيفات الأخرى أو البحث عن سورة مختلفة.</p>
+            <h3>${esc(emptyMsg)}</h3>
           </div>`;
         return;
       }
@@ -385,14 +418,25 @@
       feedEl.innerHTML = filtered.map(item => {
         const isArchived = item.status === 'ARCHIVED';
         const dateStr = item.created_at ? String(item.created_at).slice(0, 10) : '';
+        const surahDisplay = window.I18N ? I18N.getSurahName(item.surah_id, item.surah_name) : ('سورة ' + item.surah_name);
+        const ayahDisplay = window.I18N ? I18N.t('ayah_label', { num: item.ayah_number }) : ('الآية ' + item.ayah_number);
+        const mistakeLabel = window.I18N ? I18N.getMistakeLabel(item.mistake_type, item.mistake_label) : item.mistake_label;
+        const pageLabel = window.I18N ? (I18N.t('page_prefix') + item.page_number) : ('صفحة ' + item.page_number);
+        const loggedDate = window.I18N ? I18N.t('history_logged_date', { date: dateStr }) : ('سُجل بتاريخ: ' + dateStr);
+        const masteryLabel = window.I18N ? I18N.t('fc_card_mastery', { count: item.mastery_count }) : ('مرات الإتقان: ' + item.mastery_count);
+        const badgeArchived = window.I18N ? I18N.t('history_badge_mastered') : '✓ تم إتقانها';
+        const badgeActive = window.I18N ? I18N.t('history_badge_active') : '🔴 قيد التدريب';
+        const reactivateText = window.I18N ? I18N.t('history_reactivate_btn') : 'إعادة للتدريب 🔁';
+        const deleteText = window.I18N ? I18N.t('history_delete_btn') : '🗑️ حذف';
+        const practiceText = window.I18N ? I18N.t('history_btn_practice_now') : 'تدريب الآن ←';
 
         return `
           <article class="history-card-item ${isArchived ? 'is-archived' : 'is-active'}">
             <div style="flex:1;">
               <div style="display:flex; align-items:center; gap:0.6rem; flex-wrap:wrap; margin-bottom:0.4rem;">
-                <h3 style="font-size:1.15rem;">سورة ${esc(item.surah_name)} — الآية ${item.ayah_number}</h3>
-                <span class="fc-tag-pill" style="font-size:0.75rem; padding:0.2rem 0.6rem;">${esc(item.mistake_label)}</span>
-                <span style="font-size:0.8rem; font-weight:700; color:var(--muted);">صفحة ${item.page_number}</span>
+                <h3 style="font-size:1.15rem;">${esc(surahDisplay)} — ${esc(ayahDisplay)}</h3>
+                <span class="fc-tag-pill" style="font-size:0.75rem; padding:0.2rem 0.6rem;">${esc(mistakeLabel)}</span>
+                <span style="font-size:0.8rem; font-weight:700; color:var(--muted);">${esc(pageLabel)}</span>
               </div>
 
               ${item.notes ? `
@@ -402,30 +446,30 @@
               ` : ''}
 
               <div style="display:flex; gap:1rem; font-size:0.8rem; color:var(--muted); margin-top:0.4rem; flex-wrap:wrap;">
-                <span>سُجل بتاريخ: ${dateStr}</span>
-                <span>مرات الإتقان: <strong>${item.mastery_count}</strong></span>
+                <span>${esc(loggedDate)}</span>
+                <span>${masteryLabel}</span>
               </div>
             </div>
 
             <div style="display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem;">
               ${isArchived ? `
-                <span class="task-status done">✓ تم إتقانها</span>
+                <span class="task-status done">${esc(badgeArchived)}</span>
                 <div style="display:flex; gap:0.4rem; align-items:center;">
-                  <button type="button" class="btn btn-ghost btn-reactivate" data-id="${item.id}" style="font-size:0.78rem; padding:0.35rem 0.65rem;" title="إعادة إلى رزمة البطاقات النشطة">
-                    إعادة للتدريب 🔁
+                  <button type="button" class="btn btn-ghost btn-reactivate" data-id="${item.id}" style="font-size:0.78rem; padding:0.35rem 0.65rem;" title="${esc(reactivateText)}">
+                    ${esc(reactivateText)}
                   </button>
-                  <button type="button" class="btn-danger-outline btn-delete-mistake" data-id="${item.id}" style="font-size:0.78rem; padding:0.35rem 0.55rem;" title="حذف هذا الخطأ نهائياً من السجل">
-                    🗑️ حذف
+                  <button type="button" class="btn-danger-outline btn-delete-mistake" data-id="${item.id}" style="font-size:0.78rem; padding:0.35rem 0.55rem;" title="${esc(deleteText)}">
+                    ${esc(deleteText)}
                   </button>
                 </div>
               ` : `
-                <span class="task-status" style="color:var(--danger); background:var(--danger-soft);">🔴 قيد التدريب</span>
+                <span class="task-status" style="color:var(--danger); background:var(--danger-soft);">${esc(badgeActive)}</span>
                 <div style="display:flex; gap:0.4rem; align-items:center;">
                   <a href="flashcards.html" class="btn btn-primary" style="font-size:0.78rem; padding:0.35rem 0.65rem;">
-                    تدريب الآن ←
+                    ${esc(practiceText)}
                   </a>
-                  <button type="button" class="btn-danger-outline btn-delete-mistake" data-id="${item.id}" style="font-size:0.78rem; padding:0.35rem 0.55rem;" title="حذف هذا الخطأ نهائياً من السجل">
-                    🗑️ حذف
+                  <button type="button" class="btn-danger-outline btn-delete-mistake" data-id="${item.id}" style="font-size:0.78rem; padding:0.35rem 0.55rem;" title="${esc(deleteText)}">
+                    ${esc(deleteText)}
                   </button>
                 </div>
               `}
@@ -445,7 +489,8 @@
               body: { mistake_id: mId, action: 'REACTIVATE' },
               redirectOn401: true,
             });
-            showToast('تمت إعادة الآية إلى رزمة بطاقات التدريب النشطة 🔁');
+            const reactivateToast = window.I18N ? I18N.t('history_toast_reactivated') : 'تمت إعادة الآية إلى رزمة بطاقات التدريب النشطة 🔁';
+            showToast(reactivateToast);
             await loadHistoryPage();
           } catch (err) {
             showToast(err.message, true);
@@ -458,7 +503,8 @@
       document.querySelectorAll('.btn-delete-mistake').forEach(btn => {
         btn.addEventListener('click', async () => {
           const mId = parseInt(btn.dataset.id, 10);
-          if (!confirm('هل أنت متأكد من حذف هذا السجل نهائياً؟ لن يظهر مجدداً في السجل أو البطاقات.')) return;
+          const confirmMsg = window.I18N ? I18N.t('history_delete_confirm') : 'هل أنت متأكد من حذف هذا السجل نهائياً؟ لن يظهر مجدداً في السجل أو البطاقات.';
+          if (!confirm(confirmMsg)) return;
           btn.disabled = true;
           try {
             await API.call('mistakes/clear_mistake.php', {
@@ -466,7 +512,8 @@
               body: { mistake_id: mId, action: 'DELETE' },
               redirectOn401: true,
             });
-            showToast('تم حذف السجل نهائياً بنجاح 🗑️');
+            const deleteToast = window.I18N ? I18N.t('history_toast_deleted') : 'تم حذف السجل نهائياً بنجاح 🗑️';
+            showToast(deleteToast);
             await loadHistoryPage();
           } catch (err) {
             showToast(err.message, true);
@@ -478,6 +525,21 @@
 
     document.addEventListener('DOMContentLoaded', () => {
       loadHistoryPage();
+
+      if (window.I18N && typeof I18N.onChange === 'function') {
+        I18N.onChange(() => {
+          const archivedCount = (historyRecords || []).filter(r => r.status === 'ARCHIVED').length;
+          const activeCount = (historyRecords || []).filter(r => r.status === 'ACTIVE').length;
+          const countArchivedText = I18N.t('mistakes_count_label', { count: archivedCount });
+          const countActiveText = I18N.t('mistakes_count_label', { count: activeCount });
+          const kpiArchivedEl = document.getElementById('kpi-archived-count');
+          const kpiActiveEl = document.getElementById('kpi-active-count');
+          if (kpiArchivedEl) kpiArchivedEl.textContent = countArchivedText;
+          if (kpiActiveEl) kpiActiveEl.textContent = countActiveText;
+          renderAnalytics(lastAnalyticsData.topAyahs, lastAnalyticsData.topSurahs);
+          renderFeed();
+        });
+      }
 
       // Status filter tabs
       document.querySelectorAll('#status-filter-tabs .filter-btn').forEach(btn => {

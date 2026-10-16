@@ -9,21 +9,27 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
+  <script src="js/i18n.js"></script>
 </head>
 <body data-task-type="RABT">
 
   <!-- Header -->
   <header class="app-header">
     <div class="header-inner">
-      <div style="display:flex; align-items:center; gap:0.75rem;">
-        <a href="dashboard.html" class="back-link" title="العودة لدفتر اليوم">
+      <div class="header-nav-title">
+        <a href="dashboard.html" class="back-link" title="العودة لدفتر اليوم" data-i18n-title="back_to_dashboard">
           <span>←</span>
-          <span>العودة للمهام</span>
+          <span data-i18n="back_to_tasks">العودة للمهام</span>
         </a>
-        <span class="greeting">🔵 الربط (نافذة الربط المستمرة)</span>
+        <span class="greeting" id="page-task-badge" data-i18n="card_rabt_title">🔵 الربط (نافذة الربط المستمرة)</span>
       </div>
 
       <div class="header-actions">
+        <!-- Language Toggle -->
+        <button type="button" class="lang-toggle-btn header-action-btn" title="English / العربية" aria-label="تبديل اللغة">
+          <span class="lang-code-text">EN</span>
+        </button>
+
         <!-- Screen Stay-Awake Toggle -->
         <button type="button" class="wakelock-toggle-btn header-action-btn" data-wakelock="on" title="إبقاء الشاشة مضاءة">
           <svg class="icon-wakelock-on" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -85,94 +91,115 @@
   <div id="mistake-modal" class="modal-overlay hidden">
     <div class="modal" role="dialog" aria-modal="true">
       <div class="modal-head">
-        <h3>سجل خطأ أثناء التلاوة</h3>
+        <div>
+          <h3 data-i18n="mistake_modal_title">سجل خطأ أثناء التلاوة</h3>
+          <div id="modal-page-verses" class="modal-page-verses hidden"></div>
+        </div>
         <span id="modal-page" class="task-page-badge red">صفحة —</span>
       </div>
 
       <div class="field">
-        <label for="mistake-surah">السورة</label>
+        <label for="mistake-surah" data-i18n="mistake_select_surah">السورة</label>
         <select id="mistake-surah">
-          <option value="">— اختر السورة —</option>
+          <option value="" data-i18n="mistake_surah_placeholder">— اختر السورة —</option>
         </select>
       </div>
 
       <div class="field">
-        <label for="mistake-ayah">رقم الآية</label>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.35rem;">
+          <label for="mistake-ayah" style="margin-bottom:0;" data-i18n="mistake_select_ayah">رقم الآية</label>
+          <button type="button" id="btn-toggle-all-ayahs" class="btn-toggle-all-ayahs hidden"></button>
+        </div>
         <select id="mistake-ayah">
-          <option value="">— اختر الآية —</option>
+          <option value="" data-i18n="mistake_ayah_placeholder">— اختر الآية —</option>
         </select>
-      </div>
-
-      <div class="field">
-        <span class="field-label">نوع الخطأ</span>
-        <div class="tag-group" id="mistake-tags">
-          <button type="button" class="tag-btn active" data-type="TRANSITION_FAILURE">انقطاع / نقلة</button>
-          <button type="button" class="tag-btn" data-type="MUTASHABIHAT">متشابهات</button>
-          <button type="button" class="tag-btn" data-type="TAWAQQUF">توقف</button>
-          <button type="button" class="tag-btn" data-type="TASHKEEL">تشكيل</button>
-          <button type="button" class="tag-btn" data-type="LAFDH">لفظ</button>
+        <div id="ayah-chips-wrap" class="ayah-chips-wrap hidden">
+          <div class="ayah-chips-head">
+            <span class="ayah-chips-label" data-i18n="ayah_chips_label">آيات هذه الصفحة (انقر للاختيار المباشر):</span>
+          </div>
+          <div id="ayah-chips-group" class="ayah-chips-group"></div>
         </div>
       </div>
 
       <div class="field">
-        <label for="mistake-note">ملاحظة مساعدة للتذكر (اختياري)</label>
-        <textarea id="mistake-note" rows="2" maxlength="5000" placeholder="ملاحظة أثناء التلاوة…"></textarea>
+        <span class="field-label" data-i18n="mistake_type_label">نوع الخطأ</span>
+        <div class="tag-group" id="mistake-tags">
+          <button type="button" class="tag-btn active" data-type="TRANSITION_FAILURE" data-i18n="tag_transition">انقطاع / نقلة</button>
+          <button type="button" class="tag-btn" data-type="MUTASHABIHAT" data-i18n="tag_mutashabihat">متشابهات</button>
+          <button type="button" class="tag-btn" data-type="TAWAQQUF" data-i18n="tag_tawaqquf">توقف</button>
+          <button type="button" class="tag-btn" data-type="TASHKEEL" data-i18n="tag_tashkeel">تشكيل</button>
+          <button type="button" class="tag-btn" data-type="LAFDH" data-i18n="tag_lafdh">لفظ</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="mistake-note" data-i18n="mistake_notes_label">ملاحظة مساعدة للتذكر (اختياري)</label>
+        <textarea id="mistake-note" rows="2" maxlength="5000" placeholder="ملاحظة أثناء التلاوة…" data-i18n-placeholder="mistake_notes_ph"></textarea>
       </div>
 
       <div class="modal-actions">
-        <button type="button" id="modal-cancel" class="btn btn-ghost">إلغاء</button>
-        <button type="button" id="modal-save" class="btn btn-danger">تسجيل الخطأ</button>
+        <button type="button" id="modal-cancel" class="btn btn-ghost" data-i18n="btn_cancel">إلغاء</button>
+        <button type="button" id="modal-save" class="btn btn-danger" data-i18n="btn_save_mistake">تسجيل الخطأ</button>
       </div>
     </div>
   </div>
 
   <!-- Mobile Bottom Navigation -->
   <nav class="mobile-bottom-nav" aria-label="التنقل السريع">
-    <a href="dashboard.html" class="mobile-nav-link" title="الرئيسية">
+    <a href="dashboard.html" class="mobile-nav-link" title="الرئيسية" data-i18n-title="nav_home">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
         <polyline points="9 22 9 12 15 12 15 22"></polyline>
       </svg>
-      <span>الرئيسية</span>
+      <span data-i18n="nav_home">الرئيسية</span>
     </a>
-    <a href="hifz.html" class="mobile-nav-link" title="الحفظ الجديد">
+    <a href="hifz.html" class="mobile-nav-link" title="الحفظ الجديد" data-i18n-title="nav_hifz">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
         <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
       </svg>
-      <span>حفظ جديد</span>
+      <span data-i18n="nav_hifz">حفظ جديد</span>
     </a>
-    <a href="rabt.html" class="mobile-nav-link active" title="الربط">
+    <a href="tikrar.html" class="mobile-nav-link" title="تكرار الأمس" data-i18n-title="nav_tikrar">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="17 1 21 5 17 9"></polyline>
+        <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
+        <polyline points="7 23 3 19 7 15"></polyline>
+        <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
+      </svg>
+      <span data-i18n="nav_tikrar">تكرار الأمس</span>
+    </a>
+    <a href="rabt.html" class="mobile-nav-link active" title="الربط" data-i18n-title="nav_rabt">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
         <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
       </svg>
-      <span>الربط</span>
+      <span data-i18n="nav_rabt">الربط</span>
     </a>
-    <a href="murajaah.html" class="mobile-nav-link" title="المراجعة">
+    <a href="murajaah.html" class="mobile-nav-link" title="المراجعة" data-i18n-title="nav_murajaah">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <polyline points="23 4 23 10 17 10"></polyline>
         <polyline points="1 20 1 14 7 14"></polyline>
         <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
       </svg>
-      <span>المراجعة</span>
+      <span data-i18n="nav_murajaah">المراجعة</span>
     </a>
-    <a href="flashcards.html" class="mobile-nav-link" title="البطاقات">
+    <a href="flashcards.html" class="mobile-nav-link" title="البطاقات" data-i18n-title="nav_flashcards">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
         <polyline points="2 17 12 22 22 17"></polyline>
         <polyline points="2 12 12 17 22 12"></polyline>
       </svg>
-      <span>البطاقات</span>
+      <span data-i18n="nav_flashcards">البطاقات</span>
     </a>
-    <a href="history.html" class="mobile-nav-link" title="السجل">
+    <a href="history.html" class="mobile-nav-link" title="السجل" data-i18n-title="nav_history">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
         <polyline points="14 2 14 8 20 8"></polyline>
         <line x1="16" y1="13" x2="8" y2="13"></line>
         <line x1="16" y1="17" x2="8" y2="17"></line>
       </svg>
-      <span>السجل</span>
+      <span data-i18n="nav_history">السجل</span>
     </a>
   </nav>
 

@@ -75,6 +75,9 @@ try {
 try {
     $pdo->exec("ALTER TABLE `users` ADD COLUMN `rabt_extra_pages` INT NOT NULL DEFAULT 0");
 } catch (Throwable $t) {}
+try {
+    $pdo->exec("ALTER TABLE `users` ADD COLUMN `last_tikrar_page` INT NOT NULL DEFAULT 0");
+} catch (Throwable $t) {}
 
 $murajaahDays = $data['murajaah_days'] ?? 6;
 if (is_string($murajaahDays) && ctype_digit($murajaahDays)) {
@@ -110,9 +113,9 @@ $passwordHash = password_hash($password, PASSWORD_DEFAULT);
 
 $sql = 'INSERT INTO `users`
             (`name`, `email`, `password_hash`, `user_type`,
-             `current_hifz_page`, `daily_murajaah_target_pages`, `murajaah_days`, `rabt_extra_pages`)
+             `current_hifz_page`, `daily_murajaah_target_pages`, `murajaah_days`, `rabt_extra_pages`, `last_tikrar_page`)
         VALUES (:name, :email, :password_hash, :user_type,
-                :current_hifz_page, :daily_murajaah_target_pages, :murajaah_days, 0)';
+                :current_hifz_page, :daily_murajaah_target_pages, :murajaah_days, 0, :last_tikrar_page)';
 
 try {
     $stmt = $pdo->prepare($sql);
@@ -124,6 +127,7 @@ try {
         ':current_hifz_page'           => $currentPage,
         ':daily_murajaah_target_pages' => $dailyTarget,
         ':murajaah_days'               => $murajaahDays,
+        ':last_tikrar_page'            => $currentPage,
     ]);
     $userId = (int) $pdo->lastInsertId();
 } catch (PDOException $e) {
@@ -156,6 +160,7 @@ echo json_encode([
         'email'                       => $email,
         'user_type'                   => $userType,
         'current_hifz_page'           => $currentPage,
+        'last_tikrar_page'            => $currentPage,
         'daily_murajaah_target_pages' => $dailyTarget,
         'murajaah_days'               => $murajaahDays,
         'rabt_extra_pages'            => 0,

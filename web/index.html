@@ -9,16 +9,20 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
+  <script src="js/i18n.js"></script>
 </head>
 <body class="auth-body">
 
   <main class="auth-container">
-    <div style="display:flex; justify-content:flex-end; margin-bottom:0.75rem;">
+    <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-bottom:0.75rem;">
+      <button type="button" class="lang-toggle-btn header-action-btn" title="English / العربية" aria-label="تبديل اللغة">
+        <span class="lang-code-text">EN</span>
+      </button>
       <button type="button" class="theme-toggle-btn header-action-btn" title="تبديل المظهر" aria-label="تبديل المظهر">
         <svg class="icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <circle cx="12" cy="12" r="4.5" fill="currentColor"></circle>
           <line x1="12" y1="1" x2="12" y2="3"></line>
-          <line x1="12" y1="21" x2="12" y2="23"></line>
+          <line x1="12" y1="21" x2="23" y2="23"></line>
           <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
           <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
           <line x1="1" y1="12" x2="3" y2="12"></line>
@@ -39,92 +43,92 @@
           <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
         </svg>
       </div>
-      <h1>رفيق الحفظ</h1>
-      <p>رفيقك اليومي في رحلة حفظ القرآن الكريم</p>
+      <h1 data-i18n="brand_name">رفيق الحفظ</h1>
+      <p data-i18n="brand_slogan">رفيقك اليومي في رحلة حفظ القرآن الكريم</p>
     </div>
 
     <div class="auth-card">
       <div class="tabs" role="tablist">
-        <button type="button" class="tab active" id="tab-register" data-tab="register" role="tab">إنشاء حساب</button>
-        <button type="button" class="tab" id="tab-login" data-tab="login" role="tab">تسجيل الدخول</button>
+        <button type="button" class="tab active" id="tab-register" data-tab="register" role="tab" data-i18n="tab_register">إنشاء حساب</button>
+        <button type="button" class="tab" id="tab-login" data-tab="login" role="tab" data-i18n="tab_login">تسجيل الدخول</button>
       </div>
 
       <form id="register-form" class="auth-form" novalidate>
         <div class="field">
-          <label for="reg-name">الاسم</label>
-          <input type="text" id="reg-name" name="name" autocomplete="name" placeholder="اسمك الكريم" maxlength="100" required>
+          <label for="reg-name" data-i18n="lbl_name">الاسم</label>
+          <input type="text" id="reg-name" name="name" autocomplete="name" placeholder="اسمك الكريم" data-i18n-placeholder="ph_name" maxlength="100" required>
         </div>
 
         <div class="field">
-          <label for="reg-email">البريد الإلكتروني</label>
-          <input type="email" id="reg-email" name="email" autocomplete="email" placeholder="example@mail.com" required>
+          <label for="reg-email" data-i18n="lbl_email">البريد الإلكتروني</label>
+          <input type="email" id="reg-email" name="email" autocomplete="email" placeholder="example@mail.com" data-i18n-placeholder="ph_email" required>
         </div>
 
         <div class="field">
-          <label for="reg-password">كلمة المرور</label>
-          <input type="password" id="reg-password" name="password" autocomplete="new-password" placeholder="٨ أحرف على الأقل" minlength="8" required>
+          <label for="reg-password" data-i18n="lbl_password">كلمة المرور</label>
+          <input type="password" id="reg-password" name="password" autocomplete="new-password" placeholder="٨ أحرف على الأقل" data-i18n-placeholder="ph_password" minlength="8" required>
         </div>
 
         <fieldset class="field profile-field">
-          <legend>نوع الحفظ</legend>
+          <legend data-i18n="legend_user_type">نوع الحفظ</legend>
           <div class="profile-options">
             <label class="profile-option">
               <input type="radio" name="user_type" value="NEW" checked>
               <span class="profile-body">
-                <strong>جديد</strong>
-                <small>أبدأ الحفظ من البداية</small>
+                <strong data-i18n="type_new_title">جديد</strong>
+                <small data-i18n="type_new_sub">أبدأ الحفظ من البداية</small>
               </span>
             </label>
             <label class="profile-option">
               <input type="radio" name="user_type" value="EXISTING">
               <span class="profile-body">
-                <strong>أحفظ مسبقاً</strong>
-                <small>حدّد الصفحة التي وصلت إليها</small>
+                <strong data-i18n="type_existing_title">أحفظ مسبقاً</strong>
+                <small data-i18n="type_existing_sub">حدّد الصفحة التي وصلت إليها</small>
               </span>
             </label>
             <label class="profile-option">
               <input type="radio" name="user_type" value="COMPLETE">
               <span class="profile-body">
-                <strong>حافظ كامل</strong>
-                <small>أنهيت ٦٠٤ صفحة</small>
+                <strong data-i18n="type_complete_title">حافظ كامل</strong>
+                <small data-i18n="type_complete_sub">أنهيت ٦٠٤ صفحة</small>
               </span>
             </label>
           </div>
         </fieldset>
 
         <div class="field hidden" id="existing-fields">
-          <label for="reg-page">صفحة الحفظ الحالية (١ – ٦٠٤)</label>
-          <input type="number" id="reg-page" name="current_hifz_page" min="1" max="604" inputmode="numeric" placeholder="مثال: ٢٧٥">
+          <label for="reg-page" data-i18n="lbl_existing_page">صفحة الحفظ الحالية (١ – ٦٠٤)</label>
+          <input type="number" id="reg-page" name="current_hifz_page" min="1" max="604" inputmode="numeric" placeholder="مثال: ٢٧٥" data-i18n-placeholder="ph_existing_page">
         </div>
 
         <div class="field">
-          <label for="reg-days">المدة المرغوبة لختم المراجعة دورياً (١ – ٦ أيام كحد أقصى)</label>
+          <label for="reg-days" data-i18n="lbl_murajaah_days">المدة المرغوبة لختم المراجعة دورياً (١ – ٦ أيام كحد أقصى)</label>
           <select id="reg-days" name="murajaah_days">
-            <option value="1">ختم في يوم واحد (ورد مكثف)</option>
-            <option value="2">ختم كل يومين</option>
-            <option value="3">ختم كل ٣ أيام</option>
-            <option value="4">ختم كل ٤ أيام</option>
-            <option value="5">ختم كل ٥ أيام</option>
-            <option value="6" selected>ختم كل ٦ أيام (الموصى به)</option>
+            <option value="1" data-i18n="opt_day_1">ختم في يوم واحد (ورد مكثف)</option>
+            <option value="2" data-i18n="opt_day_2">ختم كل يومين</option>
+            <option value="3" data-i18n="opt_day_3">ختم كل ٣ أيام</option>
+            <option value="4" data-i18n="opt_day_4">ختم كل ٤ أيام</option>
+            <option value="5" data-i18n="opt_day_5">ختم كل ٥ أيام</option>
+            <option value="6" data-i18n="opt_day_6" selected>ختم كل ٦ أيام (الموصى به)</option>
           </select>
-          <small class="hint">يقوم النظام تلقائياً بحساب وقسمة صفحات المراجعة لتختم في اليوم الأخير.</small>
+          <small class="hint" data-i18n="hint_murajaah_days">يقوم النظام تلقائياً بحساب وقسمة صفحات المراجعة لتختم في اليوم الأخير.</small>
         </div>
 
-        <button type="submit" class="btn btn-primary btn-block">إنشاء الحساب</button>
+        <button type="submit" class="btn btn-primary btn-block" data-i18n="btn_submit_register">إنشاء الحساب</button>
       </form>
 
       <form id="login-form" class="auth-form hidden" novalidate>
         <div class="field">
-          <label for="login-email">البريد الإلكتروني</label>
-          <input type="email" id="login-email" name="email" autocomplete="email" placeholder="example@mail.com" required>
+          <label for="login-email" data-i18n="lbl_email">البريد الإلكتروني</label>
+          <input type="email" id="login-email" name="email" autocomplete="email" placeholder="example@mail.com" data-i18n-placeholder="ph_email" required>
         </div>
 
         <div class="field">
-          <label for="login-password">كلمة المرور</label>
-          <input type="password" id="login-password" name="password" autocomplete="current-password" placeholder="كلمة المرور" required>
+          <label for="login-password" data-i18n="lbl_password">كلمة المرور</label>
+          <input type="password" id="login-password" name="password" autocomplete="current-password" placeholder="كلمة المرور" data-i18n-placeholder="ph_password_login" required>
         </div>
 
-        <button type="submit" class="btn btn-primary btn-block">دخول</button>
+        <button type="submit" class="btn btn-primary btn-block" data-i18n="btn_submit_login">دخول</button>
       </form>
 
       <p id="auth-error" class="form-error hidden" role="alert"></p>

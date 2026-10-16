@@ -54,6 +54,9 @@ try {
 try {
     $pdo->exec("ALTER TABLE `users` ADD COLUMN `rabt_extra_pages` INT NOT NULL DEFAULT 0");
 } catch (Throwable $t) {}
+try {
+    $pdo->exec("ALTER TABLE `users` ADD COLUMN `last_tikrar_page` INT NOT NULL DEFAULT 0");
+} catch (Throwable $t) {}
 
 $murajaahDays = $input['murajaah_days'] ?? null;
 if ($murajaahDays !== null) {
@@ -145,6 +148,8 @@ try {
     if ($currentPage !== null) {
         $updates[] = '`current_hifz_page` = :current';
         $params[':current'] = $currentPage;
+        $updates[] = '`last_tikrar_page` = :tikrar';
+        $params[':tikrar'] = $currentPage;
         $updates[] = '`rabt_extra_pages` = :extra';
         $params[':extra'] = $effectiveExtra;
     }
@@ -169,16 +174,16 @@ try {
         $stmt = $pdo->prepare("DELETE FROM `daily_task_logs` WHERE `user_id` = :u AND `task_date` = :d AND `is_completed` = 0");
         $stmt->execute([':u' => $userId, ':d' => $today]);
 
-        // If HIFZ_JADID was completed today but current_hifz_page was explicitly modified by the user,
-        // clear the stale HIFZ_JADID log for today so the new current_hifz_page + 1 takes effect immediately
+        // If HIFZ_JADID or TIKRAR_AMS were logged today but current_hifz_page was explicitly modified by the user,
+        // clear them for today so the new current_hifz_page takes effect immediately
         if ($currentPage !== null) {
-            $stmt = $pdo->prepare("DELETE FROM `daily_task_logs` WHERE `user_id` = :u AND `task_date` = :d AND `task_type` = 'HIFZ_JADID'");
+            $stmt = $pdo->prepare("DELETE FROM `daily_task_logs` WHERE `user_id` = :u AND `task_date` = :d AND `task_type` IN ('HIFZ_JADID', 'TIKRAR_AMS')");
             $stmt->execute([':u' => $userId, ':d' => $today]);
         }
     }
 
     // Return fresh user data
-    $stmt = $pdo->prepare('SELECT `id`, `name`, `email`, `user_type`, `current_hifz_page`, `daily_murajaah_target_pages`, COALESCE(`murajaah_days`, 6) AS `murajaah_days`, COALESCE(`rabt_extra_pages`, 0) AS `rabt_extra_pages` FROM `users` WHERE `id` = :id');
+    $stmt = $pdo->prepare('SELECT `id`, `name`, `email`, `user_type`, `current_hifz_page`, COALESCE(`last_tikrar_page`, 0) AS `last_tikrar_page`, `daily_murajaah_target_pages`, COALESCE(`murajaah_days`, 6) AS `murajaah_days`, COALESCE(`rabt_extra_pages`, 0) AS `rabt_extra_pages` FROM `users` WHERE `id` = :id');
     $stmt->execute([':id' => $userId]);
     $updatedUser = $stmt->fetch();
 
@@ -191,6 +196,7 @@ try {
             'email'                       => (string) $updatedUser['email'],
             'user_type'                   => (string) $updatedUser['user_type'],
             'current_hifz_page'           => (int) $updatedUser['current_hifz_page'],
+            'last_tikrar_page'            => (int) $updatedUser['last_tikrar_page'],
             'daily_murajaah_target_pages' => (int) $updatedUser['daily_murajaah_target_pages'],
             'murajaah_days'               => (int) $updatedUser['murajaah_days'],
             'rabt_extra_pages'            => (int) $updatedUser['rabt_extra_pages'],

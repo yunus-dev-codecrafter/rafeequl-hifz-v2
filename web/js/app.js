@@ -87,6 +87,7 @@ function showToast(message, isError = false) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => el.classList.add('hidden'), 3400);
 }
+window.showToast = showToast;
 
 /* ---------------- 2. Theme Engine (Light / Dark) ---------------- */
 
@@ -117,7 +118,9 @@ function updateThemeIcon() {
   const active = document.documentElement.getAttribute('data-theme');
   btns.forEach((btn) => {
     btn.setAttribute('data-current-theme', active);
-    btn.title = active === 'dark' ? 'الوضع الحالي: داكن (انقر للتحويل إلى الفاتح)' : 'الوضع الحالي: فاتح (انقر للتحويل إلى الداكن)';
+    btn.title = active === 'dark'
+      ? (window.I18N ? I18N.t('theme_toggle_title_dark') : 'الوضع الحالي: داكن (انقر للتحويل إلى الفاتح)')
+      : (window.I18N ? I18N.t('theme_toggle_title_light') : 'الوضع الحالي: فاتح (انقر للتحويل إلى الداكن)');
     btn.setAttribute('aria-label', btn.title);
   });
 }
@@ -126,10 +129,10 @@ function cycleTheme() {
   const currentActive = document.documentElement.getAttribute('data-theme');
   if (currentActive === 'dark') {
     applyTheme('light');
-    showToast('تم التحويل إلى الوضع الفاتح ☀️');
+    showToast(window.I18N ? I18N.t('toast_theme_light') : 'تم التحويل إلى الوضع الفاتح ☀️');
   } else {
     applyTheme('dark');
-    showToast('تم التحويل إلى الوضع الداكن 🌙');
+    showToast(window.I18N ? I18N.t('toast_theme_dark') : 'تم التحويل إلى الوضع الداكن 🌙');
   }
 }
 
@@ -167,8 +170,8 @@ function updateWakeLockUI() {
   btns.forEach((btn) => {
     btn.setAttribute('data-wakelock', wakeLockEnabled ? 'on' : 'off');
     btn.title = wakeLockEnabled
-      ? (wakeLockSupported() ? 'إبقاء الشاشة مضاءة: مفعّل (لن تنطفئ الشاشة أثناء التلاوة)' : 'إبقاء الشاشة مضاءة: مفعّل (غير مدعوم في هذا المتصفح)')
-      : 'إبقاء الشاشة مضاءة: متوقف (ستنطفئ الشاشة بشكل طبيعي)';
+      ? (window.I18N ? I18N.t('wakelock_title_on') : 'إبقاء الشاشة مضاءة: مفعّل (لن تنطفئ الشاشة أثناء التلاوة)')
+      : (window.I18N ? I18N.t('wakelock_title_off') : 'إبقاء الشاشة مضاءة: متوقف (ستنطفئ الشاشة بشكل طبيعي)');
     btn.setAttribute('aria-label', btn.title);
   });
 }
@@ -204,10 +207,10 @@ function toggleWakeLock() {
   try { localStorage.setItem(WAKELOCK_KEY, wakeLockEnabled ? '1' : '0'); } catch (e) {}
   if (wakeLockEnabled) {
     requestWakeLock();
-    showToast('تم تفعيل إبقاء الشاشة مضاءة 💡');
+    showToast(window.I18N ? I18N.t('toast_wake_on') : 'تم تفعيل إبقاء الشاشة مضاءة 💡');
   } else {
     releaseWakeLock();
-    showToast('تم إيقاف إبقاء الشاشة مضاءة');
+    showToast(window.I18N ? I18N.t('toast_wake_off') : 'تم إيقاف إبقاء الشاشة مضاءة');
   }
   updateWakeLockUI();
 }
@@ -248,7 +251,9 @@ const AudioEngine = {
   updateUI() {
     document.querySelectorAll('.sound-toggle-btn').forEach((btn) => {
       btn.setAttribute('data-sound', this.enabled ? 'on' : 'off');
-      btn.title = this.enabled ? 'المؤثرات الصوتية: مفعّلة (انقر للكتم)' : 'المؤثرات الصوتية: مكتومة (انقر للتفعيل)';
+      btn.title = this.enabled
+        ? (window.I18N ? I18N.t('sound_toggle_title_on') : 'المؤثرات الصوتية: مفعّلة (انقر للكتم)')
+        : (window.I18N ? I18N.t('sound_toggle_title_off') : 'المؤثرات الصوتية: مكتومة (انقر للتفعيل)');
       btn.setAttribute('aria-label', btn.title);
     });
   },
@@ -256,7 +261,7 @@ const AudioEngine = {
     this.enabled = !this.enabled;
     try { localStorage.setItem('hifz-sound', this.enabled ? '1' : '0'); } catch (e) {}
     this.updateUI();
-    showToast(this.enabled ? 'تم تفعيل المؤثرات الصوتية 🔊' : 'تم كتم المؤثرات الصوتية 🔇');
+    showToast(this.enabled ? (window.I18N ? I18N.t('toast_sound_on') : 'تم تفعيل المؤثرات الصوتية 🔊') : (window.I18N ? I18N.t('toast_sound_off') : 'تم كتم المؤثرات الصوتية 🔇'));
     if (this.enabled) this.playSuccess();
   },
   playSuccess() {
@@ -294,6 +299,23 @@ const AudioEngine = {
         osc.start(ctx.currentTime + idx * 0.09);
         osc.stop(ctx.currentTime + idx * 0.09 + 0.35);
       });
+    } catch (e) {}
+  },
+  playUndo() {
+    if (!this.enabled) return;
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(659.25, ctx.currentTime); // E5
+      osc.frequency.exponentialRampToValueAtTime(440.00, ctx.currentTime + 0.18); // A4
+      gain.gain.setValueAtTime(0.09, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.3);
     } catch (e) {}
   }
 };
@@ -391,7 +413,7 @@ function initAuthPage() {
       if (res.user && res.user.name) {
         localStorage.setItem('hifz_name', res.user.name);
       }
-      showToast('تم إنشاء الحساب بنجاح! مرحباً بك 📖');
+      showToast(window.I18N ? I18N.t('auth_welcome_toast') : 'تم إنشاء الحساب بنجاح! مرحباً بك 📖');
       setTimeout(() => { location.href = 'dashboard.html'; }, 400);
     } catch (err) {
       showError(err.message);
@@ -415,7 +437,7 @@ function initAuthPage() {
       if (res.user && res.user.name) {
         localStorage.setItem('hifz_name', res.user.name);
       }
-      showToast('تم تسجيل الدخول بنجاح ✓');
+      showToast(window.I18N ? I18N.t('auth_login_toast') : 'تم تسجيل الدخول بنجاح ✓');
       setTimeout(() => { location.href = 'dashboard.html'; }, 300);
     } catch (err) {
       showError(err.message);
@@ -427,16 +449,17 @@ function initAuthPage() {
 /* ---------------- 6. Dashboard Controller (dashboard.html) ---------------- */
 
 const TASK_DESTINATIONS = {
-  HIFZ_JADID: { url: 'hifz.html',       cls: 'task-green',  title: 'الحفظ الجديد', sub: 'صفحة جديدة اليوم' },
-  RABT:       { url: 'rabt.html',       cls: 'task-blue',   title: 'الربط',        sub: 'نافذة الربط المستمرة' },
-  MURAJAAH:   { url: 'murajaah.html',   cls: 'task-purple', title: 'المراجعة',     sub: 'ختم دوري مقسم على الأيام' },
-  MISTAKES:   { url: 'flashcards.html', cls: 'task-red',    title: 'المعالجة',     sub: 'تدريب البطاقات الذكية' },
+  HIFZ_JADID: { url: 'hifz.html',       cls: 'task-green',  keyTitle: 'task_hifz_title',     keySub: 'task_hifz_sub',     title: 'الحفظ الجديد',     sub: 'صفحة جديدة اليوم' },
+  TIKRAR_AMS: { url: 'tikrar.html',     cls: 'task-amber',  keyTitle: 'task_tikrar_title',   keySub: 'task_tikrar_sub',   title: 'تكرار حفظ الأمس',   sub: 'تكرار ١٠ مرات لتثبيت الحفظ قبل الربط' },
+  RABT:       { url: 'rabt.html',       cls: 'task-blue',   keyTitle: 'task_rabt_title',     keySub: 'task_rabt_sub',     title: 'الربط',            sub: 'نافذة الربط المستمرة' },
+  MURAJAAH:   { url: 'murajaah.html',   cls: 'task-purple', keyTitle: 'task_murajaah_title', keySub: 'task_murajaah_sub', title: 'المراجعة',         sub: 'ختم دوري مقسم على الأيام' },
+  MISTAKES:   { url: 'flashcards.html', cls: 'task-red',    keyTitle: 'task_mistakes_title', keySub: 'task_mistakes_sub', title: 'المعالجة',         sub: 'تدريب البطاقات الذكية' },
 };
 
 async function initDashboard() {
   const name = localStorage.getItem('hifz_name');
   if (name && document.getElementById('greeting')) {
-    document.getElementById('greeting').textContent = 'مرحباً، ' + name;
+    document.getElementById('greeting').textContent = (window.I18N ? I18N.t('greeting_prefix') : 'مرحباً، ') + name;
   }
 
   const logoutBtn = document.getElementById('logout-btn');
@@ -450,6 +473,17 @@ async function initDashboard() {
   initHeaderDropdown();
   initResetModal();
   initPlanModal();
+
+  if (window.I18N && !window._dashLangBound) {
+    I18N.onChange(() => {
+      const n = localStorage.getItem('hifz_name');
+      if (n && document.getElementById('greeting')) {
+        document.getElementById('greeting').textContent = I18N.t('greeting_prefix') + n;
+      }
+      renderDashboardUI();
+    });
+    window._dashLangBound = true;
+  }
 
   try {
     await loadSharedData();
@@ -517,21 +551,21 @@ function initResetModal() {
 
   confirmBtn.addEventListener('click', async () => {
     confirmBtn.disabled = true;
-    confirmBtn.textContent = 'جاري التصفير…';
+    confirmBtn.textContent = window.I18N ? I18N.t('resetting_in_progress') : 'جاري التصفير…';
 
     try {
       const body = sharedState.user && sharedState.user.id ? { user_id: sharedState.user.id } : null;
       await API.call('auth/reset.php', { method: 'POST', body, redirectOn401: true });
       closeReset();
       if (window.AudioEngine) AudioEngine.playSuccess();
-      showToast('تم تصفير الحساب ومسح جميع السجلات بنجاح 🔄');
+      showToast(window.I18N ? I18N.t('reset_success_toast') : 'تم تصفير الحساب ومسح جميع السجلات بنجاح 🔄');
       await loadSharedData();
       renderDashboardUI();
     } catch (err) {
       showToast(err.message, true);
     } finally {
       confirmBtn.disabled = false;
-      confirmBtn.textContent = 'نعم، صفّر كل شيء وابدأ من جديد';
+      confirmBtn.textContent = window.I18N ? I18N.t('btn_confirm_reset') : 'نعم، صفّر كل شيء وابدأ من جديد';
     }
   });
 }
@@ -573,12 +607,14 @@ function initPlanModal() {
     }
 
     if (pool <= 0) {
-      calcPreview.innerHTML = `📊 <strong>المراجعة غير نشطة حالياً:</strong> ستنطلق المراجعة الدورية تلقائياً بعد تجاوز أول ٣٠ صفحة حفظ.`;
+      calcPreview.innerHTML = window.I18N ? I18N.t('plan_calc_inactive') : `📊 <strong>المراجعة غير نشطة حالياً:</strong> ستنطلق المراجعة الدورية تلقائياً بعد تجاوز أول ٣٠ صفحة حفظ.`;
     } else {
       const dailyPages = Math.ceil(pool / days);
       const hizb = dailyPages / 10;
       const hizbText = Number.isInteger(hizb) ? hizb : hizb.toFixed(1);
-      calcPreview.innerHTML = `📊 <strong>الحساب التلقائي:</strong> إجمالي صفحات المراجعة (${pool} صفحة) مقسومة على <strong>${days} أيام</strong> = <strong>${dailyPages} صفحة يومياً</strong> (~${hizbText} أحزاب) لختم المراجعة في اليوم الأخير تماماً.`;
+      calcPreview.innerHTML = window.I18N
+        ? I18N.t('plan_calc_active', { pool, days, daily: dailyPages, hizb: hizbText })
+        : `📊 <strong>الحساب التلقائي:</strong> إجمالي صفحات المراجعة (${pool} صفحة) مقسومة على <strong>${days} أيام</strong> = <strong>${dailyPages} صفحة يومياً</strong> (~${hizbText} أحزاب) لختم المراجعة في اليوم الأخير تماماً.`;
     }
   }
 
@@ -646,7 +682,7 @@ function initPlanModal() {
         renderDashboardUI();
         closePlanModal();
         if (window.AudioEngine) AudioEngine.playSuccess();
-        showToast('تم تحديث خطة المراجعة بنجاح 🎯');
+        showToast(window.I18N ? I18N.t('plan_updated_toast') : 'تم تحديث خطة المراجعة بنجاح 🎯');
       } catch (err) {
         showToast(err.message, true);
       } finally {
@@ -662,19 +698,21 @@ function renderDashboardUI() {
 
   // Render Stats Banner
   const currentVal = document.getElementById('stat-current-hifz');
-  if (currentVal) currentVal.textContent = user.current_hifz_page + ' صفحة';
+  if (currentVal) currentVal.textContent = user.current_hifz_page + ' ' + (window.I18N ? I18N.t('page_unit') : 'صفحة');
 
   const targetVal = document.getElementById('stat-target');
   if (targetVal) {
     const hizb = user.daily_murajaah_target_pages / 10;
     const hizbText = Number.isInteger(hizb) ? hizb : hizb.toFixed(1);
     const days = user.murajaah_days || 6;
-    targetVal.textContent = `ختم كل ${days} أيام (${user.daily_murajaah_target_pages} ص / اليوم ≈ ${hizbText} أحزاب)`;
+    targetVal.textContent = window.I18N
+      ? I18N.t('khatm_every_days', { days, pages: user.daily_murajaah_target_pages, hizb: hizbText })
+      : `ختم كل ${days} أيام (${user.daily_murajaah_target_pages} ص / اليوم ≈ ${hizbText} أحزاب)`;
   }
 
   const activeMistakesCount = sharedState.history.filter((m) => m.status === 'ACTIVE').length;
   const mistakesVal = document.getElementById('stat-active-mistakes');
-  if (mistakesVal) mistakesVal.textContent = activeMistakesCount + ' خطأ نشط';
+  if (mistakesVal) mistakesVal.textContent = activeMistakesCount + ' ' + (window.I18N ? I18N.t('active_mistakes_unit') : 'خطأ نشط');
 
   const dateEl = document.getElementById('tasks-date');
   if (dateEl) dateEl.textContent = sharedState.date;
@@ -683,11 +721,15 @@ function renderDashboardUI() {
   const grid = document.getElementById('tasks-grid');
   if (!grid) return;
 
-  const order = ['HIFZ_JADID', 'RABT', 'MURAJAAH', 'MISTAKES'];
+  const order = ['HIFZ_JADID', 'TIKRAR_AMS', 'RABT', 'MURAJAAH', 'MISTAKES'];
   grid.innerHTML = order.map((type) => {
     const meta = TASK_DESTINATIONS[type];
     const task = sharedState.tasks.find((t) => t.task_type === type);
     const isDisabled = !task && type !== 'MISTAKES';
+
+    const cardTitle = window.I18N ? I18N.t(meta.keyTitle) : meta.title;
+    const cardSub = window.I18N ? I18N.t(meta.keySub) : meta.sub;
+    const arrowText = window.I18N ? I18N.t('task_open_arrow') : 'فتح صفحة التلاوة المستقلة ←';
 
     let rangeHtml = '';
     let statusPill = '';
@@ -696,46 +738,67 @@ function renderDashboardUI() {
 
     if (type === 'MISTAKES') {
       const count = activeMistakesCount;
-      rangeHtml = count > 0 ? (count + ' خطأ بحاجة للإتقان') : 'لا توجد أخطاء نشطة ✓';
+      rangeHtml = count > 0
+        ? (window.I18N ? I18N.t('task_mistakes_need_practice', { count }) : (count + ' خطأ بحاجة للإتقان'))
+        : (window.I18N ? I18N.t('task_no_mistakes') : 'لا توجد أخطاء نشطة ✓');
+
       statusPill = count > 0
-        ? '<span class="task-status" style="color:var(--danger); background:var(--danger-soft)">متاح للتدريب</span>'
-        : '<span class="task-status done">رائـع! مكتمل</span>';
+        ? `<span class="task-status" style="color:var(--danger); background:var(--danger-soft)">${window.I18N ? I18N.t('task_status_ready_train') : 'متاح للتدريب'}</span>`
+        : `<span class="task-status done">${window.I18N ? I18N.t('task_status_deck_done') : 'رائـع! مكتمل'}</span>`;
+
       progressHtml = `
         <div class="progress-wrap">
-          <div class="progress-header"><span>بطاقات التدريب</span><span>${count} نشطة</span></div>
+          <div class="progress-header"><span>${window.I18N ? I18N.t('task_progress_deck_title') : 'بطاقات التدريب'}</span><span>${window.I18N ? I18N.t('task_progress_deck_active', { count }) : (count + ' نشطة')}</span></div>
           <div class="progress-bar"><div class="progress-fill fill-blue" style="width:${count > 0 ? 100 : 0}%"></div></div>
         </div>`;
     } else if (task) {
       if (task.start_page === task.end_page) {
-        rangeHtml = 'صفحة ' + task.start_page;
+        rangeHtml = window.I18N ? I18N.t('single_page_format', { page: task.start_page }) : ('صفحة ' + task.start_page);
       } else {
-        rangeHtml = 'صفحات ' + task.start_page + ' – ' + task.end_page;
+        rangeHtml = window.I18N ? I18N.t('multi_page_format', { start: task.start_page, end: task.end_page }) : ('صفحات ' + task.start_page + ' – ' + task.end_page);
       }
 
       const total = task.total_pages || 1;
       const count = task.completed_count || (task.is_completed ? total : 0);
       const percent = task.progress_percent || (task.is_completed ? 100 : 0);
 
-      statusPill = task.is_completed
-        ? '<span class="task-status done">✓ مكتمل اليوم</span>'
-        : `<span class="task-status">${count} / ${total} صفحة</span>`;
+      if (type === 'TIKRAR_AMS') {
+        const reps = task.repetition_count || 0;
+        const target = task.target_repetitions || 10;
+        statusPill = task.is_completed
+          ? `<span class="task-status done">${window.I18N ? I18N.t('task_status_done_today') : '✓ مكتمل اليوم'}</span>`
+          : `<span class="task-status">${window.I18N ? I18N.t('repetition_count_pill', { count: reps, total: target }) : `${reps} / ${target} تكرار`}</span>`;
 
-      if (task.carried_over) {
-        carriedFlag = '<span class="task-flag">محولة من أمس</span>';
+        progressHtml = `
+          <div class="progress-wrap">
+            <div class="progress-header">
+              <span>${window.I18N ? I18N.t('task_progress_title') : 'التقدم الفردي للعملية'}</span>
+              <span><strong>${reps}</strong> / ${target} (${percent}%)</span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill fill-amber" style="width:${percent}%"></div></div>
+          </div>`;
+      } else {
+        statusPill = task.is_completed
+          ? `<span class="task-status done">${window.I18N ? I18N.t('task_status_done_today') : '✓ مكتمل اليوم'}</span>`
+          : `<span class="task-status">${window.I18N ? I18N.t('page_count_pill', { count, total }) : `${count} / ${total} صفحة`}</span>`;
+
+        const fillClass = type === 'HIFZ_JADID' ? 'fill-green' : (type === 'RABT' ? 'fill-blue' : 'fill-purple');
+        progressHtml = `
+          <div class="progress-wrap">
+            <div class="progress-header">
+              <span>${window.I18N ? I18N.t('task_progress_title') : 'التقدم الفردي للعملية'}</span>
+              <span><strong>${count}</strong> ${window.I18N ? I18N.t('page_count_progress', { count, total, percent }).replace(/^[0-9]+\s*/, '') : `من ${total} صفحة (${percent}%)`}</span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill ${fillClass}" style="width:${percent}%"></div></div>
+          </div>`;
       }
 
-      const fillClass = type === 'HIFZ_JADID' ? 'fill-green' : (type === 'RABT' ? 'fill-blue' : 'fill-purple');
-      progressHtml = `
-        <div class="progress-wrap">
-          <div class="progress-header">
-            <span>التقدم الفردي للعملية</span>
-            <span><strong>${count}</strong> من ${total} صفحة (${percent}%)</span>
-          </div>
-          <div class="progress-bar"><div class="progress-fill ${fillClass}" style="width:${percent}%"></div></div>
-        </div>`;
+      if (task.carried_over) {
+        carriedFlag = `<span class="task-flag">${window.I18N ? I18N.t('task_flag_carried') : 'محولة من أمس'}</span>`;
+      }
     } else {
-      rangeHtml = 'غير مفعّل اليوم';
-      statusPill = '<span class="task-status">غير مفعّل</span>';
+      rangeHtml = window.I18N ? I18N.t('task_status_inactive_today') : 'غير مفعّل اليوم';
+      statusPill = `<span class="task-status">${window.I18N ? I18N.t('task_status_inactive') : 'غير مفعّل'}</span>`;
     }
 
     return `
@@ -743,17 +806,17 @@ function renderDashboardUI() {
         <div class="task-top">
           <div class="task-title-wrap">
             <span class="task-dot"></span>
-            <h3>${meta.title}</h3>
+            <h3>${cardTitle}</h3>
           </div>
           ${carriedFlag}
         </div>
-        <p class="task-sub">${meta.sub}</p>
+        <p class="task-sub">${cardSub}</p>
         <div class="task-range">
           <span>${rangeHtml}</span>
           ${statusPill}
         </div>
         ${progressHtml}
-        <span class="task-arrow">فتح صفحة التلاوة المستقلة ←</span>
+        <span class="task-arrow">${arrowText}</span>
       </a>
     `;
   }).join('');
@@ -762,6 +825,13 @@ function renderDashboardUI() {
 /* ---------------- 7. Dedicated Task Recitation Controller ---------------- */
 
 async function initDedicatedTaskPage(taskType) {
+  if (window.I18N && !window['_taskLangBound_' + taskType]) {
+    I18N.onChange(() => {
+      renderTaskPage(taskType);
+    });
+    window['_taskLangBound_' + taskType] = true;
+  }
+
   try {
     await loadSharedData();
     renderTaskPage(taskType);
@@ -774,17 +844,35 @@ async function initDedicatedTaskPage(taskType) {
 }
 
 function renderTaskPage(taskType) {
-  const task = sharedState.tasks.find((t) => t.task_type === taskType);
   const container = document.getElementById('task-content');
   if (!container) return;
 
+  const task = sharedState.tasks.find((t) => t.task_type === taskType);
+
   if (!task) {
+    const isTikrar = taskType === 'TIKRAR_AMS';
+    const headText = isTikrar
+      ? (window.I18N ? I18N.t('tikrar_inactive_head') : 'لا يوجد تكرار لحفظ الأمس اليوم')
+      : (window.I18N ? I18N.t('task_inactive_head') : 'هذه المهمة غير نشطة اليوم');
+    const descText = isTikrar
+      ? (window.I18N ? I18N.t('tikrar_inactive_desc') : 'لم يتم إنجاز صفحة حفظ جديد بالأمس، أو تم إتمام تكرارها مسبقاً وتثبيتها في الربط.')
+      : (window.I18N ? I18N.t('task_inactive_desc') : 'حسب مسار خطتك الحالي، هذه المهمة لا تتطلب إنجازاً اليوم.');
+
     container.innerHTML = `
       <div class="task-page-head">
-        <h2>هذه المهمة غير نشطة اليوم</h2>
-        <p class="hint">حسب مسار خطتك الحالي، هذه المهمة لا تتطلب إنجازاً اليوم.</p>
-        <a href="dashboard.html" class="btn btn-primary" style="align-self:flex-start">العودة للرئيسية</a>
+        <h2>${headText}</h2>
+        <p class="hint">${descText}</p>
+        <div style="display:flex; gap:0.75rem; margin-top:1rem; flex-wrap:wrap;">
+          <a href="dashboard.html" class="btn btn-primary">${window.I18N ? I18N.t('back_to_home') : 'العودة للرئيسية'}</a>
+          <a href="hifz.html" class="btn btn-ghost">${window.I18N ? I18N.t('card_hifz_title') : 'الحفظ الجديد'}</a>
+          <a href="rabt.html" class="btn btn-ghost">${window.I18N ? I18N.t('card_rabt_title') : 'الربط'}</a>
+        </div>
       </div>`;
+    return;
+  }
+
+  if (taskType === 'TIKRAR_AMS') {
+    renderTikrarStage(task);
     return;
   }
 
@@ -798,37 +886,49 @@ function renderTaskPage(taskType) {
   // Determine active selected page
   let activePage = start;
   const storedSelection = parseInt(sessionStorage.getItem('selected_page_' + taskType), 10);
-  if (storedSelection >= start && storedSelection <= end) {
+  const isValidStored = !isNaN(storedSelection) && storedSelection >= start && storedSelection <= end;
+  const allowCompletedView = sessionStorage.getItem('view_completed_' + taskType) === '1';
+
+  if (isValidStored && (!completedList.includes(storedSelection) || allowCompletedView || completedList.length >= totalPages)) {
     activePage = storedSelection;
   } else {
-    // Select first uncompleted page if available
+    let firstUncompleted = null;
     for (let p = start; p <= end; p++) {
       if (!completedList.includes(p)) {
-        activePage = p;
+        firstUncompleted = p;
         break;
       }
     }
+    activePage = firstUncompleted !== null ? firstUncompleted : (isValidStored ? storedSelection : start);
   }
 
   // Header and Progress Bar
   const isAllDone = task.is_completed || completedCount >= totalPages;
-  const titleArabic = task.title_ar;
+  const taskTitle = (window.I18N && I18N.lang === 'en' && task.title_en) ? task.title_en : (task.title_ar || '');
   const fillClass = taskType === 'HIFZ_JADID' ? 'fill-green' : (taskType === 'RABT' ? 'fill-blue' : 'fill-purple');
+
+  const rangeHint = window.I18N ? I18N.t('required_range_hint', { start, end }) : `النطاق المطلوب: من صفحة <strong>${start}</strong> إلى <strong>${end}</strong>`;
+  const doneBadge = isAllDone
+    ? (window.I18N ? I18N.t('all_pages_completed') : '✓ أنجزت جميع صفحات اليوم')
+    : (window.I18N ? I18N.t('pages_completed_badge', { count: completedCount, total: totalPages }) : `${completedCount} من ${totalPages} صفحة منجزة`);
+  const progressLbl = window.I18N ? I18N.t('daily_recitation_progress') : 'تقدم التلاوة اليومي';
+  const chipsTitle = window.I18N ? I18N.t('chips_title_text') : 'اختر صفحة للتلاوة أو تسجيل خطأ:';
+  const chipsHint = window.I18N ? I18N.t('chips_hint_text') : 'كل صفحة تُتلى وتُحدد تُسجل كصفحة منجزة بشكل فردي';
 
   const pageHtml = `
     <div class="task-page-head">
       <div class="task-page-title-row">
         <div>
-          <h2>${titleArabic}</h2>
-          <p class="hint">النطاق المطلوب: من صفحة <strong>${start}</strong> إلى <strong>${end}</strong></p>
+          <h2>${taskTitle}</h2>
+          <p class="hint">${rangeHint}</p>
         </div>
         <div class="task-page-badge ${isAllDone ? 'green' : 'blue'}">
-          ${isAllDone ? '✓ أنجزت جميع صفحات اليوم' : `${completedCount} من ${totalPages} صفحة منجزة`}
+          ${doneBadge}
         </div>
       </div>
       <div class="progress-wrap">
         <div class="progress-header">
-          <span>تقدم التلاوة اليومي</span>
+          <span>${progressLbl}</span>
           <span>${percent}%</span>
         </div>
         <div class="progress-bar">
@@ -845,8 +945,8 @@ function renderTaskPage(taskType) {
     <!-- Interactive Page Chips -->
     <div class="chips-card">
       <div class="chips-title">
-        <span>اختر صفحة للتلاوة أو تسجيل خطأ:</span>
-        <small class="hint">كل صفحة تُتلى وتُحدد تُسجل كصفحة منجزة بشكل فردي</small>
+        <span>${chipsTitle}</span>
+        <small class="hint">${chipsHint}</small>
       </div>
       <div class="page-chips" id="task-page-chips">
         <!-- Rendered chips -->
@@ -885,9 +985,238 @@ function renderChipsList(taskType, task, activePage) {
     btn.addEventListener('click', () => {
       const pageNum = parseInt(btn.dataset.page, 10);
       sessionStorage.setItem('selected_page_' + taskType, pageNum);
+      sessionStorage.setItem('view_completed_' + taskType, '1');
       renderTaskPage(taskType);
     });
   });
+}
+
+function renderTikrarStage(task) {
+  const container = document.getElementById('task-content');
+  if (!container) return;
+
+  const activePage = task.start_page;
+  const reps = Math.max(0, Math.min(10, parseInt(task.repetition_count, 10) || 0));
+  const targetReps = parseInt(task.target_repetitions, 10) || 10;
+  const isAllDone = task.is_completed || reps >= targetReps;
+  const percent = Math.min(100, Math.round((reps / targetReps) * 100));
+  const mistakeCount = sharedState.badges[activePage] || 0;
+
+  const taskTitle = (window.I18N && I18N.lang === 'en' && task.title_en) ? task.title_en : (task.title_ar || 'تكرار حفظ الأمس');
+  const pageTitle = window.I18N ? I18N.t('stage_page_label', { page: activePage }) : `📖 صفحة ${activePage}`;
+  const stageMeta = window.I18N ? I18N.t('stage_meta_tikrar') : 'تكرار صفحة الأمس (10 مرات متتالية قبل الربط)';
+
+  const doneBadge = isAllDone
+    ? (window.I18N ? I18N.t('tikrar_done_badge') : '✓ أتممت تكرار صفحة الأمس (10 مرات) وانضمت للربط')
+    : (window.I18N ? I18N.t('repetition_count_pill', { count: reps, target: targetReps }) : `${reps} / ${targetReps} تكرارات`);
+
+  const progressLbl = window.I18N ? I18N.t('daily_recitation_progress') : 'تقدم التلاوة والتكرار';
+  const rangeHint = window.I18N ? I18N.t('task_tikrar_sub') : 'تكرار صفحة الأمس 10 مرات قبل انتقالها للربط';
+
+  const repTitle = window.I18N ? I18N.t('repetition_count_label', { count: reps, target: targetReps }) : `عدد التكرارات المنجزة: ${reps} من ${targetReps}`;
+  const btnAddText = window.I18N ? I18N.t('btn_add_repetition') : 'تلاوة مرة واحدة (+1)';
+  const btnAllText = window.I18N ? I18N.t('btn_complete_all_repetitions') : 'إتمام التكرار بالكامل (10/10)';
+  const btnUndoText = window.I18N ? I18N.t('btn_undo_repetition') : 'تراجع عن تكرار (-1)';
+  const btnRabtText = window.I18N ? I18N.t('btn_go_to_rabt') : 'الانتقال إلى ورد الربط ←';
+
+  const mushafBtnText = window.I18N ? I18N.t('btn_view_mushaf') : '📖 تصفح المصحف';
+  const mistakeBtnText = window.I18N ? I18N.t('btn_open_mistake') : '🔴 سجل خطأ';
+  const kbdHintText = window.I18N ? I18N.t('kbd_hints') : '<span>مفاتيح سريعة:</span> <kbd>Enter</kbd> أو <kbd>Space</kbd> للتلاوة (+1) | <kbd>U</kbd> للتراجع | <kbd>M</kbd> لتسجيل خطأ';
+
+  let beadsHtml = '';
+  for (let i = 1; i <= targetReps; i++) {
+    const isDone = i <= reps;
+    beadsHtml += `<div class="repetition-bead ${isDone ? 'done' : ''}" data-rep="${i}">${isDone ? '✓' : i}</div>`;
+  }
+
+  const html = `
+    <div class="task-page-head">
+      <div class="task-page-title-row">
+        <div>
+          <h2>${taskTitle}</h2>
+          <p class="hint">${rangeHint}</p>
+        </div>
+        <div class="task-page-badge ${isAllDone ? 'green' : 'amber'}">
+          ${doneBadge}
+        </div>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-header">
+          <span>${progressLbl}</span>
+          <span>${percent}%</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill fill-amber" style="width: ${percent}%;"></div>
+        </div>
+      </div>
+    </div>
+
+    const verseSummary = formatPageVerseSummary(activePage, window.I18N && I18N.lang === 'en');
+
+    <div class="recitation-stage" id="recitation-stage">
+      <div class="stage-top">
+        <div class="stage-page-title">
+          <span>${pageTitle}</span>
+          <span class="task-status ${isAllDone ? 'done' : ''}">
+            ${isAllDone ? (window.I18N ? I18N.t('stage_page_recited') : '✓ تمت تلاوتها وانضمت للربط') : `${reps} / ${targetReps}`}
+          </span>
+        </div>
+        ${verseSummary ? `<div class="stage-page-verses">${verseSummary}</div>` : ''}
+        <div class="stage-meta">
+          ${stageMeta}
+        </div>
+      </div>
+
+      ${mistakeCount > 0 ? `
+        <div class="stage-warning">
+          <span>${window.I18N ? I18N.t('stage_warning_mistakes', { count: mistakeCount }) : `⚠ لديك <strong>${mistakeCount}</strong> أخطاء سابقة مسجلة على هذه الصفحة. ركز عليها أثناء التكرار!`}</span>
+        </div>
+      ` : ''}
+
+      <div class="repetition-tracker">
+        <div class="repetition-head">
+          <span class="repetition-title">${repTitle}</span>
+          <span class="repetition-counter-badge">${reps} / ${targetReps}</span>
+        </div>
+        <div class="repetition-beads" id="repetition-beads">
+          ${beadsHtml}
+        </div>
+      </div>
+
+      <div class="stage-actions" style="margin-top: 1.25rem;">
+        ${!isAllDone ? `
+          <button type="button" id="btn-add-rep" class="btn btn-repetition-primary">
+            ${btnAddText}
+          </button>
+          <button type="button" id="btn-complete-all-rep" class="btn btn-ghost" style="font-size:0.85rem;">
+            ${btnAllText}
+          </button>
+        ` : `
+          <a href="rabt.html" class="btn btn-success">
+            ${btnRabtText}
+          </a>
+        `}
+
+        ${reps > 0 ? `
+          <button type="button" id="btn-undo-rep" class="btn btn-warning-outline" title="${btnUndoText}">
+            ${btnUndoText}
+          </button>
+        ` : ''}
+
+        <button type="button" id="btn-view-mushaf" class="btn-mushaf-view" title="${mushafBtnText}">
+          ${mushafBtnText}
+        </button>
+
+        <button type="button" id="btn-open-mistake" class="btn btn-danger">
+          ${mistakeBtnText}
+        </button>
+      </div>
+
+      <div class="kbd-hint">
+        ${kbdHintText}
+      </div>
+    </div>
+  `;
+
+  container.innerHTML = html;
+
+  // Event handlers
+  const addBtn = document.getElementById('btn-add-rep');
+  if (addBtn) {
+    addBtn.addEventListener('click', async () => {
+      addBtn.disabled = true;
+      try {
+        const res = await API.call('tasks/update_progress.php', {
+          method: 'POST',
+          body: { task_type: 'TIKRAR_AMS', completed_page: activePage },
+          redirectOn401: true,
+        });
+
+        if (res.task && (res.task.is_completed || res.task.repetition_count >= targetReps)) {
+          if (window.AudioEngine && typeof AudioEngine.playCelebration === 'function') {
+            AudioEngine.playCelebration();
+          }
+          showToast(window.I18N ? I18N.t('tikrar_celebration_toast') : 'ما شاء الله! أتممت تكرار صفحة الأمس 10 مرات، وانضمت الآن إلى نطاق الربط مباركاً 🎉');
+        } else {
+          if (window.AudioEngine && typeof AudioEngine.playSuccess === 'function') {
+            AudioEngine.playSuccess();
+          }
+          const currentRep = res.task ? res.task.repetition_count : (reps + 1);
+          showToast(window.I18N ? I18N.t('tikrar_page_recited_toast', { count: currentRep, page: activePage }) : `أحسنت! سُجل التكرار رقم ${currentRep} لصفحة ${activePage} 👏`);
+        }
+
+        await loadSharedData();
+        renderTaskPage('TIKRAR_AMS');
+      } catch (err) {
+        showToast(err.message, true);
+        addBtn.disabled = false;
+      }
+    });
+  }
+
+  const allBtn = document.getElementById('btn-complete-all-rep');
+  if (allBtn) {
+    allBtn.addEventListener('click', async () => {
+      allBtn.disabled = true;
+      try {
+        await API.call('tasks/update_progress.php', {
+          method: 'POST',
+          body: { task_type: 'TIKRAR_AMS', completed_page: activePage, repetition_count: 10 },
+          redirectOn401: true,
+        });
+
+        if (window.AudioEngine && typeof AudioEngine.playCelebration === 'function') {
+          AudioEngine.playCelebration();
+        }
+        showToast(window.I18N ? I18N.t('tikrar_celebration_toast') : 'ما شاء الله! أتممت تكرار صفحة الأمس 10 مرات، وانضمت الآن إلى نطاق الربط مباركاً 🎉');
+
+        await loadSharedData();
+        renderTaskPage('TIKRAR_AMS');
+      } catch (err) {
+        showToast(err.message, true);
+        allBtn.disabled = false;
+      }
+    });
+  }
+
+  const undoBtn = document.getElementById('btn-undo-rep');
+  if (undoBtn) {
+    undoBtn.addEventListener('click', async () => {
+      undoBtn.disabled = true;
+      try {
+        await API.call('tasks/undo_progress.php', {
+          method: 'POST',
+          body: { task_type: 'TIKRAR_AMS', page: activePage, completed_page: activePage },
+          redirectOn401: true,
+        });
+
+        if (window.AudioEngine && typeof AudioEngine.playUndo === 'function') {
+          AudioEngine.playUndo();
+        }
+        showToast(window.I18N ? I18N.t('tikrar_page_undone_toast', { page: activePage }) : `تم التراجع عن التكرار لصفحة ${activePage}`);
+
+        await loadSharedData();
+        renderTaskPage('TIKRAR_AMS');
+      } catch (err) {
+        showToast(err.message, true);
+        undoBtn.disabled = false;
+      }
+    });
+  }
+
+  const mushafBtn = document.getElementById('btn-view-mushaf');
+  if (mushafBtn) {
+    mushafBtn.addEventListener('click', () => {
+      openMushafModal(activePage);
+    });
+  }
+
+  const mistakeBtn = document.getElementById('btn-open-mistake');
+  if (mistakeBtn) {
+    mistakeBtn.addEventListener('click', () => {
+      openMistakeModal(activePage);
+    });
+  }
 }
 
 function renderActivePageStage(taskType, task, activePage) {
@@ -897,73 +1226,170 @@ function renderActivePageStage(taskType, task, activePage) {
   const completedList = task.completed_pages || [];
   const isPageDone = completedList.includes(activePage);
   const mistakeCount = sharedState.badges[activePage] || 0;
+  const taskTitle = (window.I18N && I18N.lang === 'en' && task.title_en) ? task.title_en : (task.title_ar || '');
+
+  const pageTitle = window.I18N ? I18N.t('stage_page_label', { page: activePage }) : `📖 صفحة ${activePage}`;
+  const statusPill = isPageDone
+    ? `<span class="task-status done">${window.I18N ? I18N.t('stage_page_recited') : '✓ تمت تلاوتها'}</span>`
+    : `<span class="task-status">${window.I18N ? I18N.t('stage_page_pending') : 'بانتظار التلاوة'}</span>`;
+  const stageMeta = taskType === 'HIFZ_JADID'
+    ? (window.I18N ? I18N.t('stage_meta_hifz') : 'الحفظ الجديد (صفحة اليوم)')
+    : (window.I18N ? I18N.t('stage_meta_range', { task: taskTitle }) : ('صفحة داخل نطاق ' + taskTitle));
+
+  const completeBtnText = isPageDone
+    ? (window.I18N ? I18N.t('btn_complete_page_reconfirm') : '✓ تم إتمام هذه الصفحة (إعادة التأكيد)')
+    : (window.I18N ? I18N.t('btn_complete_page_init') : '✓ تمت تلاوة الصفحة (إتمام)');
+
+  const undoBtnText = window.I18N ? I18N.t('btn_undo_page') : '↩ التراجع عن إتمام الصفحة';
+  const undoBtnTitle = window.I18N ? I18N.t('btn_undo_page_title') : 'إلغاء وسم هذه الصفحة كمنجزة وإعادتها كصفحة غير متلوة';
+
+  const mushafBtnText = window.I18N ? I18N.t('btn_view_mushaf') : '📖 تصفح المصحف';
+  const mistakeBtnText = window.I18N ? I18N.t('btn_open_mistake') : '🔴 سجل خطأ';
+  const prevBtnText = window.I18N ? I18N.t('btn_prev_page', { page: activePage - 1 }) : `السابقة (${activePage - 1})`;
+  const nextBtnText = window.I18N ? I18N.t('btn_next_page', { page: activePage + 1 }) : `التالية (${activePage + 1})`;
+  const kbdHintText = window.I18N ? I18N.t('kbd_hints') : '<span>مفاتيح سريعة:</span> <kbd>→</kbd> <kbd>←</kbd> للتنقل | <kbd>Enter</kbd> للإتمام | <kbd>U</kbd> للتراجع | <kbd>M</kbd> لتسجيل خطأ';
 
   stage.innerHTML = `
+    const verseSummary = formatPageVerseSummary(activePage, window.I18N && I18N.lang === 'en');
+
     <div class="stage-top">
       <div class="stage-page-title">
-        <span>📖 صفحة ${activePage}</span>
-        ${isPageDone ? '<span class="task-status done">✓ تمت تلاوتها</span>' : '<span class="task-status">بانتظار التلاوة</span>'}
+        <span>${pageTitle}</span>
+        ${statusPill}
       </div>
+      ${verseSummary ? `<div class="stage-page-verses">${verseSummary}</div>` : ''}
       <div class="stage-meta">
-        ${taskType === 'HIFZ_JADID' ? 'الحفظ الجديد (صفحة اليوم)' : 'صفحة داخل نطاق ' + task.title_ar}
+        ${stageMeta}
       </div>
     </div>
 
     ${mistakeCount > 0 ? `
       <div class="stage-warning">
-        <span>⚠ لديك <strong>${mistakeCount}</strong> أخطاء سابقة مسجلة على هذه الصفحة. ركز عليها أثناء التلاوة!</span>
+        <span>${window.I18N ? I18N.t('stage_warning_mistakes', { count: mistakeCount }) : `⚠ لديك <strong>${mistakeCount}</strong> أخطاء سابقة مسجلة على هذه الصفحة. ركز عليها أثناء التلاوة!`}</span>
       </div>
     ` : ''}
 
     <div class="stage-actions">
-      <button type="button" id="btn-complete-page" class="btn ${isPageDone ? 'btn-ghost' : 'btn-success'}">
-        ${isPageDone ? '✓ تم إتمام هذه الصفحة (إعادة التأكيد)' : '✓ تمت تلاوة الصفحة (إتمام)'}
-      </button>
+      ${!isPageDone ? `
+        <button type="button" id="btn-complete-page" class="btn btn-success">
+          ${completeBtnText}
+        </button>
+      ` : `
+        <button type="button" id="btn-undo-page" class="btn btn-warning-outline" title="${undoBtnTitle}">
+          ${undoBtnText}
+        </button>
+        <button type="button" id="btn-complete-page" class="btn btn-ghost" style="font-size:0.85rem;" title="${completeBtnText}">
+          ${completeBtnText}
+        </button>
+      `}
 
-      <button type="button" id="btn-view-mushaf" class="btn-mushaf-view" title="عرض الصفحة من مصحف المدينة">
-        📖 تصفح المصحف
+      <button type="button" id="btn-view-mushaf" class="btn-mushaf-view" title="${mushafBtnText}">
+        ${mushafBtnText}
       </button>
 
       <button type="button" id="btn-open-mistake" class="btn btn-danger">
-        🔴 سجل خطأ
+        ${mistakeBtnText}
       </button>
 
-      <div style="margin-right:auto; display:flex; gap:0.5rem">
-        ${activePage > task.start_page ? `<button type="button" id="btn-prev-page" class="btn btn-ghost">السابقة (${activePage - 1})</button>` : ''}
-        ${activePage < task.end_page ? `<button type="button" id="btn-next-page" class="btn btn-ghost">التالية (${activePage + 1})</button>` : ''}
+      <div class="stage-nav-group" style="margin-right:auto; display:flex; gap:0.5rem">
+        ${activePage > task.start_page ? `<button type="button" id="btn-prev-page" class="btn btn-ghost">${prevBtnText}</button>` : ''}
+        ${activePage < task.end_page ? `<button type="button" id="btn-next-page" class="btn btn-ghost">${nextBtnText}</button>` : ''}
       </div>
     </div>
     <div class="kbd-hint">
-      <span>مفاتيح سريعة:</span> <kbd>→</kbd> <kbd>←</kbd> للتنقل بين الصفحات | <kbd>Enter</kbd> للإتمام | <kbd>M</kbd> لتسجيل خطأ
+      ${kbdHintText}
     </div>
   `;
 
   // Action listeners
   const completeBtn = document.getElementById('btn-complete-page');
-  completeBtn.addEventListener('click', async () => {
-    completeBtn.disabled = true;
-    try {
-      const res = await API.call('tasks/update_progress.php', {
-        method: 'POST',
-        body: { task_type: taskType, completed_page: activePage },
-        redirectOn401: true,
-      });
+  if (completeBtn) {
+    completeBtn.addEventListener('click', async () => {
+      completeBtn.disabled = true;
+      try {
+        const res = await API.call('tasks/update_progress.php', {
+          method: 'POST',
+          body: { task_type: taskType, completed_page: activePage },
+          redirectOn401: true,
+        });
 
-      if (res.task && res.task.is_completed) {
-        AudioEngine.playCelebration();
-        showToast(`🎉 مبارك! تم إنجاز جميع صفحات ${task.title_ar} لليوم!`);
-      } else {
-        AudioEngine.playSuccess();
-        showToast(`تم تسجيل إتمام صفحة ${activePage} بنجاح ✓`);
+        if (res.task && res.task.is_completed) {
+          AudioEngine.playCelebration();
+          showToast(window.I18N ? I18N.t('task_celebration_toast', { title: taskTitle }) : `🎉 مبارك! تم إنجاز جميع صفحات ${taskTitle} لليوم!`);
+        } else {
+          AudioEngine.playSuccess();
+          showToast(window.I18N ? I18N.t('page_completed_toast', { page: activePage }) : `تم تسجيل إتمام صفحة ${activePage} بنجاح ✓`);
+        }
+
+        await loadSharedData();
+
+        // Calculate next uncompleted page to display automatically
+        const updatedTask = sharedState.tasks.find((t) => t.task_type === taskType) || task;
+        const updatedCompleted = (updatedTask.completed_pages || []).slice();
+        if (!updatedCompleted.includes(activePage)) {
+          updatedCompleted.push(activePage);
+        }
+
+        let nextCandidate = null;
+        // 1. Search forward after activePage
+        for (let p = activePage + 1; p <= updatedTask.end_page; p++) {
+          if (!updatedCompleted.includes(p)) {
+            nextCandidate = p;
+            break;
+          }
+        }
+        // 2. Wrap around to search earlier pages in task range
+        if (nextCandidate === null) {
+          for (let p = updatedTask.start_page; p < activePage; p++) {
+            if (!updatedCompleted.includes(p)) {
+              nextCandidate = p;
+              break;
+            }
+          }
+        }
+        // 3. Fallback if all pages are done
+        if (nextCandidate === null) {
+          nextCandidate = Math.min(updatedTask.end_page, activePage + 1);
+        }
+
+        sessionStorage.setItem('selected_page_' + taskType, nextCandidate);
+        sessionStorage.removeItem('view_completed_' + taskType);
+        renderTaskPage(taskType);
+      } catch (err) {
+        showToast(err.message, true);
+        completeBtn.disabled = false;
       }
+    });
+  }
 
-      await loadSharedData();
-      renderTaskPage(taskType);
-    } catch (err) {
-      showToast(err.message, true);
-      completeBtn.disabled = false;
-    }
-  });
+  const undoBtn = document.getElementById('btn-undo-page');
+  if (undoBtn) {
+    undoBtn.addEventListener('click', async () => {
+      undoBtn.disabled = true;
+      undoBtn.textContent = window.I18N ? I18N.t('undo_in_progress') : 'جاري التراجع…';
+      try {
+        await API.call('tasks/undo_progress.php', {
+          method: 'POST',
+          body: { task_type: taskType, page: activePage, completed_page: activePage },
+          redirectOn401: true,
+        });
+
+        if (window.AudioEngine && typeof AudioEngine.playUndo === 'function') {
+          AudioEngine.playUndo();
+        }
+        showToast(window.I18N ? I18N.t('page_undone_toast', { page: activePage }) : `تم التراجع عن إتمام صفحة ${activePage} بنجاح ↩`);
+
+        sessionStorage.setItem('selected_page_' + taskType, activePage);
+        sessionStorage.removeItem('view_completed_' + taskType);
+        await loadSharedData();
+        renderTaskPage(taskType);
+      } catch (err) {
+        showToast(err.message, true);
+        undoBtn.disabled = false;
+        undoBtn.textContent = undoBtnText;
+      }
+    });
+  }
 
   const mushafBtn = document.getElementById('btn-view-mushaf');
   if (mushafBtn) {
@@ -981,6 +1407,7 @@ function renderActivePageStage(taskType, task, activePage) {
   if (prevBtn) {
     prevBtn.addEventListener('click', () => {
       sessionStorage.setItem('selected_page_' + taskType, activePage - 1);
+      sessionStorage.setItem('view_completed_' + taskType, '1');
       renderTaskPage(taskType);
     });
   }
@@ -989,6 +1416,7 @@ function renderActivePageStage(taskType, task, activePage) {
   if (nextBtn) {
     nextBtn.addEventListener('click', () => {
       sessionStorage.setItem('selected_page_' + taskType, activePage + 1);
+      sessionStorage.setItem('view_completed_' + taskType, '1');
       renderTaskPage(taskType);
     });
   }
@@ -1116,35 +1544,221 @@ const SURAHS_LIST = [
   { id: 114, name: "الناس", ayahs: 6 },
 ];
 
+// Precomputed 604-page verse ranges for Madinah Mushaf (0 errors, 6236 ayahs)
+const MADINAH_PAGE_VERSES = [[[1,1,7]],[[2,1,5]],[[2,6,16]],[[2,17,24]],[[2,25,29]],[[2,30,37]],[[2,38,48]],[[2,49,57]],[[2,58,61]],[[2,62,69]],[[2,70,76]],[[2,77,83]],[[2,84,88]],[[2,89,93]],[[2,94,101]],[[2,102,105]],[[2,106,112]],[[2,113,119]],[[2,120,126]],[[2,127,134]],[[2,135,141]],[[2,142,145]],[[2,146,153]],[[2,154,163]],[[2,164,169]],[[2,170,176]],[[2,177,181]],[[2,182,186]],[[2,187,190]],[[2,191,196]],[[2,197,202]],[[2,203,210]],[[2,211,215]],[[2,216,219]],[[2,220,224]],[[2,225,230]],[[2,231,233]],[[2,234,237]],[[2,238,245]],[[2,246,248]],[[2,249,252]],[[2,253,256]],[[2,257,259]],[[2,260,264]],[[2,265,269]],[[2,270,274]],[[2,275,281]],[[2,282,282]],[[2,283,286]],[[3,1,9]],[[3,10,15]],[[3,16,22]],[[3,23,29]],[[3,30,37]],[[3,38,45]],[[3,46,52]],[[3,53,61]],[[3,62,70]],[[3,71,77]],[[3,78,83]],[[3,84,91]],[[3,92,100]],[[3,101,108]],[[3,109,115]],[[3,116,121]],[[3,122,132]],[[3,133,140]],[[3,141,148]],[[3,149,153]],[[3,154,157]],[[3,158,165]],[[3,166,173]],[[3,174,180]],[[3,181,186]],[[3,187,194]],[[3,195,200]],[[4,1,6]],[[4,7,11]],[[4,12,14]],[[4,15,19]],[[4,20,23]],[[4,24,26]],[[4,27,33]],[[4,34,37]],[[4,38,44]],[[4,45,51]],[[4,52,59]],[[4,60,65]],[[4,66,74]],[[4,75,79]],[[4,80,86]],[[4,87,91]],[[4,92,94]],[[4,95,101]],[[4,102,105]],[[4,106,113]],[[4,114,121]],[[4,122,127]],[[4,128,134]],[[4,135,140]],[[4,141,147]],[[4,148,154]],[[4,155,162]],[[4,163,170]],[[4,171,175]],[[4,176,176],[5,1,2]],[[5,3,5]],[[5,6,9]],[[5,10,13]],[[5,14,17]],[[5,18,23]],[[5,24,31]],[[5,32,36]],[[5,37,41]],[[5,42,45]],[[5,46,50]],[[5,51,57]],[[5,58,64]],[[5,65,70]],[[5,71,76]],[[5,77,82]],[[5,83,89]],[[5,90,95]],[[5,96,103]],[[5,104,108]],[[5,109,113]],[[5,114,120]],[[6,1,8]],[[6,9,18]],[[6,19,27]],[[6,28,35]],[[6,36,44]],[[6,45,52]],[[6,53,59]],[[6,60,68]],[[6,69,73]],[[6,74,81]],[[6,82,90]],[[6,91,94]],[[6,95,101]],[[6,102,110]],[[6,111,118]],[[6,119,124]],[[6,125,131]],[[6,132,137]],[[6,138,142]],[[6,143,146]],[[6,147,151]],[[6,152,157]],[[6,158,165]],[[7,1,11]],[[7,12,22]],[[7,23,30]],[[7,31,37]],[[7,38,43]],[[7,44,51]],[[7,52,57]],[[7,58,67]],[[7,68,73]],[[7,74,81]],[[7,82,87]],[[7,88,95]],[[7,96,104]],[[7,105,120]],[[7,121,130]],[[7,131,137]],[[7,138,143]],[[7,144,149]],[[7,150,155]],[[7,156,159]],[[7,160,163]],[[7,164,170]],[[7,171,178]],[[7,179,187]],[[7,188,195]],[[7,196,206]],[[8,1,8]],[[8,9,16]],[[8,17,25]],[[8,26,33]],[[8,34,40]],[[8,41,45]],[[8,46,52]],[[8,53,61]],[[8,62,69]],[[8,70,75]],[[9,1,6]],[[9,7,13]],[[9,14,20]],[[9,21,26]],[[9,27,31]],[[9,32,36]],[[9,37,40]],[[9,41,47]],[[9,48,54]],[[9,55,61]],[[9,62,68]],[[9,69,72]],[[9,73,79]],[[9,80,86]],[[9,87,93]],[[9,94,99]],[[9,100,106]],[[9,107,111]],[[9,112,117]],[[9,118,122]],[[9,123,129]],[[10,1,6]],[[10,7,14]],[[10,15,20]],[[10,21,25]],[[10,26,33]],[[10,34,42]],[[10,43,53]],[[10,54,61]],[[10,62,70]],[[10,71,78]],[[10,79,88]],[[10,89,97]],[[10,98,106]],[[10,107,109],[11,1,5]],[[11,6,12]],[[11,13,19]],[[11,20,28]],[[11,29,37]],[[11,38,45]],[[11,46,53]],[[11,54,62]],[[11,63,71]],[[11,72,81]],[[11,82,88]],[[11,89,97]],[[11,98,108]],[[11,109,117]],[[11,118,123],[12,1,4]],[[12,5,14]],[[12,15,22]],[[12,23,30]],[[12,31,37]],[[12,38,43]],[[12,44,52]],[[12,53,63]],[[12,64,69]],[[12,70,78]],[[12,79,86]],[[12,87,95]],[[12,96,103]],[[12,104,111]],[[13,1,5]],[[13,6,13]],[[13,14,18]],[[13,19,28]],[[13,29,34]],[[13,35,42]],[[13,43,43],[14,1,5]],[[14,6,10]],[[14,11,18]],[[14,19,24]],[[14,25,33]],[[14,34,42]],[[14,43,52]],[[15,1,15]],[[15,16,31]],[[15,32,51]],[[15,52,70]],[[15,71,90]],[[15,91,99],[16,1,6]],[[16,7,14]],[[16,15,26]],[[16,27,34]],[[16,35,42]],[[16,43,54]],[[16,55,64]],[[16,65,72]],[[16,73,79]],[[16,80,87]],[[16,88,93]],[[16,94,102]],[[16,103,110]],[[16,111,118]],[[16,119,128]],[[17,1,7]],[[17,8,17]],[[17,18,27]],[[17,28,38]],[[17,39,49]],[[17,50,58]],[[17,59,66]],[[17,67,75]],[[17,76,86]],[[17,87,96]],[[17,97,104]],[[17,105,111],[18,1,4]],[[18,5,15]],[[18,16,20]],[[18,21,27]],[[18,28,34]],[[18,35,45]],[[18,46,53]],[[18,54,61]],[[18,62,74]],[[18,75,83]],[[18,84,97]],[[18,98,110]],[[19,1,11]],[[19,12,25]],[[19,26,38]],[[19,39,51]],[[19,52,64]],[[19,65,76]],[[19,77,95]],[[19,96,98],[20,1,12]],[[20,13,37]],[[20,38,51]],[[20,52,64]],[[20,65,76]],[[20,77,87]],[[20,88,98]],[[20,99,113]],[[20,114,125]],[[20,126,135]],[[21,1,10]],[[21,11,24]],[[21,25,35]],[[21,36,44]],[[21,45,57]],[[21,58,72]],[[21,73,81]],[[21,82,90]],[[21,91,101]],[[21,102,112]],[[22,1,5]],[[22,6,15]],[[22,16,23]],[[22,24,30]],[[22,31,38]],[[22,39,46]],[[22,47,55]],[[22,56,64]],[[22,65,72]],[[22,73,78]],[[23,1,17]],[[23,18,27]],[[23,28,42]],[[23,43,59]],[[23,60,74]],[[23,75,89]],[[23,90,104]],[[23,105,118]],[[24,1,10]],[[24,11,20]],[[24,21,27]],[[24,28,31]],[[24,32,36]],[[24,37,43]],[[24,44,53]],[[24,54,58]],[[24,59,61]],[[24,62,64],[25,1,2]],[[25,3,11]],[[25,12,20]],[[25,21,32]],[[25,33,43]],[[25,44,55]],[[25,56,67]],[[25,68,77]],[[26,1,19]],[[26,20,39]],[[26,40,60]],[[26,61,83]],[[26,84,111]],[[26,112,136]],[[26,137,159]],[[26,160,183]],[[26,184,206]],[[26,207,227]],[[27,1,13]],[[27,14,22]],[[27,23,35]],[[27,36,44]],[[27,45,55]],[[27,56,63]],[[27,64,76]],[[27,77,88]],[[27,89,93],[28,1,5]],[[28,6,13]],[[28,14,21]],[[28,22,28]],[[28,29,35]],[[28,36,43]],[[28,44,50]],[[28,51,59]],[[28,60,70]],[[28,71,77]],[[28,78,84]],[[28,85,88],[29,1,6]],[[29,7,14]],[[29,15,23]],[[29,24,30]],[[29,31,38]],[[29,39,45]],[[29,46,52]],[[29,53,63]],[[29,64,69],[30,1,5]],[[30,6,15]],[[30,16,24]],[[30,25,32]],[[30,33,41]],[[30,42,50]],[[30,51,60]],[[31,1,11]],[[31,12,19]],[[31,20,28]],[[31,29,34]],[[32,1,11]],[[32,12,20]],[[32,21,30]],[[33,1,6]],[[33,7,15]],[[33,16,22]],[[33,23,30]],[[33,31,35]],[[33,36,43]],[[33,44,50]],[[33,51,54]],[[33,55,62]],[[33,63,73]],[[34,1,7]],[[34,8,14]],[[34,15,22]],[[34,23,31]],[[34,32,39]],[[34,40,48]],[[34,49,54],[35,1,3]],[[35,4,11]],[[35,12,18]],[[35,19,30]],[[35,31,38]],[[35,39,44]],[[35,45,45],[36,1,12]],[[36,13,27]],[[36,28,40]],[[36,41,54]],[[36,55,70]],[[36,71,83]],[[37,1,24]],[[37,25,51]],[[37,52,76]],[[37,77,102]],[[37,103,126]],[[37,127,153]],[[37,154,182]],[[38,1,16]],[[38,17,26]],[[38,27,42]],[[38,43,61]],[[38,62,83]],[[38,84,88],[39,1,5]],[[39,6,10]],[[39,11,21]],[[39,22,31]],[[39,32,40]],[[39,41,47]],[[39,48,56]],[[39,57,67]],[[39,68,74]],[[39,75,75],[40,1,7]],[[40,8,16]],[[40,17,25]],[[40,26,33]],[[40,34,40]],[[40,41,49]],[[40,50,58]],[[40,59,66]],[[40,67,77]],[[40,78,85]],[[41,1,11]],[[41,12,20]],[[41,21,29]],[[41,30,38]],[[41,39,46]],[[41,47,54]],[[42,1,10]],[[42,11,15]],[[42,16,22]],[[42,23,31]],[[42,32,44]],[[42,45,51]],[[42,52,53],[43,1,10]],[[43,11,22]],[[43,23,33]],[[43,34,47]],[[43,48,60]],[[43,61,73]],[[43,74,89]],[[44,1,18]],[[44,19,39]],[[44,40,59]],[[45,1,13]],[[45,14,22]],[[45,23,32]],[[45,33,37],[46,1,5]],[[46,6,14]],[[46,15,20]],[[46,21,28]],[[46,29,35]],[[47,1,11]],[[47,12,19]],[[47,20,29]],[[47,30,38]],[[48,1,9]],[[48,10,15]],[[48,16,23]],[[48,24,28]],[[48,29,29],[49,1,4]],[[49,5,11]],[[49,12,18]],[[50,1,15]],[[50,16,35]],[[50,36,45],[51,1,6]],[[51,7,30]],[[51,31,51]],[[51,52,60],[52,1,14]],[[52,15,31]],[[52,32,49]],[[53,1,26]],[[53,27,44]],[[53,45,62],[54,1,6]],[[54,7,27]],[[54,28,49]],[[54,50,55],[55,1,16]],[[55,17,40]],[[55,41,67]],[[55,68,78],[56,1,16]],[[56,17,50]],[[56,51,76]],[[56,77,96],[57,1,3]],[[57,4,11]],[[57,12,18]],[[57,19,24]],[[57,25,29]],[[58,1,6]],[[58,7,11]],[[58,12,21]],[[58,22,22],[59,1,3]],[[59,4,9]],[[59,10,16]],[[59,17,24]],[[60,1,5]],[[60,6,11]],[[60,12,13],[61,1,5]],[[61,6,14]],[[62,1,8]],[[62,9,11],[63,1,4]],[[63,5,11]],[[64,1,9]],[[64,10,18]],[[65,1,5]],[[65,6,12]],[[66,1,7]],[[66,8,12]],[[67,1,12]],[[67,13,26]],[[67,27,30],[68,1,15]],[[68,16,42]],[[68,43,52],[69,1,8]],[[69,9,34]],[[69,35,52],[70,1,10]],[[70,11,39]],[[70,40,44],[71,1,10]],[[71,11,28]],[[72,1,13]],[[72,14,28]],[[73,1,19]],[[73,20,20],[74,1,17]],[[74,18,47]],[[74,48,56],[75,1,19]],[[75,20,40],[76,1,5]],[[76,6,25]],[[76,26,31],[77,1,19]],[[77,20,50]],[[78,1,30]],[[78,31,40],[79,1,15]],[[79,16,46]],[[80,1,42]],[[81,1,29]],[[82,1,19],[83,1,6]],[[83,7,34]],[[83,35,36],[84,1,25]],[[85,1,22]],[[86,1,17],[87,1,15]],[[87,16,19],[88,1,26]],[[89,1,23]],[[89,24,30],[90,1,20]],[[91,1,15],[92,1,14]],[[92,15,21],[93,1,11],[94,1,8]],[[95,1,8],[96,1,19]],[[97,1,5],[98,1,7]],[[98,8,8],[99,1,8],[100,1,9]],[[100,10,11],[101,1,11],[102,1,8]],[[103,1,3],[104,1,9],[105,1,5]],[[106,1,4],[107,1,7],[108,1,3]],[[109,1,6],[110,1,3],[111,1,5]],[[112,1,4],[113,1,5],[114,1,6]]];
+
+function getPageVerseSections(pageNumber) {
+  if (!pageNumber || pageNumber < 1 || pageNumber > 604) return [];
+  const raw = MADINAH_PAGE_VERSES[pageNumber - 1];
+  if (!raw) return [];
+  const list = window.SURAHS_DATA || SURAHS_LIST;
+  return raw.map(([sId, fromA, toA]) => {
+    const sData = list.find((s) => s.id === sId) || {};
+    return {
+      surahId: sId,
+      fromAyah: fromA,
+      toAyah: toA,
+      surahNameAr: sData.name_ar || sData.name || '',
+      surahNameEn: window.I18N ? window.I18N.getSurahName(sId) : (sData.name_en || sData.name || ''),
+      totalAyahs: sData.ayahs || 0,
+    };
+  });
+}
+
+function formatPageVerseSummary(pageNumber, isEnglish = false) {
+  const sections = getPageVerseSections(pageNumber);
+  if (!sections || sections.length === 0) return '';
+  return sections.map((sec) => {
+    const sName = isEnglish ? sec.surahNameEn : sec.surahNameAr;
+    const prefix = isEnglish ? `Surah ${sName}` : `سورة ${sName}`;
+    const range = (sec.fromAyah === sec.toAyah)
+      ? (isEnglish ? `v. ${sec.fromAyah}` : `الآية ${sec.fromAyah}`)
+      : (isEnglish ? `vv. ${sec.fromAyah}–${sec.toAyah}` : `الآيات ${sec.fromAyah}–${sec.toAyah}`);
+    return `${prefix} (${range})`;
+  }).join(isEnglish ? ' • ' : '، ');
+}
+
+let modalShowAllAyahs = false;
+
+function populateSurahOptions(pageNumber) {
+  const surahSelect = document.getElementById('mistake-surah');
+  if (!surahSelect) return;
+  const currentVal = parseInt(surahSelect.value, 10);
+  surahSelect.innerHTML = `<option value="">${window.I18N ? window.I18N.t('mistake_surah_placeholder') : '— اختر السورة —'}</option>`;
+  const list = window.SURAHS_DATA || SURAHS_LIST;
+
+  const sections = pageNumber ? getPageVerseSections(pageNumber) : [];
+  const pageSurahIds = sections.map((s) => s.surahId);
+
+  if (pageSurahIds.length > 0) {
+    const pageGroup = document.createElement('optgroup');
+    pageGroup.label = window.I18N ? window.I18N.t('optgroup_page_surahs') : 'سور هذه الصفحة';
+    pageSurahIds.forEach((sId) => {
+      const s = list.find((item) => item.id === sId);
+      if (s) {
+        const opt = document.createElement('option');
+        opt.value = s.id;
+        const sName = window.I18N ? window.I18N.getSurahName(s.id) : (s.name_ar || s.name);
+        opt.textContent = `${s.id}. ${(window.I18N && window.I18N.lang === 'en') ? 'Surah ' + sName : 'سورة ' + sName}`;
+        pageGroup.appendChild(opt);
+      }
+    });
+    surahSelect.appendChild(pageGroup);
+
+    const otherGroup = document.createElement('optgroup');
+    otherGroup.label = window.I18N ? window.I18N.t('optgroup_all_surahs') : 'باقي سور القرآن';
+    list.forEach((s) => {
+      if (!pageSurahIds.includes(s.id)) {
+        const opt = document.createElement('option');
+        opt.value = s.id;
+        const sName = window.I18N ? window.I18N.getSurahName(s.id) : (s.name_ar || s.name);
+        opt.textContent = `${s.id}. ${(window.I18N && window.I18N.lang === 'en') ? 'Surah ' + sName : 'سورة ' + sName}`;
+        otherGroup.appendChild(opt);
+      }
+    });
+    surahSelect.appendChild(otherGroup);
+  } else {
+    list.forEach((s) => {
+      const opt = document.createElement('option');
+      opt.value = s.id;
+      const sName = window.I18N ? window.I18N.getSurahName(s.id) : (s.name_ar || s.name);
+      opt.textContent = `${s.id}. ${(window.I18N && window.I18N.lang === 'en') ? 'Surah ' + sName : 'سورة ' + sName}`;
+      surahSelect.appendChild(opt);
+    });
+  }
+
+  if (currentVal) surahSelect.value = currentVal;
+}
+
+function renderAyahOptions(sId, pageNumber, showAll = false) {
+  const ayahSelect = document.getElementById('mistake-ayah');
+  if (!ayahSelect) return;
+
+  const currentAyah = parseInt(ayahSelect.value, 10);
+  ayahSelect.innerHTML = `<option value="">${window.I18N ? I18N.t('mistake_ayah_placeholder') : '— اختر الآية —'}</option>`;
+
+  const list = window.SURAHS_DATA || SURAHS_LIST;
+  const sData = list.find((s) => s.id === sId);
+  if (!sData) return;
+
+  const sections = pageNumber ? getPageVerseSections(pageNumber) : [];
+  const matchingSection = sections.find((sec) => sec.surahId === sId);
+
+  const chipsWrap = document.getElementById('ayah-chips-wrap');
+  const chipsGroup = document.getElementById('ayah-chips-group');
+  const toggleBtn = document.getElementById('btn-toggle-all-ayahs');
+
+  let startAyah = 1;
+  let endAyah = sData.ayahs;
+  const isPageRestricted = matchingSection && !showAll;
+
+  if (isPageRestricted) {
+    startAyah = matchingSection.fromAyah;
+    endAyah = matchingSection.toAyah;
+  }
+
+  for (let i = startAyah; i <= endAyah; i++) {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = window.I18N ? I18N.t('ayah_label', { num: i }) : ('الآية ' + i);
+    ayahSelect.appendChild(opt);
+  }
+
+  if (currentAyah >= startAyah && currentAyah <= endAyah) {
+    ayahSelect.value = currentAyah;
+  }
+
+  // Render quick chips for this page's verses
+  if (matchingSection && chipsWrap && chipsGroup) {
+    chipsWrap.classList.remove('hidden');
+    let chipsHtml = '';
+    for (let i = matchingSection.fromAyah; i <= matchingSection.toAyah; i++) {
+      const isSelected = (ayahSelect.value && parseInt(ayahSelect.value, 10) === i);
+      chipsHtml += `<button type="button" class="ayah-chip ${isSelected ? 'active' : ''}" data-ayah="${i}">${i}</button>`;
+    }
+    chipsGroup.innerHTML = chipsHtml;
+
+    chipsGroup.querySelectorAll('.ayah-chip').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const val = parseInt(btn.dataset.ayah, 10);
+        ayahSelect.value = val;
+        chipsGroup.querySelectorAll('.ayah-chip').forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+  } else if (chipsWrap) {
+    chipsWrap.classList.add('hidden');
+  }
+
+  // Toggle button state
+  if (toggleBtn) {
+    if (matchingSection) {
+      toggleBtn.classList.remove('hidden');
+      if (showAll) {
+        const count = matchingSection.toAyah - matchingSection.fromAyah + 1;
+        toggleBtn.textContent = window.I18N ? I18N.t('btn_show_page_ayahs_only', { count }) : `الاقتصار على آيات الصفحة (${count} آية)`;
+      } else {
+        toggleBtn.textContent = window.I18N ? I18N.t('btn_show_all_ayahs', { total: sData.ayahs }) : `عرض جميع آيات السورة (${sData.ayahs} آية)`;
+      }
+    } else {
+      toggleBtn.classList.add('hidden');
+    }
+  }
+}
+
+function refreshMistakeModalLabels() {
+  populateSurahOptions(modalActivePage);
+  if (document.getElementById('mistake-surah')) {
+    const currentSurah = parseInt(document.getElementById('mistake-surah').value, 10);
+    if (currentSurah) {
+      renderAyahOptions(currentSurah, modalActivePage, modalShowAllAyahs);
+    }
+  }
+  document.querySelectorAll('#mistake-tags .tag-btn').forEach((btn) => {
+    if (window.I18N) btn.textContent = I18N.getMistakeLabel(btn.dataset.type);
+  });
+}
+
 function initMistakeModal() {
   const modal = document.getElementById('mistake-modal');
   if (!modal) return;
 
   const surahSelect = document.getElementById('mistake-surah');
   const ayahSelect = document.getElementById('mistake-ayah');
+  const toggleBtn = document.getElementById('btn-toggle-all-ayahs');
 
-  if (surahSelect && surahSelect.options.length <= 1) {
-    SURAHS_LIST.forEach((s) => {
-      const opt = document.createElement('option');
-      opt.value = s.id;
-      opt.textContent = `${s.id}. سورة ${s.name}`;
-      surahSelect.appendChild(opt);
-    });
+  refreshMistakeModalLabels();
+
+  if (window.I18N && !window._mistakeModalLangBound) {
+    I18N.onChange(refreshMistakeModalLabels);
+    window._mistakeModalLangBound = true;
   }
 
   if (surahSelect) {
     surahSelect.addEventListener('change', () => {
       const sId = parseInt(surahSelect.value, 10);
-      const sData = SURAHS_LIST.find((s) => s.id === sId);
-      ayahSelect.innerHTML = '<option value="">— اختر الآية —</option>';
-      if (sData) {
-        for (let i = 1; i <= sData.ayahs; i++) {
-          const opt = document.createElement('option');
-          opt.value = i;
-          opt.textContent = 'الآية ' + i;
-          ayahSelect.appendChild(opt);
-        }
+      modalShowAllAyahs = false;
+      renderAyahOptions(sId, modalActivePage, false);
+    });
+  }
+
+  if (ayahSelect) {
+    ayahSelect.addEventListener('change', () => {
+      const val = parseInt(ayahSelect.value, 10);
+      const chipsGroup = document.getElementById('ayah-chips-group');
+      if (chipsGroup) {
+        chipsGroup.querySelectorAll('.ayah-chip').forEach((b) => {
+          b.classList.toggle('active', parseInt(b.dataset.ayah, 10) === val);
+        });
       }
+    });
+  }
+
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', () => {
+      modalShowAllAyahs = !modalShowAllAyahs;
+      const sId = parseInt(surahSelect.value, 10);
+      renderAyahOptions(sId, modalActivePage, modalShowAllAyahs);
     });
   }
 
@@ -1171,7 +1785,7 @@ function initMistakeModal() {
       const notesVal = document.getElementById('mistake-note').value.trim();
 
       if (!surahVal || !ayahVal) {
-        showToast('يرجى اختيار السورة ورقم الآية أولاً', true);
+        showToast(window.I18N ? I18N.t('mistake_select_required') : 'يرجى اختيار السورة ورقم الآية أولاً', true);
         return;
       }
 
@@ -1189,7 +1803,7 @@ function initMistakeModal() {
           redirectOn401: true,
         });
 
-        showToast('تم تسجيل الخطأ بنجاح 🔴 وسيظهر في بطاقات المعالجة');
+        showToast(window.I18N ? I18N.t('mistake_logged_toast') : 'تم تسجيل الخطأ بنجاح 🔴 وسيظهر في بطاقات المعالجة');
         closeMistakeModal();
 
         // Refresh shared data and re-render current view
@@ -1209,61 +1823,42 @@ function initMistakeModal() {
   }
 }
 
-/* Standard Madinah Mushaf Surah start pages mapping (1-114) */
-const SURAH_START_PAGES = [
-  { id: 1, page: 1 }, { id: 2, page: 2 }, { id: 3, page: 50 }, { id: 4, page: 77 }, { id: 5, page: 106 },
-  { id: 6, page: 128 }, { id: 7, page: 151 }, { id: 8, page: 177 }, { id: 9, page: 187 }, { id: 10, page: 208 },
-  { id: 11, page: 221 }, { id: 12, page: 235 }, { id: 13, page: 249 }, { id: 14, page: 255 }, { id: 15, page: 262 },
-  { id: 16, page: 267 }, { id: 17, page: 282 }, { id: 18, page: 293 }, { id: 19, page: 305 }, { id: 20, page: 312 },
-  { id: 21, page: 322 }, { id: 22, page: 332 }, { id: 23, page: 342 }, { id: 24, page: 350 }, { id: 25, page: 359 },
-  { id: 26, page: 367 }, { id: 27, page: 377 }, { id: 28, page: 385 }, { id: 29, page: 396 }, { id: 30, page: 404 },
-  { id: 31, page: 411 }, { id: 32, page: 415 }, { id: 33, page: 418 }, { id: 34, page: 428 }, { id: 35, page: 434 },
-  { id: 36, page: 440 }, { id: 37, page: 446 }, { id: 38, page: 453 }, { id: 39, page: 458 }, { id: 40, page: 467 },
-  { id: 41, page: 477 }, { id: 42, page: 483 }, { id: 43, page: 489 }, { id: 44, page: 496 }, { id: 45, page: 499 },
-  { id: 46, page: 502 }, { id: 47, page: 507 }, { id: 48, page: 511 }, { id: 49, page: 515 }, { id: 50, page: 518 },
-  { id: 51, page: 520 }, { id: 52, page: 523 }, { id: 53, page: 526 }, { id: 54, page: 528 }, { id: 55, page: 531 },
-  { id: 56, page: 534 }, { id: 57, page: 537 }, { id: 58, page: 542 }, { id: 59, page: 545 }, { id: 60, page: 549 },
-  { id: 61, page: 551 }, { id: 62, page: 553 }, { id: 63, page: 554 }, { id: 64, page: 556 }, { id: 65, page: 558 },
-  { id: 66, page: 560 }, { id: 67, page: 562 }, { id: 68, page: 564 }, { id: 69, page: 566 }, { id: 70, page: 568 },
-  { id: 71, page: 570 }, { id: 72, page: 572 }, { id: 73, page: 574 }, { id: 74, page: 575 }, { id: 75, page: 577 },
-  { id: 76, page: 578 }, { id: 77, page: 580 }, { id: 78, page: 582 }, { id: 79, page: 583 }, { id: 80, page: 585 },
-  { id: 81, page: 586 }, { id: 82, page: 587 }, { id: 83, page: 587 }, { id: 84, page: 589 }, { id: 85, page: 590 },
-  { id: 86, page: 591 }, { id: 87, page: 591 }, { id: 88, page: 592 }, { id: 89, page: 593 }, { id: 90, page: 594 },
-  { id: 91, page: 595 }, { id: 92, page: 595 }, { id: 93, page: 596 }, { id: 94, page: 596 }, { id: 95, page: 597 },
-  { id: 96, page: 597 }, { id: 97, page: 598 }, { id: 98, page: 598 }, { id: 99, page: 599 }, { id: 100, page: 599 },
-  { id: 101, page: 600 }, { id: 102, page: 600 }, { id: 103, page: 601 }, { id: 104, page: 601 }, { id: 105, page: 601 },
-  { id: 106, page: 602 }, { id: 107, page: 602 }, { id: 108, page: 602 }, { id: 109, page: 603 }, { id: 110, page: 603 },
-  { id: 111, page: 603 }, { id: 112, page: 604 }, { id: 113, page: 604 }, { id: 114, page: 604 }
-];
-
-function getSurahForPage(page) {
-  let matched = 1;
-  for (let i = 0; i < SURAH_START_PAGES.length; i++) {
-    if (SURAH_START_PAGES[i].page <= page) {
-      matched = SURAH_START_PAGES[i].id;
-    } else {
-      break;
-    }
-  }
-  return matched;
-}
-
 function openMistakeModal(pageNumber) {
   modalActivePage = pageNumber;
+  modalShowAllAyahs = false;
   const modal = document.getElementById('mistake-modal');
   if (!modal) return;
 
   const pageBadge = document.getElementById('modal-page');
-  if (pageBadge) pageBadge.textContent = 'صفحة ' + pageNumber;
+  if (pageBadge) pageBadge.textContent = (window.I18N ? I18N.t('page_prefix') : 'صفحة ') + pageNumber;
+
+  const verseSummary = formatPageVerseSummary(pageNumber, window.I18N && I18N.lang === 'en');
+  let versesBadge = document.getElementById('modal-page-verses');
+  if (!versesBadge) {
+    const headTitle = modal.querySelector('.modal-head h3');
+    if (headTitle) {
+      versesBadge = document.createElement('div');
+      versesBadge.id = 'modal-page-verses';
+      versesBadge.className = 'modal-page-verses';
+      headTitle.parentNode.insertBefore(versesBadge, headTitle.nextSibling);
+    }
+  }
+  if (versesBadge) {
+    versesBadge.textContent = verseSummary;
+    versesBadge.classList.toggle('hidden', !verseSummary);
+  }
 
   document.getElementById('mistake-note').value = '';
 
-  // Auto-detect and select Surah for this page
+  // Auto-detect and populate Surahs for this page
+  populateSurahOptions(pageNumber);
+
   const surahSelect = document.getElementById('mistake-surah');
   if (surahSelect) {
-    const detectedSurah = getSurahForPage(pageNumber);
+    const sections = getPageVerseSections(pageNumber);
+    const detectedSurah = sections.length > 0 ? sections[0].surahId : (SURAH_START_PAGES[0]?.id || 1);
     surahSelect.value = detectedSurah;
-    surahSelect.dispatchEvent(new Event('change'));
+    renderAyahOptions(detectedSurah, pageNumber, false);
   }
 
   // Reset tag selection to first tag
@@ -1295,20 +1890,25 @@ function openMushafModal(pageNumber) {
 
   const imgUrl = `https://images.quran.com/page/${pageNumber}.png`;
   const quranComUrl = `https://quran.com/page/${pageNumber}`;
+  const modalTitle = window.I18N ? I18N.t('mushaf_modal_title', { page: pageNumber }) : `📖 مصحف المدينة — صفحة ${pageNumber}`;
+  const openExternalText = window.I18N ? I18N.t('mushaf_open_external') : 'فتح على Quran.com ↗';
+  const offlineErr = window.I18N ? I18N.t('mushaf_offline_error') : 'تعذر تحميل صورة الصفحة في وضع عدم الاتصال';
+  const offlineHint = window.I18N ? I18N.t('mushaf_offline_hint') : 'يمكنك تلاوة الصفحة مباشرة من مصحفك أو النقر أدناه لفتحها على الويب:';
+  const offlineBtn = window.I18N ? I18N.t('mushaf_open_btn') : 'فتح الصفحة على Quran.com';
 
   modal.innerHTML = `
     <div class="mushaf-modal-content" role="dialog" aria-modal="true">
       <div class="mushaf-modal-head">
         <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
-          <h3 style="font-size:1.1rem;">📖 مصحف المدينة — صفحة ${pageNumber}</h3>
+          <h3 style="font-size:1.1rem;">${modalTitle}</h3>
           <a href="${quranComUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-ghost" style="padding:0.25rem 0.6rem; font-size:0.75rem;">
-            فتح على Quran.com ↗
+            ${openExternalText}
           </a>
         </div>
         <button type="button" id="btn-close-mushaf" class="btn btn-ghost" style="padding:0.35rem 0.65rem; font-size:1.1rem;" aria-label="إغلاق">✕</button>
       </div>
       <div class="mushaf-img-frame">
-        <img src="${imgUrl}" alt="صفحة ${pageNumber} من مصحف المدينة" class="mushaf-img" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'mushaf-fallback-box\\'><h3>تعذر تحميل صورة الصفحة في وضع عدم الاتصال</h3><p class=\\'hint\\'>يمكنك تلاوة الصفحة مباشرة من مصحفك أو النقر أدناه لفتحها على الويب:</p><a href=\\'${quranComUrl}\\' target=\\'_blank\\' class=\\'btn btn-primary\\'>فتح الصفحة على Quran.com</a></div>';">
+        <img src="${imgUrl}" alt="${modalTitle}" class="mushaf-img" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'mushaf-fallback-box\\'><h3>${offlineErr}</h3><p class=\\'hint\\'>${offlineHint}</p><a href=\\'${quranComUrl}\\' target=\\'_blank\\' class=\\'btn btn-primary\\'>${offlineBtn}</a></div>';">
       </div>
     </div>
   `;
@@ -1350,9 +1950,23 @@ function initKeyboardShortcuts() {
     } else if (e.key === 'ArrowRight') {
       const prevBtn = document.getElementById('btn-prev-page');
       if (prevBtn) prevBtn.click();
-    } else if (e.key === 'Enter') {
+    } else if (e.key === 'Enter' || e.key === ' ') {
+      const addRepBtn = document.getElementById('btn-add-rep');
       const compBtn = document.getElementById('btn-complete-page');
-      if (compBtn && !compBtn.disabled) compBtn.click();
+      if (addRepBtn && !addRepBtn.disabled) {
+        if (e.key === ' ') e.preventDefault();
+        addRepBtn.click();
+      } else if (compBtn && !compBtn.disabled) {
+        compBtn.click();
+      }
+    } else if (e.key === 'u' || e.key === 'U' || e.key === 'ع') {
+      const undoRepBtn = document.getElementById('btn-undo-rep');
+      const undoBtn = document.getElementById('btn-undo-page');
+      if (undoRepBtn && !undoRepBtn.disabled) {
+        undoRepBtn.click();
+      } else if (undoBtn && !undoBtn.disabled) {
+        undoBtn.click();
+      }
     } else if (e.key === 'm' || e.key === 'M' || e.key === 'ة') {
       const mistBtn = document.getElementById('btn-open-mistake');
       if (mistBtn) mistBtn.click();

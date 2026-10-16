@@ -52,6 +52,9 @@ try {
 try {
     $pdo->exec("ALTER TABLE `users` ADD COLUMN `rabt_extra_pages` INT NOT NULL DEFAULT 0");
 } catch (Throwable $t) {}
+try {
+    $pdo->exec("ALTER TABLE `users` ADD COLUMN `last_tikrar_page` INT NOT NULL DEFAULT 0");
+} catch (Throwable $t) {}
 
 try {
     $pdo->beginTransaction();
@@ -68,6 +71,7 @@ try {
     $stmt = $pdo->prepare("
         UPDATE `users`
         SET `current_hifz_page` = 0,
+            `last_tikrar_page` = 0,
             `user_type` = 'NEW',
             `daily_murajaah_target_pages` = 100,
             `murajaah_days` = 6,
@@ -85,6 +89,7 @@ try {
             'id'                          => $userId,
             'user_type'                   => 'NEW',
             'current_hifz_page'           => 0,
+            'last_tikrar_page'            => 0,
             'daily_murajaah_target_pages' => 100,
             'murajaah_days'               => 6,
             'rabt_extra_pages'            => 0,
