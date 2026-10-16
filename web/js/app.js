@@ -904,7 +904,7 @@ function renderTaskPage(taskType) {
 
   // Header and Progress Bar
   const isAllDone = task.is_completed || completedCount >= totalPages;
-  const taskTitle = (window.I18N && I18N.lang === 'en' && task.title_en) ? task.title_en : (task.title_ar || '');
+  const taskTitle = (window.I18N && window.I18N.lang === 'en' && task.title_en) ? task.title_en : (task.title_ar || '');
   const fillClass = taskType === 'HIFZ_JADID' ? 'fill-green' : (taskType === 'RABT' ? 'fill-blue' : 'fill-purple');
 
   const rangeHint = window.I18N ? I18N.t('required_range_hint', { start, end }) : `النطاق المطلوب: من صفحة <strong>${start}</strong> إلى <strong>${end}</strong>`;
@@ -1002,7 +1002,7 @@ function renderTikrarStage(task) {
   const percent = Math.min(100, Math.round((reps / targetReps) * 100));
   const mistakeCount = sharedState.badges[activePage] || 0;
 
-  const taskTitle = (window.I18N && I18N.lang === 'en' && task.title_en) ? task.title_en : (task.title_ar || 'تكرار حفظ الأمس');
+  const taskTitle = (window.I18N && window.I18N.lang === 'en' && task.title_en) ? task.title_en : (task.title_ar || 'تكرار حفظ الأمس');
   const pageTitle = window.I18N ? I18N.t('stage_page_label', { page: activePage }) : `📖 صفحة ${activePage}`;
   const stageMeta = window.I18N ? I18N.t('stage_meta_tikrar') : 'تكرار صفحة الأمس (10 مرات متتالية قبل الربط)';
 
@@ -1029,6 +1029,8 @@ function renderTikrarStage(task) {
     beadsHtml += `<div class="repetition-bead ${isDone ? 'done' : ''}" data-rep="${i}">${isDone ? '✓' : i}</div>`;
   }
 
+  const verseSummary = formatPageVerseSummary(activePage, window.I18N && window.I18N.lang === 'en');
+
   const html = `
     <div class="task-page-head">
       <div class="task-page-title-row">
@@ -1050,8 +1052,6 @@ function renderTikrarStage(task) {
         </div>
       </div>
     </div>
-
-    const verseSummary = formatPageVerseSummary(activePage, window.I18N && I18N.lang === 'en');
 
     <div class="recitation-stage" id="recitation-stage">
       <div class="stage-top">
@@ -1226,7 +1226,7 @@ function renderActivePageStage(taskType, task, activePage) {
   const completedList = task.completed_pages || [];
   const isPageDone = completedList.includes(activePage);
   const mistakeCount = sharedState.badges[activePage] || 0;
-  const taskTitle = (window.I18N && I18N.lang === 'en' && task.title_en) ? task.title_en : (task.title_ar || '');
+  const taskTitle = (window.I18N && window.I18N.lang === 'en' && task.title_en) ? task.title_en : (task.title_ar || '');
 
   const pageTitle = window.I18N ? I18N.t('stage_page_label', { page: activePage }) : `📖 صفحة ${activePage}`;
   const statusPill = isPageDone
@@ -1249,9 +1249,9 @@ function renderActivePageStage(taskType, task, activePage) {
   const nextBtnText = window.I18N ? I18N.t('btn_next_page', { page: activePage + 1 }) : `التالية (${activePage + 1})`;
   const kbdHintText = window.I18N ? I18N.t('kbd_hints') : '<span>مفاتيح سريعة:</span> <kbd>→</kbd> <kbd>←</kbd> للتنقل | <kbd>Enter</kbd> للإتمام | <kbd>U</kbd> للتراجع | <kbd>M</kbd> لتسجيل خطأ';
 
-  stage.innerHTML = `
-    const verseSummary = formatPageVerseSummary(activePage, window.I18N && I18N.lang === 'en');
+  const verseSummary = formatPageVerseSummary(activePage, window.I18N && window.I18N.lang === 'en');
 
+  stage.innerHTML = `
     <div class="stage-top">
       <div class="stage-page-title">
         <span>${pageTitle}</span>
@@ -1830,9 +1830,9 @@ function openMistakeModal(pageNumber) {
   if (!modal) return;
 
   const pageBadge = document.getElementById('modal-page');
-  if (pageBadge) pageBadge.textContent = (window.I18N ? I18N.t('page_prefix') : 'صفحة ') + pageNumber;
+  if (pageBadge) pageBadge.textContent = (window.I18N ? window.I18N.t('page_prefix') : 'صفحة ') + pageNumber;
 
-  const verseSummary = formatPageVerseSummary(pageNumber, window.I18N && I18N.lang === 'en');
+  const verseSummary = formatPageVerseSummary(pageNumber, window.I18N && window.I18N.lang === 'en');
   let versesBadge = document.getElementById('modal-page-verses');
   if (!versesBadge) {
     const headTitle = modal.querySelector('.modal-head h3');
@@ -1866,7 +1866,7 @@ function openMistakeModal(pageNumber) {
   if (firstTag) {
     document.querySelectorAll('#mistake-tags .tag-btn').forEach((b) => b.classList.remove('active'));
     firstTag.classList.add('active');
-    modalSelectedTag = firstTag.dataset.type;
+    modalSelectedTag = firstTag.dataset?.type || 'TRANSITION_FAILURE';
   }
 
   modal.classList.remove('hidden');
