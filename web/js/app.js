@@ -410,27 +410,41 @@ async function initPWAEngine() {
     });
   }
 
-  // 2. If app is currently running in standalone mode (already launched as installed app), hide triggers
-  if (isAppStandalone()) {
+  // 2. If app is currently running in standalone mode OR was already installed, hide triggers
+  if (isAppStandalone() || wasInstalledPreviously()) {
     hideInstallUI();
     return;
   }
 
-  // 3. Normal browser tab: Always show the install button so user can install or see instructions
+  // 3. Chromium installed apps check
+  if (typeof navigator.getInstalledRelatedApps === 'function') {
+    try {
+      const relatedApps = await navigator.getInstalledRelatedApps();
+      if (relatedApps && relatedApps.length > 0) {
+        markAppInstalled();
+        hideInstallUI();
+        return;
+      }
+    } catch (e) {}
+  }
+
+  // 4. Normal browser tab: Show the install button so user can install
   showInstallUI();
 
-  // 4. Capture native Chromium install prompt
+  // 5. Capture native Chromium install prompt
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredInstallPrompt = e;
     showInstallUI();
   });
 
-  // 5. Successful installation listener
+  // 6. Successful installation listener
   window.addEventListener('appinstalled', () => {
     deferredInstallPrompt = null;
     hideInstallUI();
     markAppInstalled();
+    const modal = document.getElementById('install-guide-modal');
+    if (modal) modal.classList.add('hidden');
     showToast(window.I18N ? I18N.t('app_installed_toast') : '🎉 تم تثبيت التطبيق بنجاح!');
   });
 }
@@ -542,7 +556,8 @@ function showInstallGuideModal() {
             <span data-i18n="install_modal_note">💡 ملاحظة: خيار «الإضافة إلى الشاشة الرئيسية» من قائمة المتصفح يثبّت التطبيق فوراً على هاتفك ليعمل كتطبيق أصيل مستقل مع أيقونة المصحف وبملء الشاشة!</span>
           </div>
         </div>
-        <div class="modal-foot" style="justify-content:flex-end;">
+        <div class="modal-foot" style="display:flex; justify-content:space-between; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+          <button type="button" id="btn-guide-already-installed" class="btn btn-ghost" style="font-size:0.82rem;" data-i18n="install_already_done_btn">✓ قمت بتثبيته بالفعل (إخفاء الزر)</button>
           <button type="button" class="btn btn-primary btn-close-guide" data-i18n="ios_install_modal_close">فهمت ذلك</button>
         </div>
       </div>
@@ -565,11 +580,30 @@ function showInstallGuideModal() {
         if (choice && choice.outcome === 'accepted') {
           console.log('[PWA] User accepted prompt');
           modal.classList.add('hidden');
+          markAppInstalled();
+          const headerBtn = document.getElementById('btn-install-app');
+          if (headerBtn) headerBtn.classList.add('hidden');
+          const pwaBanner = document.getElementById('pwa-install-banner');
+          if (pwaBanner) pwaBanner.classList.add('hidden');
+          showToast(window.I18N ? I18N.t('app_installed_toast') : '🎉 تم تثبيت التطبيق بنجاح!');
         }
       } catch (err) {
         console.warn('[PWA] Prompt error:', err);
       }
     };
+
+    const btnAlreadyInstalled = modal.querySelector('#btn-guide-already-installed');
+    if (btnAlreadyInstalled) {
+      btnAlreadyInstalled.addEventListener('click', () => {
+        markAppInstalled();
+        const headerBtn = document.getElementById('btn-install-app');
+        if (headerBtn) headerBtn.classList.add('hidden');
+        const pwaBanner = document.getElementById('pwa-install-banner');
+        if (pwaBanner) pwaBanner.classList.add('hidden');
+        modal.classList.add('hidden');
+        showToast(window.I18N ? I18N.t('app_installed_toast') : '🎉 تم تثبيت التطبيق بنجاح على جهازك!');
+      });
+    }
 
     const btnQuickAndroid = modal.querySelector('#btn-quick-install-prompt-android');
     if (btnQuickAndroid) btnQuickAndroid.addEventListener('click', handlePrompt);

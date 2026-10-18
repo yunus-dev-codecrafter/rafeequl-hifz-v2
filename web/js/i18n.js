@@ -185,6 +185,7 @@ const I18N_DICTIONARY = {
     ios_install_step2: 'مرر للأسفل واختر «إضافة إلى الشاشة الرئيسية» (Add to Home Screen ⊞).',
     ios_install_step3: 'اضغط «إضافة» (Add) في الزاوية العلوية وسيظهر التطبيق كأيقونة على شاشتك الرئيسية.',
     ios_install_modal_close: 'فهمت ذلك',
+    install_already_done_btn: '✓ قمت بتثبيته بالفعل (إخفاء الزر)',
     app_installed_toast: '🎉 تم تثبيت التطبيق بنجاح على جهازك!',
 
     // Back & Nav
@@ -529,6 +530,7 @@ const I18N_DICTIONARY = {
     ios_install_step2: 'Scroll down and tap «Add to Home Screen» (⊞).',
     ios_install_step3: 'Tap «Add» in the top corner to install Rafeequl Hifz on your home screen.',
     ios_install_modal_close: 'Got it',
+    install_already_done_btn: '✓ Already Installed (Hide Button)',
     app_installed_toast: '🎉 App installed successfully!',
 
     // Back & Nav
