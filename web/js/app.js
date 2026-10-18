@@ -336,18 +336,22 @@ function isIOS() {
   return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 }
 
+function isAndroid() {
+  return /Android/.test(navigator.userAgent);
+}
+
 function initPWAEngine() {
-  // 1. Register Service Worker
+  // 1. Register Service Worker immediately (no waiting for window load)
   if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js')
+    try {
+      navigator.serviceWorker.register('sw.js?v=2')
         .then((reg) => {
           console.log('[PWA] Service Worker registered with scope:', reg.scope);
         })
         .catch((err) => {
           console.warn('[PWA] Service Worker registration failed:', err);
         });
-    });
+    } catch (e) {}
   }
 
   // 2. Standalone check: If already installed / running standalone, hide all install prompts
@@ -380,14 +384,17 @@ function initPWAEngine() {
     if (banner) banner.classList.add('hidden');
   };
 
-  // 4. Capture beforeinstallprompt (Android / Chrome / Edge)
+  // 4. Always show install button right away if not standalone!
+  showInstallUI();
+
+  // 5. Capture beforeinstallprompt if fired by Chromium
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredInstallPrompt = e;
     showInstallUI();
   });
 
-  // 5. Successful installation listener
+  // 6. Successful installation listener
   window.addEventListener('appinstalled', () => {
     deferredInstallPrompt = null;
     hideInstallUI();
@@ -395,23 +402,23 @@ function initPWAEngine() {
     showToast(window.I18N ? I18N.t('app_installed_toast') : '🎉 تم تثبيت التطبيق بنجاح!');
   });
 
-  // 6. User clicked Install
+  // 7. User clicked Install
   const triggerInstall = async () => {
     if (deferredInstallPrompt) {
-      deferredInstallPrompt.prompt();
       try {
+        deferredInstallPrompt.prompt();
         const choice = await deferredInstallPrompt.userChoice;
         if (choice && choice.outcome === 'accepted') {
           deferredInstallPrompt = null;
           hideInstallUI();
+          return;
         }
       } catch (err) {
         console.warn('[PWA] Prompt error:', err);
       }
-    } else {
-      // Fallback for iOS or when prompt is not ready
-      showIOSInstallModal();
     }
+    // Show instruction guide (essential for iOS Safari and Android hosts where WebAPK minting is blocked)
+    showInstallGuideModal();
   };
 
   if (headerInstallBtn) {
@@ -426,27 +433,51 @@ function initPWAEngine() {
       try { localStorage.setItem('pwa_banner_dismissed', String(Date.now())); } catch (e) {}
     });
   }
-
-  // 7. On iOS Safari (no beforeinstallprompt event), show install button if not standalone
-  if (isIOS() && !isAppStandalone()) {
-    showInstallUI();
-  }
 }
 
-function showIOSInstallModal() {
-  let modal = document.getElementById('ios-install-modal');
+function showInstallGuideModal() {
+  let modal = document.getElementById('install-guide-modal');
   if (!modal) {
     modal = document.createElement('div');
-    modal.id = 'ios-install-modal';
+    modal.id = 'install-guide-modal';
     modal.className = 'modal-backdrop hidden';
+    
+    const userIsIOS = isIOS();
+    
     modal.innerHTML = `
-      <div class="modal-box ios-install-box" style="max-width:440px;" role="dialog" aria-modal="true">
+      <div class="modal-box ios-install-box" style="max-width:480px;" role="dialog" aria-modal="true">
         <div class="modal-head">
-          <h3 data-i18n="ios_install_modal_title">تثبيت التطبيق على جهازك</h3>
-          <button type="button" class="btn btn-ghost btn-close-ios" style="padding:0.25rem 0.6rem;">✕</button>
+          <h3 data-i18n="install_modal_title">تثبيت رفيق الحفظ على هاتفك</h3>
+          <button type="button" class="btn btn-ghost btn-close-guide" style="padding:0.25rem 0.6rem;">✕</button>
         </div>
-        <div class="modal-body" style="padding:1rem 0;">
-          <ul class="ios-guide-list">
+        <div class="modal-body" style="padding:0.8rem 0;">
+          <div style="display:flex; gap:0.5rem; margin-bottom:1rem; border-bottom:1px solid var(--border-color); padding-bottom:0.5rem;">
+            <button type="button" id="tab-guide-android" class="btn btn-ghost ${!userIsIOS ? 'btn-primary' : ''}" style="flex:1; font-size:0.85rem;" data-i18n="android_install_tab">
+              🤖 أندرويد (Chrome)
+            </button>
+            <button type="button" id="tab-guide-ios" class="btn btn-ghost ${userIsIOS ? 'btn-primary' : ''}" style="flex:1; font-size:0.85rem;" data-i18n="ios_install_tab">
+              🍎 آيفون (Safari)
+            </button>
+          </div>
+
+          <!-- Android Steps -->
+          <ul id="guide-steps-android" class="ios-guide-list ${userIsIOS ? 'hidden' : ''}">
+            <li class="ios-guide-step">
+              <span class="ios-step-num">1</span>
+              <span class="ios-step-text" data-i18n="android_install_step1">اضغط على زر القائمة (الثلاث نقاط ⋮) في أعلى المتصفح.</span>
+            </li>
+            <li class="ios-guide-step">
+              <span class="ios-step-num">2</span>
+              <span class="ios-step-text" data-i18n="android_install_step2">اختر «الإضافة إلى الشاشة الرئيسية» (Add to Home screen) أو «تثبيت التطبيق».</span>
+            </li>
+            <li class="ios-guide-step">
+              <span class="ios-step-num">3</span>
+              <span class="ios-step-text" data-i18n="android_install_step3">اضغط «إضافة» وسيتم تثبيت التطبيق فوراً ليعمل كأي تطبيق أصيل بملء الشاشة!</span>
+            </li>
+          </ul>
+
+          <!-- iOS Steps -->
+          <ul id="guide-steps-ios" class="ios-guide-list ${!userIsIOS ? 'hidden' : ''}">
             <li class="ios-guide-step">
               <span class="ios-step-num">1</span>
               <span class="ios-step-text" data-i18n="ios_install_step1">اضغط على زر المشاركة (Share ⎋) في شريط متصفح Safari.</span>
@@ -462,13 +493,32 @@ function showIOSInstallModal() {
           </ul>
         </div>
         <div class="modal-foot" style="justify-content:flex-end;">
-          <button type="button" class="btn btn-primary btn-close-ios" data-i18n="ios_install_modal_close">فهمت ذلك</button>
+          <button type="button" class="btn btn-primary btn-close-guide" data-i18n="ios_install_modal_close">فهمت ذلك</button>
         </div>
       </div>
     `;
     document.body.appendChild(modal);
 
-    modal.querySelectorAll('.btn-close-ios').forEach((b) => {
+    const btnAndroid = modal.querySelector('#tab-guide-android');
+    const btnIos = modal.querySelector('#tab-guide-ios');
+    const stepsAndroid = modal.querySelector('#guide-steps-android');
+    const stepsIos = modal.querySelector('#guide-steps-ios');
+
+    btnAndroid.addEventListener('click', () => {
+      btnAndroid.classList.add('btn-primary');
+      btnIos.classList.remove('btn-primary');
+      stepsAndroid.classList.remove('hidden');
+      stepsIos.classList.add('hidden');
+    });
+
+    btnIos.addEventListener('click', () => {
+      btnIos.classList.add('btn-primary');
+      btnAndroid.classList.remove('btn-primary');
+      stepsIos.classList.remove('hidden');
+      stepsAndroid.classList.add('hidden');
+    });
+
+    modal.querySelectorAll('.btn-close-guide').forEach((b) => {
       b.addEventListener('click', () => modal.classList.add('hidden'));
     });
     modal.addEventListener('click', (e) => {
@@ -520,6 +570,15 @@ function initAuthPage() {
   const loginForm = document.getElementById('login-form');
   const errorBox = document.getElementById('auth-error');
   const existingFields = document.getElementById('existing-fields');
+
+  // If user already has an active session, auto-redirect to dashboard
+  API.call('tasks/get_daily_tasks.php', { method: 'GET' })
+    .then((res) => {
+      if (res && res.success && res.user) {
+        location.href = 'dashboard.html';
+      }
+    })
+    .catch(() => {});
 
   function showError(message) {
     errorBox.textContent = message;

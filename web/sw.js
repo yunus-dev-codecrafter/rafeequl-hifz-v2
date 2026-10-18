@@ -1,9 +1,8 @@
 'use strict';
 
-const CACHE_NAME = 'rafeequl-hifz-v1';
+const CACHE_NAME = 'rafeequl-hifz-v2';
 
 const STATIC_ASSETS = [
-  './',
   'index.html',
   'dashboard.html',
   'hifz.html',
@@ -17,15 +16,22 @@ const STATIC_ASSETS = [
   'js/app.js',
   'icons/icon-192.png',
   'icons/icon-512.png',
+  'icons/icon-maskable-192.png',
+  'icons/icon-maskable-512.png',
   'manifest.json'
 ];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS).catch((err) => {
-        console.warn('[SW] Cache addAll failed for some assets:', err);
-      });
+      // Use Promise.allSettled so that if any individual asset fails, the rest are still cached
+      return Promise.allSettled(
+        STATIC_ASSETS.map((asset) => {
+          return cache.add(asset).catch((err) => {
+            console.warn('[SW] Could not pre-cache asset:', asset, err);
+          });
+        })
+      );
     }).then(() => self.skipWaiting())
   );
 });
@@ -65,14 +71,19 @@ self.addEventListener('fetch', (event) => {
         }
         return networkRes;
       })
-      .catch(() => {
-        return caches.match(req).then((cachedRes) => {
-          if (cachedRes) {
-            return cachedRes;
-          }
-          if (req.headers.get('accept') && req.headers.get('accept').includes('text/html')) {
-            return caches.match('dashboard.html') || caches.match('index.html');
-          }
+      .catch(async () => {
+        const cachedRes = await caches.match(req);
+        if (cachedRes) {
+          return cachedRes;
+        }
+        if (req.headers.get('accept') && req.headers.get('accept').includes('text/html')) {
+          const fallback = (await caches.match('index.html')) || (await caches.match('dashboard.html'));
+          if (fallback) return fallback;
+        }
+        return new Response('Offline: Network connection failed', {
+          status: 503,
+          statusText: 'Service Unavailable',
+          headers: { 'Content-Type': 'text/plain; charset=utf-8' }
         });
       })
   );
