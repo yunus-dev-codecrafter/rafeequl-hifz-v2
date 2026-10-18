@@ -403,24 +403,11 @@ function initPWAEngine() {
   });
 
   // 7. User clicked Install
-  const triggerInstall = async (e) => {
+  const triggerInstall = (e) => {
     if (e) {
       try { e.preventDefault(); e.stopPropagation(); } catch (err) {}
     }
-    if (deferredInstallPrompt) {
-      try {
-        deferredInstallPrompt.prompt();
-        const choice = await deferredInstallPrompt.userChoice;
-        if (choice && choice.outcome === 'accepted') {
-          deferredInstallPrompt = null;
-          hideInstallUI();
-          return;
-        }
-      } catch (err) {
-        console.warn('[PWA] Prompt error:', err);
-      }
-    }
-    // Show instruction guide (essential for iOS Safari and Android hosts where WebAPK minting is blocked)
+    // Open install guide modal with 1-click trigger & direct "Add to Home screen" steps
     showInstallGuideModal();
   };
 
@@ -464,20 +451,31 @@ function showInstallGuideModal() {
           </div>
 
           <!-- Android Steps -->
-          <ul id="guide-steps-android" class="ios-guide-list ${userIsIOS ? 'hidden' : ''}">
-            <li class="ios-guide-step">
-              <span class="ios-step-num">1</span>
-              <span class="ios-step-text" data-i18n="android_install_step1">اضغط على زر القائمة (الثلاث نقاط ⋮) في أعلى المتصفح.</span>
-            </li>
-            <li class="ios-guide-step">
-              <span class="ios-step-num">2</span>
-              <span class="ios-step-text" data-i18n="android_install_step2">اختر «الإضافة إلى الشاشة الرئيسية» (Add to Home screen) أو «تثبيت التطبيق».</span>
-            </li>
-            <li class="ios-guide-step">
-              <span class="ios-step-num">3</span>
-              <span class="ios-step-text" data-i18n="android_install_step3">اضغط «إضافة» وسيتم تثبيت التطبيق فوراً ليعمل كأي تطبيق أصيل بملء الشاشة!</span>
-            </li>
-          </ul>
+          <div id="guide-steps-android" class="${userIsIOS ? 'hidden' : ''}">
+            <div id="quick-install-container" class="${deferredInstallPrompt ? '' : 'hidden'}" style="margin-bottom:1.2rem; text-align:center;">
+              <button type="button" id="btn-quick-install-prompt" class="btn btn-primary" style="width:100%; justify-content:center; padding:0.75rem; font-weight:700; font-size:0.95rem;">
+                <span data-i18n="install_quick_btn">⚡ محاولة التثبيت التلقائي الفوري</span>
+              </button>
+              <p style="font-size:0.8rem; color:var(--text-muted, #64748b); margin-top:0.4rem; margin-bottom:0;" data-i18n="install_quick_hint">
+                إذا ظهر تنبيه المتصفح «تعذر تثبيت التطبيق»، اتبع الخطوات السريعة أدناه:
+              </p>
+            </div>
+
+            <ul class="ios-guide-list">
+              <li class="ios-guide-step">
+                <span class="ios-step-num">1</span>
+                <span class="ios-step-text" data-i18n="android_install_step1">اضغط على زر القائمة (الثلاث نقاط ⋮) في أعلى المتصفح.</span>
+              </li>
+              <li class="ios-guide-step">
+                <span class="ios-step-num">2</span>
+                <span class="ios-step-text" data-i18n="android_install_step2">اختر «الإضافة إلى الشاشة الرئيسية» (Add to Home screen) أو «تثبيت التطبيق».</span>
+              </li>
+              <li class="ios-guide-step">
+                <span class="ios-step-num">3</span>
+                <span class="ios-step-text" data-i18n="android_install_step3">اضغط «إضافة» وسيتم تثبيت التطبيق فوراً ليعمل كأي تطبيق أصيل بملء الشاشة!</span>
+              </li>
+            </ul>
+          </div>
 
           <!-- iOS Steps -->
           <ul id="guide-steps-ios" class="ios-guide-list ${!userIsIOS ? 'hidden' : ''}">
@@ -494,6 +492,11 @@ function showInstallGuideModal() {
               <span class="ios-step-text" data-i18n="ios_install_step3">اضغط «إضافة» (Add) في الزاوية وسيظهر التطبيق كأيقونة على شاشتك.</span>
             </li>
           </ul>
+
+          <!-- Note box -->
+          <div style="background:var(--bg-card, #f8f9fa); border:1px solid var(--border-color, #e2e8f0); border-radius:8px; padding:0.75rem 1rem; margin-top:1rem; font-size:0.85rem; color:var(--text-muted, #64748b); line-height:1.5;">
+            <span data-i18n="install_modal_note">💡 ملاحظة: خيار «الإضافة إلى الشاشة الرئيسية» من قائمة المتصفح يثبّت التطبيق فوراً على هاتفك ليعمل كتطبيق أصيل مستقل مع أيقونة المصحف وبملء الشاشة!</span>
+          </div>
         </div>
         <div class="modal-foot" style="justify-content:flex-end;">
           <button type="button" class="btn btn-primary btn-close-guide" data-i18n="ios_install_modal_close">فهمت ذلك</button>
@@ -506,6 +509,23 @@ function showInstallGuideModal() {
     const btnIos = modal.querySelector('#tab-guide-ios');
     const stepsAndroid = modal.querySelector('#guide-steps-android');
     const stepsIos = modal.querySelector('#guide-steps-ios');
+    const btnQuickPrompt = modal.querySelector('#btn-quick-install-prompt');
+
+    if (btnQuickPrompt) {
+      btnQuickPrompt.addEventListener('click', async () => {
+        if (!deferredInstallPrompt) return;
+        try {
+          const promptEvent = deferredInstallPrompt;
+          await promptEvent.prompt();
+          const choice = await promptEvent.userChoice;
+          if (choice && choice.outcome === 'accepted') {
+            console.log('[PWA] User accepted prompt');
+          }
+        } catch (err) {
+          console.warn('[PWA] Prompt error:', err);
+        }
+      });
+    }
 
     btnAndroid.addEventListener('click', () => {
       btnAndroid.classList.add('btn-primary');
@@ -527,6 +547,16 @@ function showInstallGuideModal() {
     modal.addEventListener('click', (e) => {
       if (e.target === modal) modal.classList.add('hidden');
     });
+  }
+
+  // Update quick install button visibility if deferredInstallPrompt changed
+  const quickContainer = modal.querySelector('#quick-install-container');
+  if (quickContainer) {
+    if (deferredInstallPrompt) {
+      quickContainer.classList.remove('hidden');
+    } else {
+      quickContainer.classList.add('hidden');
+    }
   }
 
   if (window.I18N && typeof window.I18N.translateContainer === 'function') {
