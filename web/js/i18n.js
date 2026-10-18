@@ -844,7 +844,36 @@ const I18N = {
     return key ? this.t(key) : (type || '');
   },
 
+  translateContainer(root = document) {
+    if (!root || !root.querySelectorAll) return;
+    root.querySelectorAll('[data-i18n]').forEach((el) => {
+      const key = el.getAttribute('data-i18n');
+      if (key) el.textContent = this.t(key);
+    });
+    root.querySelectorAll('[data-i18n-html]').forEach((el) => {
+      const key = el.getAttribute('data-i18n-html');
+      if (key) el.innerHTML = this.t(key);
+    });
+    root.querySelectorAll('[data-i18n-placeholder]').forEach((el) => {
+      const key = el.getAttribute('data-i18n-placeholder');
+      if (key) el.setAttribute('placeholder', this.t(key));
+    });
+    root.querySelectorAll('[data-i18n-title]').forEach((el) => {
+      const key = el.getAttribute('data-i18n-title');
+      if (key) {
+        const val = this.t(key);
+        el.setAttribute('title', val);
+        el.setAttribute('aria-label', val);
+      }
+    });
+  },
+
   apply(newLang, triggerToast = true) {
+    if (newLang instanceof Element || newLang instanceof Document || (newLang && newLang.nodeType)) {
+      this.translateContainer(newLang);
+      return;
+    }
+    if (typeof newLang !== 'string') return;
     this.lang = newLang === 'en' ? 'en' : 'ar';
     try {
       localStorage.setItem('hifz-lang', this.lang);

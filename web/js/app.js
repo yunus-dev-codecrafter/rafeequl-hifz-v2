@@ -403,7 +403,10 @@ function initPWAEngine() {
   });
 
   // 7. User clicked Install
-  const triggerInstall = async () => {
+  const triggerInstall = async (e) => {
+    if (e) {
+      try { e.preventDefault(); e.stopPropagation(); } catch (err) {}
+    }
     if (deferredInstallPrompt) {
       try {
         deferredInstallPrompt.prompt();
@@ -526,8 +529,8 @@ function showInstallGuideModal() {
     });
   }
 
-  if (window.I18N) {
-    window.I18N.apply(modal);
+  if (window.I18N && typeof window.I18N.translateContainer === 'function') {
+    window.I18N.translateContainer(modal);
   }
   modal.classList.remove('hidden');
 }
