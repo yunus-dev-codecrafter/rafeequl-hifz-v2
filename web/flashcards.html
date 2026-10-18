@@ -114,12 +114,72 @@
           <h2 data-i18n="fc_head_title">🔴 تدريب بطاقات الأخطاء السابقة</h2>
           <p class="hint" data-i18n="fc_head_desc">كرر تلاوة الآيات التي سُجلت عليها أخطاء حتى تتقنها وتنتقل تلقائياً إلى الأرشيف.</p>
         </div>
-        <div style="display:flex; align-items:center; gap:0.5rem;">
+        <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
           <a href="history.html" class="btn btn-ghost" style="font-size:0.8rem; padding:0.35rem 0.75rem;" data-i18n="fc_btn_view_history">
             📜 عرض الأخطاء المتقنة
           </a>
-          <div id="deck-counter" class="task-page-badge red" data-i18n="fc_counter_loading">البطاقات</div>
         </div>
+      </div>
+
+      <!-- Deck counters -->
+      <div class="fc-counters" id="fc-counters">
+        <div class="fc-counter fc-counter-due">
+          <span class="fc-counter-value" id="fc-due-count">0</span>
+          <span class="fc-counter-label" data-i18n="fc_due_badge">مستحقة اليوم</span>
+        </div>
+        <div class="fc-counter fc-counter-new">
+          <span class="fc-counter-value" id="fc-new-count">0</span>
+          <span class="fc-counter-label" data-i18n="fc_new_badge">جديدة</span>
+        </div>
+        <div class="fc-counter fc-counter-total">
+          <span class="fc-counter-value" id="fc-total-count">0</span>
+          <span class="fc-counter-label" data-i18n="fc_total_badge">إجمالي النشطة</span>
+        </div>
+      </div>
+
+      <!-- Deck toolbar -->
+      <div class="fc-toolbar">
+        <div class="fc-mode-switch" id="fc-mode-switch">
+          <button type="button" class="fc-mode-btn active" data-mode="due" data-i18n="fc_mode_due">المستحقة</button>
+          <button type="button" class="fc-mode-btn" data-mode="all" data-i18n="fc_mode_all">الكل</button>
+        </div>
+        <button type="button" id="btn-fc-filters" class="btn btn-ghost fc-tool-btn" data-i18n="fc_filters_btn">تصفية ⚙</button>
+        <button type="button" id="btn-fc-shuffle" class="btn btn-ghost fc-tool-btn" data-i18n="fc_shuffle_btn">خلط 🔀</button>
+        <button type="button" id="btn-fc-undo" class="btn btn-ghost fc-tool-btn" disabled data-i18n="fc_undo_btn">↩ تراجع</button>
+      </div>
+
+      <!-- Filter panel -->
+      <div id="fc-filter-panel" class="fc-filter-panel hidden">
+        <div class="fc-filter-grid">
+          <label class="field">
+            <span class="field-label" data-i18n="fc_filter_type">نوع الخطأ</span>
+            <select id="fc-filter-type">
+              <option value="" data-i18n="fc_filter_all">الكل</option>
+            </select>
+          </label>
+          <label class="field">
+            <span class="field-label" data-i18n="fc_filter_surah">السورة</span>
+            <select id="fc-filter-surah">
+              <option value="" data-i18n="fc_filter_all">الكل</option>
+            </select>
+          </label>
+          <label class="field">
+            <span class="field-label" data-i18n="fc_filter_juz">الجزء</span>
+            <select id="fc-filter-juz">
+              <option value="" data-i18n="fc_filter_all">الكل</option>
+            </select>
+          </label>
+        </div>
+        <div class="fc-filter-actions">
+          <button type="button" id="btn-fc-filter-reset" class="btn btn-ghost" data-i18n="fc_filter_reset">إعادة ضبط</button>
+          <button type="button" id="btn-fc-filter-apply" class="btn btn-primary" data-i18n="fc_filter_apply">تطبيق</button>
+        </div>
+      </div>
+
+      <!-- Progress -->
+      <div class="fc-progress-wrap" id="fc-progress-wrap">
+        <div class="fc-progress"><div class="fc-progress-bar" id="deck-progress-bar"></div></div>
+        <span class="fc-progress-text" id="deck-counter" data-i18n="fc_counter_loading">البطاقات</span>
       </div>
     </div>
 
@@ -131,13 +191,17 @@
     <!-- Empty State -->
     <div id="deck-empty" class="chips-card hidden" style="text-align: center; padding: 3rem 1.5rem;">
       <div style="font-size: 3rem; margin-bottom: 0.5rem;">🎉</div>
-      <h3 data-i18n="fc_empty_title">مبارك! لا توجد أخطاء نشطة بانتظار المعالجة</h3>
-      <p class="hint" style="margin-bottom: 1.5rem;" data-i18n="fc_empty_desc">تم إتقان جميع الأخطاء المسجلة أو لم يتم تسجيل أي أخطاء جديدة اليوم.</p>
+      <h3 id="deck-empty-title" data-i18n="fc_empty_title">مبارك! لا توجد أخطاء نشطة بانتظار المعالجة</h3>
+      <p class="hint" id="deck-empty-desc" style="margin-bottom: 1.5rem;" data-i18n="fc_empty_desc">تم إتقان جميع الأخطاء المسجلة أو لم يتم تسجيل أي أخطاء جديدة اليوم.</p>
       <div style="display:flex; justify-content:center; gap:0.75rem; flex-wrap:wrap;">
+        <button type="button" id="btn-practice-all" class="btn btn-primary hidden" data-i18n="fc_practice_all_btn">راجع كل البطاقات الآن</button>
         <a href="history.html" class="btn btn-success" data-i18n="fc_btn_view_history">عرض سجل الأخطاء المتقنة 📜</a>
-        <a href="dashboard.html" class="btn btn-primary" data-i18n="back_to_tasks">العودة لدفتر المهام</a>
+        <a href="dashboard.html" class="btn btn-ghost" data-i18n="back_to_tasks">العودة لدفتر المهام</a>
       </div>
     </div>
+
+    <!-- Session Summary -->
+    <div id="deck-summary" class="chips-card hidden" style="text-align:center; padding:2.5rem 1.5rem;"></div>
 
     <!-- Interactive 3D Flashcard Stage -->
     <div id="deck-stage" class="flashcard-stage hidden">
@@ -156,45 +220,48 @@
 
           <div>
             <div id="fc-meta" class="fc-meta-row">—</div>
+            <div id="fc-flags" class="fc-flags"></div>
             <p class="hint" style="text-align:center; margin-top:0.75rem; margin-bottom:0;" data-i18n="fc_card_hint_front">
-              💡 انقر على البطاقة لقلبها وقراءة الملاحظة والتأكد من الصواب
+              💡 انقر على البطاقة لقلبها وقراءة الآية والملاحظة
             </p>
           </div>
         </div>
 
         <!-- Back Face -->
         <div class="card-face card-back">
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <span style="font-weight:700; color:var(--accent)" data-i18n="fc_card_notes_label">📝 الملاحظات والتنبيهات:</span>
-            <span id="fc-mastery" style="font-size:0.8rem; color:var(--muted)">مرات الإتقان: 0</span>
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:0.5rem;">
+            <span style="font-weight:700; color:var(--accent)" data-i18n="fc_ayah_text_label">نص الآية</span>
+            <span id="fc-record" style="font-size:0.78rem; color:var(--muted)"></span>
           </div>
 
-          <div id="fc-notes" class="fc-notes-content">
-            لا توجد ملاحظات
+          <div id="fc-ayah-text" class="fc-ayah-text">—</div>
+
+          <div class="fc-audio-row">
+            <button type="button" id="btn-play-ayah" class="btn btn-ghost" style="font-size:0.82rem;" data-i18n="fc_play_btn">▶ التلاوة</button>
           </div>
+
+          <div id="fc-notes" class="fc-notes-content">لا توجد ملاحظات</div>
 
           <p class="hint" style="text-align:center; margin:0;" data-i18n="fc_card_hint_back">
-            إذا تلوتها الآن بشكل صحيح دون تعثر، اختر «أتقنتها». وإلا اختر «أعد التدريب».
+            قيّم تذكّرك: أخطأت / صعب / جيد / سهل — وتعود البطاقة في الوقت المناسب.
           </p>
         </div>
       </div>
 
-      <!-- Action Buttons -->
-      <div id="deck-actions" class="deck-actions-bar hidden" style="flex-wrap:wrap;">
-        <button type="button" id="btn-mastered" class="btn btn-success" style="flex:1; min-width:140px;" data-i18n="fc_btn_mastered">
-          ✓ أتقنتها (أرشفة الخطأ)
-        </button>
-        <button type="button" id="btn-keep-practicing" class="btn btn-ghost" style="flex:1; min-width:140px;" data-i18n="fc_btn_keep">
-          🔁 أعد التدريب (إبقاء)
-        </button>
-        <button type="button" id="btn-delete-card" class="btn-danger-outline" style="min-width:140px; justify-content:center;" title="حذف هذا الخطأ نهائياً بعد إتقانه" data-i18n="fc_btn_delete" data-i18n-title="fc_btn_delete_title">
-          🗑️ حذف نهائياً
-        </button>
+      <!-- Grading Bar -->
+      <div id="deck-actions" class="deck-actions-bar hidden">
+        <button type="button" id="btn-again" class="btn fc-grade fc-grade-again" data-i18n="fc_grade_again">أخطأت</button>
+        <button type="button" id="btn-hard" class="btn fc-grade fc-grade-hard" data-i18n="fc_grade_hard">صعب</button>
+        <button type="button" id="btn-good" class="btn fc-grade fc-grade-good" data-i18n="fc_grade_good">جيد</button>
+        <button type="button" id="btn-easy" class="btn fc-grade fc-grade-easy" data-i18n="fc_grade_easy">سهل</button>
       </div>
 
-      <div style="text-align:center; margin-top:1rem;">
+      <div class="fc-secondary-actions">
         <button type="button" id="btn-show-hint" class="btn btn-ghost" style="font-size:0.85rem;" data-i18n="fc_btn_reveal">
-          🔍 اقلب البطاقة لرؤية الملاحظات
+          🔍 اقلب البطاقة لرؤية الآية
+        </button>
+        <button type="button" id="btn-delete-card" class="btn-danger-outline" style="font-size:0.8rem;" title="حذف هذا الخطأ نهائياً" data-i18n="fc_btn_delete" data-i18n-title="fc_btn_delete_title">
+          🗑️ حذف نهائياً
         </button>
       </div>
     </div>

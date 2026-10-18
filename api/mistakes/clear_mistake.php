@@ -2,14 +2,20 @@
 declare(strict_types=1);
 
 /**
- * Rafeequl Hifz - Clear Flashcard (Practice Result)
- * POST JSON: mistake_id, action ('MASTERED' | 'KEEP_PRACTICING')
+ * Rafeequl Hifz - Clear / Manage Flashcard (History actions)
+ * POST JSON: mistake_id, action ('MASTERED' | 'KEEP_PRACTICING' | 'REACTIVATE' | 'DELETE')
  *
- * MASTERED        -> status ARCHIVED + mastery_count + 1 (row is never deleted)
- * KEEP_PRACTICING -> mastery_count + 1, stays ACTIVE
+ * MASTERED        -> archives the card (graduated_at set), records MASTERED event
+ * REACTIVATE      -> returns it to the active deck, due immediately
+ * DELETE          -> hard-deletes the row, keeps a DELETED audit event
+ * KEEP_PRACTICING -> stays active, mastery_count + 1 (legacy)
+ *
+ * Graded practice should use review_mistake.php; this endpoint powers the
+ * history page's management buttons.
  */
 
 require __DIR__ . '/../../config/database.php';
+require __DIR__ . '/_srs.php';
 
 function json_out(int $code, array $payload): void
 {
@@ -21,33 +27,11 @@ function json_out(int $code, array $payload): void
 
 function fetchMistake(PDO $pdo, int $userId, int $mistakeId): ?array
 {
-    $stmt = $pdo->prepare(
-        'SELECT `id`, `page_number`, `surah_number`, `ayah_number`, `mistake_type`,
-                `notes`, `status`, `mastery_count`, `created_at`
-         FROM `mistakes`
-         WHERE `id` = :id AND `user_id` = :u'
-    );
+    $stmt = $pdo->prepare('SELECT * FROM `mistakes` WHERE `id` = :id AND `user_id` = :u');
     $stmt->execute([':id' => $mistakeId, ':u' => $userId]);
     $row = $stmt->fetch();
     return $row ?: null;
 }
-
-function mistakePayload(array $m): array
-{
-    return [
-        'id'            => (int) $m['id'],
-        'page_number'   => (int) $m['page_number'],
-        'surah_number'  => (int) $m['surah_number'],
-        'ayah_number'   => (int) $m['ayah_number'],
-        'mistake_type'  => $m['mistake_type'],
-        'status'        => $m['status'],
-        'mastery_count' => (int) $m['mastery_count'],
-    ];
-}
-
-// ---------------------------------------------------------------------------
-// Method & input
-// ---------------------------------------------------------------------------
 
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
     json_out(400, ['success' => false, 'error' => 'Method not allowed. Use POST.']);
@@ -64,10 +48,6 @@ if (is_string($raw) && $raw !== '') {
 } elseif (!empty($_POST)) {
     $input = array_merge($input, $_POST);
 }
-
-// ---------------------------------------------------------------------------
-// Auth & validation
-// ---------------------------------------------------------------------------
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -87,10 +67,7 @@ if (is_string($mistakeId) && ctype_digit($mistakeId)) {
     $mistakeId = (int) $mistakeId;
 }
 if (!is_int($mistakeId) || $mistakeId < 1) {
-    json_out(400, [
-        'success' => false,
-        'errors'  => ['mistake_id' => 'mistake_id must be a positive integer.'],
-    ]);
+    json_out(400, ['success' => false, 'errors' => ['mistake_id' => 'mistake_id must be a positive integer.']]);
 }
 
 $action = (string) ($input['action'] ?? '');
@@ -101,10 +78,6 @@ if (!in_array($action, ['MASTERED', 'KEEP_PRACTICING', 'REACTIVATE', 'DELETE'], 
     ]);
 }
 
-// ---------------------------------------------------------------------------
-// Apply
-// ---------------------------------------------------------------------------
-
 try {
     $mistake = fetchMistake($pdo, $userId, $mistakeId);
     if (!$mistake) {
@@ -112,6 +85,7 @@ try {
     }
 
     if ($action === 'DELETE') {
+        srs_log_event($pdo, $userId, $mistakeId, 'DELETED');
         $stmt = $pdo->prepare('DELETE FROM `mistakes` WHERE `id` = :id AND `user_id` = :u');
         $stmt->execute([':id' => $mistakeId, ':u' => $userId]);
         json_out(200, [
@@ -126,39 +100,44 @@ try {
 
     if ($action === 'MASTERED') {
         if ($mistake['status'] === 'ARCHIVED') {
-            // Idempotent: never double-increment on repeated calls
             $alreadyProcessed = true;
         } else {
             $stmt = $pdo->prepare(
                 "UPDATE `mistakes`
-                 SET `status` = 'ARCHIVED', `mastery_count` = `mastery_count` + 1
+                 SET `status` = 'ARCHIVED', `mastery_count` = `mastery_count` + 1,
+                     `graduated_at` = NOW()
                  WHERE `id` = :id AND `user_id` = :u AND `status` = 'ACTIVE'"
             );
             $stmt->execute([':id' => $mistakeId, ':u' => $userId]);
+            srs_log_event($pdo, $userId, $mistakeId, 'MASTERED',
+                SRS_GRADES['EASY'], (int) $mistake['interval_days'], (int) $mistake['interval_days'],
+                srs_prev_state($mistake));
             $mistake['status']        = 'ARCHIVED';
             $mistake['mastery_count'] = (int) $mistake['mastery_count'] + 1;
         }
     } elseif ($action === 'REACTIVATE') {
         $stmt = $pdo->prepare(
             "UPDATE `mistakes`
-             SET `status` = 'ACTIVE'
+             SET `status` = 'ACTIVE', `graduated_at` = NULL, `due_at` = NOW(),
+                 `interval_days` = 0, `streak_correct` = 0
              WHERE `id` = :id AND `user_id` = :u"
         );
         $stmt->execute([':id' => $mistakeId, ':u' => $userId]);
-        $mistake['status'] = 'ACTIVE';
-    } else { // KEEP_PRACTICING
+        srs_log_event($pdo, $userId, $mistakeId, 'REACTIVATED');
+        $mistake['status']      = 'ACTIVE';
+        $mistake['due_at']      = date('Y-m-d H:i:s');
+        $mistake['interval_days'] = 0;
+    } else { // KEEP_PRACTICING (legacy)
         if ($mistake['status'] === 'ARCHIVED') {
-            json_out(400, [
-                'success' => false,
-                'error'   => 'Mistake is already archived.',
-            ]);
+            json_out(400, ['success' => false, 'error' => 'Mistake is already archived.']);
         }
         $stmt = $pdo->prepare(
-            'UPDATE `mistakes`
-             SET `mastery_count` = `mastery_count` + 1
-             WHERE `id` = :id AND `user_id` = :u AND `status` = \'ACTIVE\''
+            "UPDATE `mistakes`
+             SET `mastery_count` = `mastery_count` + 1, `due_at` = NOW()
+             WHERE `id` = :id AND `user_id` = :u AND `status` = 'ACTIVE'"
         );
         $stmt->execute([':id' => $mistakeId, ':u' => $userId]);
+        srs_log_event($pdo, $userId, $mistakeId, 'HARD', SRS_GRADES['HARD']);
         $mistake['mastery_count'] = (int) $mistake['mastery_count'] + 1;
     }
 
@@ -168,7 +147,15 @@ try {
             ? 'Mistake archived. Row preserved in history.'
             : 'Card kept in the active practice queue.',
         'already_processed' => $alreadyProcessed,
-        'mistake'           => mistakePayload($mistake),
+        'mistake'           => [
+            'id'            => (int) $mistake['id'],
+            'page_number'   => (int) $mistake['page_number'],
+            'surah_number'  => (int) $mistake['surah_number'],
+            'ayah_number'   => (int) $mistake['ayah_number'],
+            'mistake_type'  => $mistake['mistake_type'],
+            'status'        => $mistake['status'],
+            'mastery_count' => (int) $mistake['mastery_count'],
+        ],
     ]);
 } catch (PDOException $e) {
     error_log('[ClearMistake Failed] ' . $e->getMessage());

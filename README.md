@@ -9,6 +9,16 @@ Quran memorization daily logbook: PHP 8 + MySQL backend (`api/`), RTL web fronte
 - MySQL 8 (import `config/schema.sql`, then seed meta via `api/data/seed_madinah_meta.php` or `config/seed_madinah_pages.sql`)
 - Any PHP-capable server (Apache/Nginx, or `php -S` for dev)
 
+> **Upgrading an existing v1 database?** Run the idempotent migration once —
+> `php config/migrate_v2.php` (CLI) or open
+> `https://your-host/config/migrate_v2.php?confirm=1` in a browser. It adds the
+> spaced-repetition columns to `mistakes` and creates `mistake_events` without
+> touching existing data. Fresh installs get everything from `config/schema.sql`.
+>
+> **Offline Quran text?** `php api/data/build_quran_text.php` downloads the
+> Uthmani text once and writes `web/data/quran-uthmani.json` (the flashcard
+> back face + service worker use it offline).
+
 ## Local dev
 
 ```powershell
@@ -149,10 +159,52 @@ wrapper (standalone display, RTL, theme color `#0f766e`). Its icons
 (`mobile/icon-192.png`, `mobile/icon-512.png`) are placeholders — replace
 them with final artwork before shipping an APK.
 
+## Spaced repetition & the mistake model (v2)
+
+The mistake log is now a small **spaced-repetition system** instead of a plain
+list:
+
+**Logging**
+- Logging the *same* mistake again does **not** add a duplicate row — it bumps
+  `occurrence_count`, raises `severity` to the max, resets the schedule (a
+  lapse) and writes a `LOGGED` event.
+- Each mistake can carry `severity` (بسيط/متوسط/شديد), a `source_task`, and for
+  متشابهات a `confused_with_surah` / `confused_with_ayah` pairing.
+- Mistakes can be edited from the history page (`update_mistake.php`), which
+  records an `EDITED` event with the previous snapshot.
+
+**Scheduling (SM-2 lite)** — `api/mistakes/_srs.php`
+- Grades: **أخطأت / صعب / جيد / سهل** (AGAIN/HARD/GOOD/EASY).
+- Interval ladder grows 1 → 3 → 7 → … capped at 365 days; `AGAIN` resets to
+  1 day and increments `lapses`; ease starts at 2.50 (range 1.30–2.80).
+- A card graduates (ARCHIVED) after **3 consecutive GOOD/EASY** reviews that
+  reach a ≥ 30-day interval; it can be reactivated from history.
+- Every transition is recorded in `mistake_events` (append-only audit trail),
+  which also powers the review **streak** and undo.
+
+**Endpoints**
+| File | Purpose |
+| --- | --- |
+| `record_mistake.php` | log / de-duplicate a mistake (returns `merged`) |
+| `review_mistake.php` | apply a grade and reschedule |
+| `undo_review.php` | revert the last review (within 30 min) |
+| `get_flashcards.php` | due-first deck: `mode` (`due`/`all`), filters, shuffle, counters |
+| `update_mistake.php` | edit type / severity / notes / mutashabihat pairing |
+| `clear_mistake.php` | MASTERED / REACTIVATE / KEEP_PRACTICING / DELETE |
+| `get_history.php` | log + type distribution + per-juz heatmap + due summary + streak |
+
+**Flashcards page** (`web/flashcards.html` + `web/js/flashcards.js`)
+- Due/new/active counters and a session progress bar.
+- Card **back** now shows the actual **ayah text** (offline bundle) and a
+  **recitation play** button (per-ayah audio, cached by the service worker).
+- Grade with the buttons, keys **1–4**, or **ف** to reveal; swipe or tap flips.
+- Filters (type / surah / juz), shuffle, and **undo**; ends with a session
+  summary (cards reviewed, recall rate, graduated).
+
 ## Gesture notes
 
 - Page cards (recitation): horizontal swipe moves between pages of the active task.
-- Flashcards: tap or swipe flips the card; actions are **✅ أتقنتها** (archives)
-  and **🔄 مواصلة التدريب** (rotates card to end of deck).
+- Flashcards: tap or swipe flips the card; grade with the four buttons or keys
+  **1 = أخطأت, 2 = صعب, 3 = جيد, 4 = سهل**. **↩ تراجع** reverts the last grade.
 - Gestures are implemented natively in `web/js/app.js` and `web/js/flashcards.js`;
   `mobile/index.html` only provides a fallback bridge for stale bundles.

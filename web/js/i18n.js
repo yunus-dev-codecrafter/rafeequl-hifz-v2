@@ -468,6 +468,97 @@ const I18N_DICTIONARY = {
     err_network: 'تعذر الاتصال بالخادم. يرجى التحقق من الاتصال.',
     err_session_expired: 'انتهت الجلسة. يرجى تسجيل الدخول مجدداً.',
     err_unexpected: 'حدث خطأ غير متوقع.',
+
+    // Scheduling units
+    fc_days_unit: 'يوم',
+    fc_interval_today: 'مستحقة اليوم',
+    fc_interval_days: 'بعد {days} يوم',
+
+    // Mistake modal — severity / mutashabihat / edit
+    mistake_severity_label: 'درجة الخطأ',
+    sev_light: 'بسيط',
+    sev_medium: 'متوسط',
+    sev_severe: 'شديد',
+    mistake_confused_label: 'الالتباس مع آية أخرى (للمتشابهات)',
+    mistake_confused_placeholder: '— لا يوجد التباس —',
+    mistake_confused_hint: 'اختياري، ومفيد جداً لأخطاء المتشابهات',
+    modal_edit_title: 'تعديل سجل الخطأ',
+    btn_update_mistake: 'حفظ التعديل',
+    btn_edit_mistake: 'تعديل ✎',
+    mistake_updated_toast: 'تم تحديث سجل الخطأ بنجاح ✓',
+    mistake_merged_toast: 'هذا الخطأ مسجل مسبقاً — تم تحديث عدد تكراره 🔁',
+
+    // Flashcards — header & counters
+    fc_due_badge: 'مستحقة اليوم',
+    fc_new_badge: 'جديدة',
+    fc_total_badge: 'إجمالي النشِطة',
+    fc_deck_progress: '{done} من {total}',
+    fc_mode_due: 'المستحقة',
+    fc_mode_all: 'الكل',
+    fc_filters_btn: 'تصفية ⚙',
+    fc_filter_title: 'تصفية الرزمة',
+    fc_filter_type: 'نوع الخطأ',
+    fc_filter_surah: 'السورة',
+    fc_filter_juz: 'الجزء',
+    fc_filter_all: 'الكل',
+    fc_filter_apply: 'تطبيق',
+    fc_filter_reset: 'إعادة ضبط',
+    fc_shuffle_btn: 'خلط 🔀',
+    fc_undo_btn: '↩ تراجع',
+    fc_undo_toast: 'تم التراجع عن آخر خطوة',
+    fc_undo_none: 'لا يوجد ما يمكن التراجع عنه',
+
+    // Flashcards — grading
+    fc_grade_again: 'أخطأت',
+    fc_grade_hard: 'صعب',
+    fc_grade_good: 'جيد',
+    fc_grade_easy: 'سهل',
+    fc_grade_again_title: 'لم أتذكرها (تعود قريباً)',
+    fc_grade_hard_title: 'تذكرتها بصعوبة',
+    fc_grade_good_title: 'تذكرتها جيداً',
+    fc_grade_easy_title: 'سهلة تماماً',
+
+    // Flashcards — card content
+    fc_ayah_text_label: 'نص الآية',
+    fc_ayah_unavailable: 'نص الآية غير متاح دون اتصال',
+    fc_play_btn: '▶ التلاوة',
+    fc_stop_btn: '■ إيقاف',
+    fc_audio_error: 'تعذر تشغيل التلاوة',
+    fc_card_confused: 'التبس بـ: {surah} — الآية {ayah}',
+    fc_card_severity: 'درجة الخطأ: {level}',
+    fc_card_occurrence: 'تكرر الخطأ {count} مرة',
+    fc_card_new: 'بطاقة جديدة',
+    fc_card_record: 'سجل التدريب',
+    fc_card_interval: 'قادم: {label}',
+
+    // Flashcards — session summary & empty states
+    fc_summary_title: 'أحسنت! أتممت رزمة اليوم ✅',
+    fc_summary_desc: 'ملخص جلسة التدريب',
+    fc_summary_total: 'بطاقات راجعتها',
+    fc_summary_accuracy: 'نسبة التذكّر الجيد',
+    fc_summary_graduated: 'بطاقات تخرجت للأرشيف',
+    fc_summary_remain: 'بطاقات متبقية',
+    fc_summary_restart: 'رزمة جديدة',
+    fc_no_due_title: 'لا توجد بطاقات مستحقة الآن 🎉',
+    fc_no_due_desc: 'عُد لاحقاً عندما يحين موعد المراجعة، أو راجع كل البطاقات الآن.',
+    fc_practice_all_btn: 'راجع كل البطاقات الآن',
+
+    // History — cards & analytics
+    history_occurrence: 'تكرر {count} مرة',
+    history_interval_every: 'كل {days} يوم',
+    history_next_review: 'المراجعة القادمة: {date}',
+    history_confused_with: 'التبس بـ {surah} — الآية {ayah}',
+    history_analytics_types: 'توزيع أنواع الأخطاء',
+    history_analytics_juz: 'نقاط الضعف حسب الجزء',
+    history_analytics_streak: 'سلسلة المراجعة',
+    history_streak_value: '{count} يوم',
+    history_no_types: 'لا توجد بيانات كافية',
+    history_toast_updated: 'تم تحديث السجل بنجاح ✓',
+
+    // Dashboard
+    stat_due_mistakes: 'بطاقات مستحقة اليوم',
+    streak_unit: 'يوم',
+    task_mistakes_due: '{count} بطاقة مستحقة للمراجعة',
   },
 
   en: {
@@ -813,6 +904,97 @@ const I18N_DICTIONARY = {
     err_network: 'Could not connect to server. Please check your connection.',
     err_session_expired: 'Session expired. Please sign in again.',
     err_unexpected: 'An unexpected error occurred.',
+
+    // Scheduling units
+    fc_days_unit: 'day(s)',
+    fc_interval_today: 'Due today',
+    fc_interval_days: 'In {days} day(s)',
+
+    // Mistake modal — severity / mutashabihat / edit
+    mistake_severity_label: 'Mistake severity',
+    sev_light: 'Mild',
+    sev_medium: 'Moderate',
+    sev_severe: 'Severe',
+    mistake_confused_label: 'Confused with another ayah (for Mutashabihat)',
+    mistake_confused_placeholder: '— No confusion —',
+    mistake_confused_hint: 'Optional, and very useful for similar-ayah mistakes',
+    modal_edit_title: 'Edit mistake record',
+    btn_update_mistake: 'Save changes',
+    btn_edit_mistake: 'Edit ✎',
+    mistake_updated_toast: 'Mistake record updated ✓',
+    mistake_merged_toast: 'This mistake already existed — recurrence count updated 🔁',
+
+    // Flashcards — header & counters
+    fc_due_badge: 'Due today',
+    fc_new_badge: 'New',
+    fc_total_badge: 'Active total',
+    fc_deck_progress: '{done} of {total}',
+    fc_mode_due: 'Due',
+    fc_mode_all: 'All',
+    fc_filters_btn: 'Filter ⚙',
+    fc_filter_title: 'Filter deck',
+    fc_filter_type: 'Mistake type',
+    fc_filter_surah: 'Surah',
+    fc_filter_juz: 'Juz',
+    fc_filter_all: 'All',
+    fc_filter_apply: 'Apply',
+    fc_filter_reset: 'Reset',
+    fc_shuffle_btn: 'Shuffle 🔀',
+    fc_undo_btn: '↩ Undo',
+    fc_undo_toast: 'Last action undone',
+    fc_undo_none: 'Nothing to undo',
+
+    // Flashcards — grading
+    fc_grade_again: 'Missed',
+    fc_grade_hard: 'Hard',
+    fc_grade_good: 'Good',
+    fc_grade_easy: 'Easy',
+    fc_grade_again_title: 'I did not recall it (returns soon)',
+    fc_grade_hard_title: 'Recalled with difficulty',
+    fc_grade_good_title: 'Recalled well',
+    fc_grade_easy_title: 'Very easy',
+
+    // Flashcards — card content
+    fc_ayah_text_label: 'Ayah text',
+    fc_ayah_unavailable: 'Ayah text unavailable offline',
+    fc_play_btn: '▶ Play',
+    fc_stop_btn: '■ Stop',
+    fc_audio_error: 'Could not play the recitation',
+    fc_card_confused: 'Confused with: {surah} — Ayah {ayah}',
+    fc_card_severity: 'Severity: {level}',
+    fc_card_occurrence: 'Recurred {count} time(s)',
+    fc_card_new: 'New card',
+    fc_card_record: 'Training record',
+    fc_card_interval: 'Next: {label}',
+
+    // Flashcards — session summary & empty states
+    fc_summary_title: 'Well done! Today\u2019s deck is complete ✅',
+    fc_summary_desc: 'Training session summary',
+    fc_summary_total: 'Cards reviewed',
+    fc_summary_accuracy: 'Good recall rate',
+    fc_summary_graduated: 'Cards graduated to archive',
+    fc_summary_remain: 'Cards remaining',
+    fc_summary_restart: 'New deck',
+    fc_no_due_title: 'No cards due right now 🎉',
+    fc_no_due_desc: 'Come back when the next review is due, or practice the whole deck now.',
+    fc_practice_all_btn: 'Practice all cards now',
+
+    // History — cards & analytics
+    history_occurrence: 'Recurred {count} time(s)',
+    history_interval_every: 'Every {days} day(s)',
+    history_next_review: 'Next review: {date}',
+    history_confused_with: 'Confused with {surah} — Ayah {ayah}',
+    history_analytics_types: 'Mistake type distribution',
+    history_analytics_juz: 'Weakness by Juz',
+    history_analytics_streak: 'Review streak',
+    history_streak_value: '{count} day(s)',
+    history_no_types: 'Not enough data yet',
+    history_toast_updated: 'Record updated ✓',
+
+    // Dashboard
+    stat_due_mistakes: 'Cards due today',
+    streak_unit: 'day(s)',
+    task_mistakes_due: '{count} cards due for review',
   }
 };
 

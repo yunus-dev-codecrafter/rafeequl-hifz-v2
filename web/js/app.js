@@ -351,6 +351,15 @@ function isAndroid() {
   return /Android/.test(navigator.userAgent);
 }
 
+// The install flow only makes sense on phones/tablets. On a desktop browser the
+// install button / banner is just noise, so we keep it hidden there entirely.
+function isMobileDevice() {
+  if (isIOS() || isAndroid()) return true;
+  // iPadOS 13+ reports itself as "Macintosh" but is touch-capable.
+  if (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1) return true;
+  return false;
+}
+
 // Register sw.js with a single retry. InfinityFree's "Browser Security System"
 // serves sw.js as an HTML challenge (wrong MIME type) until its __test cookie
 // is set, so the very first registration attempt can transiently fail.
@@ -382,7 +391,30 @@ async function initPWAEngine() {
   const bannerInstallBtn = document.getElementById('btn-banner-install');
   const bannerDismissBtn = document.getElementById('btn-banner-dismiss');
 
+  const hideInstallUI = () => {
+    if (headerInstallBtn) headerInstallBtn.classList.add('hidden');
+    if (banner) banner.classList.add('hidden');
+  };
+
+  // Single source of truth for whether we may offer installation at all.
+  // Once the app has been installed it must NEVER be offered again — on any
+  // device — so this checks the persisted flag, standalone mode and device type.
+  const shouldOfferInstall = () => {
+    if (isAppStandalone()) {
+      markAppInstalled();
+      return false;
+    }
+    if (wasInstalledPreviously()) return false;
+    if (!isMobileDevice()) return false;
+    return true;
+  };
+
   const showInstallUI = () => {
+    // Hard gate: never reveal the button/banner once installed (or on desktop).
+    if (!shouldOfferInstall()) {
+      hideInstallUI();
+      return;
+    }
     if (headerInstallBtn) headerInstallBtn.classList.remove('hidden');
     if (banner) {
       let dismissed = false;
@@ -392,11 +424,6 @@ async function initPWAEngine() {
       } catch (e) {}
       if (!dismissed) banner.classList.remove('hidden');
     }
-  };
-
-  const hideInstallUI = () => {
-    if (headerInstallBtn) headerInstallBtn.classList.add('hidden');
-    if (banner) banner.classList.add('hidden');
   };
 
   // Wire up click handlers immediately
@@ -420,13 +447,47 @@ async function initPWAEngine() {
     });
   }
 
-  // 2. If app is currently running in standalone mode OR was already installed, hide triggers
-  if (isAppStandalone() || wasInstalledPreviously()) {
+  // These listeners are attached on EVERY device / page (before any early
+  // return) so a completed installation is always remembered and the install
+  // button can never reappear afterwards.
+  window.addEventListener('appinstalled', () => {
+    deferredInstallPrompt = null;
+    markAppInstalled();
+    hideInstallUI();
+    const modal = document.getElementById('install-guide-modal');
+    if (modal) modal.classList.add('hidden');
+    showToast(window.I18N ? I18N.t('app_installed_toast') : '🎉 تم تثبيت التطبيق بنجاح!');
+  });
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    showInstallUI(); // gated by shouldOfferInstall()
+  });
+
+  // Persist the "installed" state if we ever find ourselves running as the
+  // installed (standalone) app, in case the install event was missed.
+  if (window.matchMedia) {
+    const onStandaloneChange = () => {
+      if (isAppStandalone()) {
+        markAppInstalled();
+        hideInstallUI();
+      }
+    };
+    try {
+      window.matchMedia('(display-mode: standalone)').addEventListener('change', onStandaloneChange);
+    } catch (e) {
+      try { window.matchMedia('(display-mode: standalone)').addListener(onStandaloneChange); } catch (e2) {}
+    }
+  }
+
+  // 2. Already installed (or running standalone, or on desktop)? Never show UI.
+  if (!shouldOfferInstall()) {
     hideInstallUI();
     return;
   }
 
-  // 3. Chromium installed apps check
+  // 3. Chromium installed-apps check
   if (typeof navigator.getInstalledRelatedApps === 'function') {
     try {
       const relatedApps = await navigator.getInstalledRelatedApps();
@@ -438,25 +499,8 @@ async function initPWAEngine() {
     } catch (e) {}
   }
 
-  // 4. Normal browser tab: Show the install button so user can install
+  // 4. Normal browser tab on a phone/tablet: offer installation.
   showInstallUI();
-
-  // 5. Capture native Chromium install prompt
-  window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    deferredInstallPrompt = e;
-    showInstallUI();
-  });
-
-  // 6. Successful installation listener
-  window.addEventListener('appinstalled', () => {
-    deferredInstallPrompt = null;
-    hideInstallUI();
-    markAppInstalled();
-    const modal = document.getElementById('install-guide-modal');
-    if (modal) modal.classList.add('hidden');
-    showToast(window.I18N ? I18N.t('app_installed_toast') : '🎉 تم تثبيت التطبيق بنجاح!');
-  });
 }
 
 function showInstallGuideModal() {
@@ -621,6 +665,28 @@ function showInstallGuideModal() {
     const btnQuickDesktop = modal.querySelector('#btn-quick-install-prompt-desktop');
     if (btnQuickDesktop) btnQuickDesktop.addEventListener('click', handlePrompt);
 
+    // iOS Safari never fires `appinstalled`. If the user leaves the page while
+    // the install guide is open (to use "Add to Home Screen") and comes back,
+    // remember it so the button does not keep reappearing on iPhone/iPad.
+    if (isIOS() && !document._pwaIosInstallHooked) {
+      document._pwaIosInstallHooked = true;
+      let guideWasOpen = false;
+      document.addEventListener('visibilitychange', () => {
+        const m = document.getElementById('install-guide-modal');
+        if (document.hidden) {
+          guideWasOpen = !!m && !m.classList.contains('hidden');
+        } else if (guideWasOpen) {
+          guideWasOpen = false;
+          markAppInstalled();
+          if (m) m.classList.add('hidden');
+          const headerBtn = document.getElementById('btn-install-app');
+          if (headerBtn) headerBtn.classList.add('hidden');
+          const pwaBanner = document.getElementById('pwa-install-banner');
+          if (pwaBanner) pwaBanner.classList.add('hidden');
+        }
+      });
+    }
+
     const selectTab = (activeBtn, activeSteps) => {
       [btnAndroid, btnIos, btnDesktop].forEach((b) => b && b.classList.remove('btn-primary'));
       [stepsAndroid, stepsIos, stepsDesktop].forEach((s) => s && s.classList.add('hidden'));
@@ -678,6 +744,7 @@ async function loadSharedData() {
   sharedState.date = tasksRes.date || '';
 
   sharedState.history = historyRes.history || [];
+  sharedState.analytics = historyRes.analytics || null;
   sharedState.badges = {};
   sharedState.history.forEach((m) => {
     sharedState.badges[m.page_number] = (sharedState.badges[m.page_number] || 0) + 1;
@@ -1056,8 +1123,15 @@ function renderDashboardUI() {
   }
 
   const activeMistakesCount = sharedState.history.filter((m) => m.status === 'ACTIVE').length;
+  const dashAnalytics = sharedState.analytics || {};
+  const dueCount = (dashAnalytics.due_summary && dashAnalytics.due_summary.due_now) || 0;
+  const reviewStreak = dashAnalytics.streak || 0;
   const mistakesVal = document.getElementById('stat-active-mistakes');
-  if (mistakesVal) mistakesVal.textContent = activeMistakesCount + ' ' + (window.I18N ? I18N.t('active_mistakes_unit') : 'خطأ نشط');
+  if (mistakesVal) {
+    mistakesVal.textContent = window.I18N
+      ? I18N.t('stat_due_mistakes') + ': ' + dueCount
+      : (dueCount + ' بطاقة مستحقة اليوم');
+  }
 
   const dateEl = document.getElementById('tasks-date');
   if (dateEl) dateEl.textContent = sharedState.date;
@@ -1084,8 +1158,14 @@ function renderDashboardUI() {
     if (type === 'MISTAKES') {
       const count = activeMistakesCount;
       rangeHtml = count > 0
-        ? (window.I18N ? I18N.t('task_mistakes_need_practice', { count }) : (count + ' خطأ بحاجة للإتقان'))
+        ? (dueCount > 0
+            ? (window.I18N ? I18N.t('task_mistakes_due', { count: dueCount }) : (dueCount + ' بطاقة مستحقة للمراجعة'))
+            : (window.I18N ? I18N.t('task_mistakes_need_practice', { count }) : (count + ' خطأ بحاجة للإتقان')))
         : (window.I18N ? I18N.t('task_no_mistakes') : 'لا توجد أخطاء نشطة ✓');
+
+      if (reviewStreak > 0) {
+        carriedFlag = `<span class="task-flag">🔥 ${reviewStreak} ${window.I18N ? I18N.t('streak_unit') : 'يوم'}</span>`;
+      }
 
       statusPill = count > 0
         ? `<span class="task-status" style="color:var(--danger); background:var(--danger-soft)">${window.I18N ? I18N.t('task_status_ready_train') : 'متاح للتدريب'}</span>`
@@ -1771,6 +1851,7 @@ function renderActivePageStage(taskType, task, activePage) {
 
 let modalActivePage = 1;
 let modalSelectedTag = 'TRANSITION_FAILURE';
+let modalSeverity = 1;
 
 const SURAHS_LIST = [
   { id: 1, name: "الفاتحة", ayahs: 7 },
@@ -2051,8 +2132,42 @@ function renderAyahOptions(sId, pageNumber, showAll = false) {
   }
 }
 
+function populateConfusedSurahOptions() {
+  const sel = document.getElementById('mistake-confused-surah');
+  if (!sel) return;
+  const current = sel.value;
+  const list = window.SURAHS_DATA || SURAHS_LIST;
+  sel.innerHTML = `<option value="">${window.I18N ? I18N.t('mistake_confused_placeholder') : '— لا يوجد التباس —'}</option>`;
+  list.forEach((s) => {
+    const opt = document.createElement('option');
+    opt.value = s.id;
+    const sName = window.I18N ? I18N.getSurahName(s.id) : (s.name_ar || s.name);
+    opt.textContent = `${s.id}. ${(window.I18N && window.I18N.lang === 'en') ? 'Surah ' + sName : 'سورة ' + sName}`;
+    sel.appendChild(opt);
+  });
+  if (current) sel.value = current;
+}
+
+function renderConfusedAyahOptions(sId) {
+  const sel = document.getElementById('mistake-confused-ayah');
+  if (!sel) return;
+  const current = sel.value;
+  sel.innerHTML = `<option value="">${window.I18N ? I18N.t('mistake_confused_placeholder') : '— لا يوجد التباس —'}</option>`;
+  const list = window.SURAHS_DATA || SURAHS_LIST;
+  const sData = list.find((s) => s.id === sId);
+  if (!sData) return;
+  for (let i = 1; i <= sData.ayahs; i++) {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = window.I18N ? I18N.t('ayah_label', { num: i }) : ('الآية ' + i);
+    sel.appendChild(opt);
+  }
+  if (current) sel.value = current;
+}
+
 function refreshMistakeModalLabels() {
   populateSurahOptions(modalActivePage);
+  populateConfusedSurahOptions();
   if (document.getElementById('mistake-surah')) {
     const currentSurah = parseInt(document.getElementById('mistake-surah').value, 10);
     if (currentSurah) {
@@ -2112,8 +2227,26 @@ function initMistakeModal() {
       document.querySelectorAll('#mistake-tags .tag-btn').forEach((b) => b.classList.remove('active'));
       btn.classList.add('active');
       modalSelectedTag = btn.dataset.type;
+      const wrap = document.getElementById('mistake-confused-wrap');
+      if (wrap) wrap.classList.toggle('hidden', modalSelectedTag !== 'MUTASHABIHAT');
     });
   });
+
+  document.querySelectorAll('#mistake-severity .tag-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#mistake-severity .tag-btn').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      modalSeverity = parseInt(btn.dataset.sev, 10) || 1;
+    });
+  });
+
+  populateConfusedSurahOptions();
+  const confusedSurahSel = document.getElementById('mistake-confused-surah');
+  if (confusedSurahSel) {
+    confusedSurahSel.addEventListener('change', () => {
+      renderConfusedAyahOptions(parseInt(confusedSurahSel.value, 10));
+    });
+  }
 
   const cancelBtn = document.getElementById('modal-cancel');
   if (cancelBtn) cancelBtn.addEventListener('click', closeMistakeModal);
@@ -2136,7 +2269,12 @@ function initMistakeModal() {
 
       saveBtn.disabled = true;
       try {
-        await API.call('mistakes/record_mistake.php', {
+        const confusedSurahEl = document.getElementById('mistake-confused-surah');
+        const confusedAyahEl = document.getElementById('mistake-confused-ayah');
+        const confusedSurah = confusedSurahEl && confusedSurahEl.value ? parseInt(confusedSurahEl.value, 10) : null;
+        const confusedAyah = confusedAyahEl && confusedAyahEl.value ? parseInt(confusedAyahEl.value, 10) : null;
+
+        const res = await API.call('mistakes/record_mistake.php', {
           method: 'POST',
           body: {
             page_number: modalActivePage,
@@ -2144,11 +2282,19 @@ function initMistakeModal() {
             ayah_number: ayahVal,
             mistake_type: modalSelectedTag,
             notes: notesVal || null,
+            severity: modalSeverity,
+            confused_with_surah: confusedSurah,
+            confused_with_ayah: confusedAyah,
+            source_task: document.body.dataset.taskType || null,
           },
           redirectOn401: true,
         });
 
-        showToast(window.I18N ? I18N.t('mistake_logged_toast') : 'تم تسجيل الخطأ بنجاح 🔴 وسيظهر في بطاقات المعالجة');
+        if (res && res.merged) {
+          showToast(window.I18N ? I18N.t('mistake_merged_toast') : 'هذا الخطأ مسجل مسبقاً — تم تحديث عدد تكراره 🔁');
+        } else {
+          showToast(window.I18N ? I18N.t('mistake_logged_toast') : 'تم تسجيل الخطأ بنجاح 🔴 وسيظهر في بطاقات المعالجة');
+        }
         closeMistakeModal();
 
         // Refresh shared data and re-render current view
@@ -2194,6 +2340,19 @@ function openMistakeModal(pageNumber) {
   }
 
   document.getElementById('mistake-note').value = '';
+
+  // Reset severity + mutashabihat pairing
+  modalSeverity = 1;
+  const sevFirst = document.querySelector('#mistake-severity .tag-btn');
+  if (sevFirst) {
+    document.querySelectorAll('#mistake-severity .tag-btn').forEach((b) => b.classList.remove('active'));
+    sevFirst.classList.add('active');
+  }
+  const confusedWrap = document.getElementById('mistake-confused-wrap');
+  if (confusedWrap) confusedWrap.classList.add('hidden');
+  if (document.getElementById('mistake-confused-surah')) document.getElementById('mistake-confused-surah').value = '';
+  if (document.getElementById('mistake-confused-ayah')) document.getElementById('mistake-confused-ayah').value = '';
+  populateConfusedSurahOptions();
 
   // Auto-detect and populate Surahs for this page
   populateSurahOptions(pageNumber);

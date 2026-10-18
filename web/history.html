@@ -213,6 +213,19 @@
           <span class="stat-value" id="kpi-mastery-rate">0%</span>
         </div>
       </div>
+
+      <div class="stat-item">
+        <div class="stat-icon" style="color:var(--warning); background:var(--warning-soft);">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2c1.5 3 4 4.5 4 8a4 4 0 0 1-8 0c0-1.5.5-2.5 1-3.5C9.5 8 12 6 12 2z"></path>
+            <path d="M8.5 13.5C7 15 6 16.8 6 18.5A6 6 0 0 0 18 18.5c0-2.2-1.2-4.2-3-5.5"></path>
+          </svg>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label" data-i18n="history_analytics_streak">سلسلة المراجعة</span>
+          <span class="stat-value" id="kpi-streak">0 يوم</span>
+        </div>
+      </div>
     </section>
 
     <!-- Analytics / Weak Points Collapsible Grid -->
@@ -233,6 +246,16 @@
         <div style="background:var(--line-subtle); padding:1rem; border-radius:var(--radius-md);">
           <strong style="display:block; margin-bottom:0.75rem; font-size:0.92rem; color:var(--ink);" data-i18n="history_top_surahs">أكثر السور تكراراً في السجل:</strong>
           <div id="top-surahs-list"><p class="hint">لا توجد بيانات كافية</p></div>
+        </div>
+
+        <div style="background:var(--line-subtle); padding:1rem; border-radius:var(--radius-md);">
+          <strong style="display:block; margin-bottom:0.75rem; font-size:0.92rem; color:var(--ink);" data-i18n="history_analytics_types">توزيع أنواع الأخطاء</strong>
+          <div id="type-dist-list"><p class="hint">لا توجد بيانات كافية</p></div>
+        </div>
+
+        <div style="background:var(--line-subtle); padding:1rem; border-radius:var(--radius-md);">
+          <strong style="display:block; margin-bottom:0.75rem; font-size:0.92rem; color:var(--ink);" data-i18n="history_analytics_juz">نقاط الضعف حسب الجزء</strong>
+          <div id="juz-heatmap" class="juz-heatmap"></div>
         </div>
       </div>
     </section>
@@ -256,6 +279,48 @@
     </section>
 
   </main>
+
+  <!-- Edit Mistake Modal -->
+  <div id="history-edit-modal" class="modal-overlay hidden">
+    <div class="modal" role="dialog" aria-modal="true">
+      <div class="modal-head">
+        <h3 data-i18n="modal_edit_title">تعديل سجل الخطأ</h3>
+        <span id="edit-modal-ref" class="task-page-badge red">—</span>
+      </div>
+
+      <div class="field">
+        <span class="field-label" data-i18n="mistake_type_label">نوع الخطأ</span>
+        <div class="tag-group" id="edit-tags"></div>
+      </div>
+
+      <div class="field">
+        <span class="field-label" data-i18n="mistake_severity_label">درجة الخطأ</span>
+        <div class="tag-group" id="edit-severity">
+          <button type="button" class="tag-btn" data-sev="1" data-i18n="sev_light">بسيط</button>
+          <button type="button" class="tag-btn" data-sev="2" data-i18n="sev_medium">متوسط</button>
+          <button type="button" class="tag-btn" data-sev="3" data-i18n="sev_severe">شديد</button>
+        </div>
+      </div>
+
+      <div class="field hidden" id="edit-confused-wrap">
+        <label data-i18n="mistake_confused_label">الالتباس مع آية أخرى (للمتشابهات)</label>
+        <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+          <select id="edit-confused-surah" style="flex:1; min-width:140px;"></select>
+          <select id="edit-confused-ayah" style="flex:1; min-width:110px;"></select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="edit-note" data-i18n="mistake_notes_label">ملاحظة مساعدة للتذكر (اختياري)</label>
+        <textarea id="edit-note" rows="2" maxlength="5000"></textarea>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" id="edit-modal-cancel" class="btn btn-ghost" data-i18n="btn_cancel">إلغاء</button>
+        <button type="button" id="edit-modal-save" class="btn btn-primary" data-i18n="btn_update_mistake">حفظ التعديل</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Mobile Bottom Navigation -->
   <nav class="mobile-bottom-nav" aria-label="التنقل السريع">
@@ -345,13 +410,21 @@
         document.getElementById('kpi-active-count').textContent = countActiveText;
         document.getElementById('kpi-mastery-rate').textContent = rate + '%';
 
+        const weak = res.weak_points || {};
+        const analytics = res.analytics || {};
         lastAnalyticsData = {
-          topAyahs: res.top_ayahs || [],
-          topSurahs: res.top_surahs || []
+          topAyahs: weak.top_ayahs || [],
+          topSurahs: weak.top_surahs || [],
+          types: analytics.type_distribution || [],
+          juz: analytics.juz_heatmap || [],
+          due: analytics.due_summary || null
         };
 
-        // Render Top Weak Ayahs & Surahs
-        renderAnalytics(lastAnalyticsData.topAyahs, lastAnalyticsData.topSurahs);
+        const streakVal = document.getElementById('kpi-streak');
+        if (streakVal) streakVal.textContent = (window.I18N ? I18N.t('history_streak_value', { count: analytics.streak || 0 }) : ((analytics.streak || 0) + ' يوم'));
+
+        // Render analytics panels
+        renderAnalytics(lastAnalyticsData);
 
         renderFeed();
       } catch (err) {
@@ -359,14 +432,19 @@
       }
     }
 
-    function renderAnalytics(topAyahs, topSurahs) {
+    function renderAnalytics(data) {
+      const topAyahs = (data && data.topAyahs) || [];
+      const topSurahs = (data && data.topSurahs) || [];
+      const types = (data && data.types) || [];
+      const juz = (data && data.juz) || [];
+
       const ayahsWrap = document.getElementById('top-ayahs-list');
       if (ayahsWrap) {
-        if (!topAyahs || !topAyahs.length) {
+        if (!topAyahs.length) {
           ayahsWrap.innerHTML = '<p class="hint">' + (window.I18N ? I18N.t('history_no_weak_ayahs') : 'لا توجد آيات متكررة') + '</p>';
         } else {
           ayahsWrap.innerHTML = topAyahs.slice(0, 5).map(a => {
-            const surahName = window.I18N ? I18N.getSurahName(a.surah_id, a.surah_name) : a.surah_name;
+            const surahName = window.I18N ? I18N.getSurahName(a.surah_number) : a.surah_name;
             const ayahLabel = window.I18N ? I18N.t('ayah_label', { num: a.ayah_number }) : ('آية ' + a.ayah_number);
             const countLabel = window.I18N ? I18N.t('times_count', { count: a.count }) : (a.count + ' مرات');
             return `
@@ -381,11 +459,11 @@
 
       const surahsWrap = document.getElementById('top-surahs-list');
       if (surahsWrap) {
-        if (!topSurahs || !topSurahs.length) {
+        if (!topSurahs.length) {
           surahsWrap.innerHTML = '<p class="hint">' + (window.I18N ? I18N.t('history_no_weak_surahs') : 'لا توجد سور متكررة') + '</p>';
         } else {
           surahsWrap.innerHTML = topSurahs.slice(0, 5).map(s => {
-            const surahName = window.I18N ? I18N.getSurahName(s.surah_id, s.surah_name) : s.surah_name;
+            const surahName = window.I18N ? I18N.getSurahName(s.surah_number) : s.surah_name;
             const countLabel = window.I18N ? I18N.t('mistakes_count_label', { count: s.count }) : (s.count + ' أخطاء');
             return `
               <div class="weak-item">
@@ -393,6 +471,39 @@
                 <strong style="color:var(--accent);">${esc(countLabel)}</strong>
               </div>
             `;
+          }).join('');
+        }
+      }
+
+      const typesWrap = document.getElementById('type-dist-list');
+      if (typesWrap) {
+        if (!types.length) {
+          typesWrap.innerHTML = '<p class="hint">' + (window.I18N ? I18N.t('history_no_types') : 'لا توجد بيانات كافية') + '</p>';
+        } else {
+          const maxT = Math.max.apply(null, types.map(t => t.count).concat([1]));
+          typesWrap.innerHTML = types.map(t => {
+            const label = window.I18N ? I18N.getMistakeLabel(t.mistake_type, t.label) : t.label;
+            const pct = Math.round((t.count / maxT) * 100);
+            return `<div class="weak-item" style="flex-direction:column; align-items:stretch; gap:0.35rem;">
+              <div style="display:flex; justify-content:space-between;"><span>${esc(label)}</span><strong style="color:var(--danger);">${esc(String(t.count))}</strong></div>
+              <div class="progress-bar" style="height:6px;"><div class="progress-fill fill-blue" style="width:${pct}%"></div></div>
+            </div>`;
+          }).join('');
+        }
+      }
+
+      const juzWrap = document.getElementById('juz-heatmap');
+      if (juzWrap) {
+        if (!juz.length) {
+          juzWrap.innerHTML = '<p class="hint">' + (window.I18N ? I18N.t('history_no_types') : 'لا توجد بيانات كافية') + '</p>';
+        } else {
+          const maxJ = Math.max.apply(null, juz.map(j => j.count).concat([1]));
+          juzWrap.innerHTML = juz.map(j => {
+            const intensity = j.count / maxJ;
+            const bg = j.count === 0 ? 'var(--line-subtle)' : 'rgba(225, 29, 72, ' + (0.12 + intensity * 0.75).toFixed(2) + ')';
+            const title = (window.I18N ? I18N.t('juz_label', { num: j.juz_number }) : ('الجزء ' + j.juz_number)) + ': ' + j.count;
+            const color = intensity > 0.5 ? '#fff' : 'var(--ink-secondary)';
+            return `<span class="juz-cell" style="background:${bg}; color:${color};" title="${esc(title)}">${j.juz_number}</span>`;
           }).join('');
         }
       }
@@ -433,12 +544,27 @@
       feedEl.innerHTML = filtered.map(item => {
         const isArchived = item.status === 'ARCHIVED';
         const dateStr = item.created_at ? String(item.created_at).slice(0, 10) : '';
-        const surahDisplay = window.I18N ? I18N.getSurahName(item.surah_id, item.surah_name) : ('سورة ' + item.surah_name);
+        const surahDisplay = window.I18N ? I18N.getSurahName(item.surah_number) : ('سورة ' + item.surah_name);
         const ayahDisplay = window.I18N ? I18N.t('ayah_label', { num: item.ayah_number }) : ('الآية ' + item.ayah_number);
         const mistakeLabel = window.I18N ? I18N.getMistakeLabel(item.mistake_type, item.mistake_label) : item.mistake_label;
         const pageLabel = window.I18N ? (I18N.t('page_prefix') + item.page_number) : ('صفحة ' + item.page_number);
         const loggedDate = window.I18N ? I18N.t('history_logged_date', { date: dateStr }) : ('سُجل بتاريخ: ' + dateStr);
         const masteryLabel = window.I18N ? I18N.t('fc_card_mastery', { count: item.mastery_count }) : ('مرات الإتقان: ' + item.mastery_count);
+        const occurrenceLabel = item.occurrence_count > 1
+          ? (window.I18N ? I18N.t('history_occurrence', { count: item.occurrence_count }) : ('تكرر ' + item.occurrence_count + ' مرة'))
+          : '';
+        const severityLabel = window.I18N
+          ? I18N.t('mistake_severity_label') + ': ' + (item.severity >= 3 ? I18N.t('sev_severe') : item.severity === 2 ? I18N.t('sev_medium') : I18N.t('sev_light'))
+          : ('الدرجة: ' + (item.severity >= 3 ? 'شديد' : item.severity === 2 ? 'متوسط' : 'بسيط'));
+        const confusedLabel = (item.confused_with_surah && item.confused_with_ayah)
+          ? (window.I18N
+              ? I18N.t('history_confused_with', { surah: I18N.getSurahName(item.confused_with_surah), ayah: item.confused_with_ayah })
+              : ('التبس بـ ' + (item.confused_with_surah_name || '') + ' — الآية ' + item.confused_with_ayah))
+          : '';
+        const nextReviewLabel = item.due_at
+          ? (window.I18N ? I18N.t('history_next_review', { date: String(item.due_at).slice(0, 10) }) : ('المراجعة القادمة: ' + String(item.due_at).slice(0, 10)))
+          : '';
+        const editText = window.I18N ? I18N.t('btn_edit_mistake') : 'تعديل ✎';
         const badgeArchived = window.I18N ? I18N.t('history_badge_mastered') : '✓ تم إتقانها';
         const badgeActive = window.I18N ? I18N.t('history_badge_active') : '🔴 قيد التدريب';
         const reactivateText = window.I18N ? I18N.t('history_reactivate_btn') : 'إعادة للتدريب 🔁';
@@ -463,10 +589,17 @@
               <div style="display:flex; gap:1rem; font-size:0.8rem; color:var(--muted); margin-top:0.4rem; flex-wrap:wrap;">
                 <span>${esc(loggedDate)}</span>
                 <span>${masteryLabel}</span>
+                <span>${esc(severityLabel)}</span>
+                ${occurrenceLabel ? `<span style="color:var(--warning); font-weight:700;">🔁 ${esc(occurrenceLabel)}</span>` : ''}
+                ${confusedLabel ? `<span style="color:var(--danger);">↔ ${esc(confusedLabel)}</span>` : ''}
+                ${nextReviewLabel ? `<span>⏱ ${esc(nextReviewLabel)}</span>` : ''}
               </div>
             </div>
 
             <div style="display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem;">
+              <button type="button" class="btn btn-ghost btn-edit-mistake" data-id="${item.id}" style="font-size:0.78rem; padding:0.35rem 0.65rem;">
+                ${esc(editText)}
+              </button>
               ${isArchived ? `
                 <span class="task-status done">${esc(badgeArchived)}</span>
                 <div style="display:flex; gap:0.4rem; align-items:center;">
@@ -536,10 +669,146 @@
           }
         });
       });
+
+      // Wire edit buttons
+      document.querySelectorAll('.btn-edit-mistake').forEach(btn => {
+        btn.addEventListener('click', () => openEditModal(parseInt(btn.dataset.id, 10)));
+      });
+    }
+
+    /* ---------------- Edit mistake modal ---------------- */
+    let editTargetId = null;
+    const EDIT_TYPES = ['TRANSITION_FAILURE', 'MUTASHABIHAT', 'TAWAQQUF', 'TASHKEEL', 'LAFDH'];
+
+    function buildEditTags() {
+      const wrap = document.getElementById('edit-tags');
+      if (!wrap) return;
+      const selected = (wrap.querySelector('.tag-btn.active') || { dataset: {} }).dataset.type;
+      wrap.innerHTML = EDIT_TYPES.map(t =>
+        `<button type="button" class="tag-btn${t === selected ? ' active' : ''}" data-type="${t}">${esc(window.I18N ? I18N.getMistakeLabel(t) : t)}</button>`
+      ).join('');
+      wrap.querySelectorAll('.tag-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          wrap.querySelectorAll('.tag-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          const cw = document.getElementById('edit-confused-wrap');
+          if (cw) cw.classList.toggle('hidden', btn.dataset.type !== 'MUTASHABIHAT');
+        });
+      });
+    }
+
+    function buildEditSurahOptions() {
+      const sel = document.getElementById('edit-confused-surah');
+      if (!sel) return;
+      const current = sel.value;
+      sel.innerHTML = `<option value="">${window.I18N ? I18N.t('mistake_confused_placeholder') : '— لا يوجد التباس —'}</option>`;
+      (window.SURAHS_DATA || []).forEach(s => {
+        const o = document.createElement('option');
+        o.value = s.id;
+        o.textContent = s.id + '. ' + (window.I18N ? I18N.getSurahName(s.id) : (s.name_ar || s.name));
+        sel.appendChild(o);
+      });
+      if (current) sel.value = current;
+    }
+
+    function buildEditAyahOptions(sId) {
+      const sel = document.getElementById('edit-confused-ayah');
+      if (!sel) return;
+      const current = sel.value;
+      sel.innerHTML = `<option value="">${window.I18N ? I18N.t('mistake_confused_placeholder') : '— لا يوجد التباس —'}</option>`;
+      const sData = (window.SURAHS_DATA || []).find(s => s.id === sId);
+      if (!sData) return;
+      for (let i = 1; i <= sData.ayahs; i++) {
+        const o = document.createElement('option');
+        o.value = i;
+        o.textContent = i;
+        sel.appendChild(o);
+      }
+      if (current) sel.value = current;
+    }
+
+    function openEditModal(id) {
+      const item = (historyRecords || []).find(r => r.id === id);
+      if (!item) return;
+      editTargetId = id;
+
+      const ref = document.getElementById('edit-modal-ref');
+      if (ref) {
+        ref.textContent = (window.I18N ? I18N.getSurahName(item.surah_number) : item.surah_name)
+          + ' — ' + (window.I18N ? I18N.t('ayah_label', { num: item.ayah_number }) : ('الآية ' + item.ayah_number));
+      }
+
+      document.querySelectorAll('#edit-severity .tag-btn').forEach(b =>
+        b.classList.toggle('active', (parseInt(b.dataset.sev, 10) || 1) === (item.severity || 1)));
+
+      buildEditTags();
+      document.querySelectorAll('#edit-tags .tag-btn').forEach(b => b.classList.toggle('active', b.dataset.type === item.mistake_type));
+
+      const cw = document.getElementById('edit-confused-wrap');
+      if (cw) cw.classList.toggle('hidden', item.mistake_type !== 'MUTASHABIHAT');
+
+      buildEditSurahOptions();
+      const cs = document.getElementById('edit-confused-surah');
+      if (cs) cs.value = item.confused_with_surah || '';
+      buildEditAyahOptions(parseInt(item.confused_with_surah, 10) || 0);
+      const ca = document.getElementById('edit-confused-ayah');
+      if (ca) ca.value = item.confused_with_ayah || '';
+
+      const note = document.getElementById('edit-note');
+      if (note) note.value = item.notes || '';
+
+      const modal = document.getElementById('history-edit-modal');
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function closeEditModal() {
+      const modal = document.getElementById('history-edit-modal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    async function saveEditModal() {
+      if (!editTargetId) return;
+      const activeTag = document.querySelector('#edit-tags .tag-btn.active');
+      const activeSev = document.querySelector('#edit-severity .tag-btn.active');
+      const cs = document.getElementById('edit-confused-surah');
+      const ca = document.getElementById('edit-confused-ayah');
+      const note = document.getElementById('edit-note');
+      const saveBtn = document.getElementById('edit-modal-save');
+      if (saveBtn) saveBtn.disabled = true;
+      try {
+        await API.call('mistakes/update_mistake.php', {
+          method: 'POST',
+          body: {
+            mistake_id: editTargetId,
+            mistake_type: activeTag ? activeTag.dataset.type : 'TRANSITION_FAILURE',
+            severity: activeSev ? parseInt(activeSev.dataset.sev, 10) : 1,
+            confused_with_surah: cs && cs.value ? parseInt(cs.value, 10) : null,
+            confused_with_ayah: ca && ca.value ? parseInt(ca.value, 10) : null,
+            notes: note && note.value.trim() ? note.value.trim() : null,
+          },
+          redirectOn401: true,
+        });
+        showToast(window.I18N ? I18N.t('history_toast_updated') : 'تم تحديث السجل بنجاح ✓');
+        closeEditModal();
+        await loadHistoryPage();
+      } catch (err) {
+        showToast(err.message, true);
+      } finally {
+        if (saveBtn) saveBtn.disabled = false;
+      }
     }
 
     document.addEventListener('DOMContentLoaded', () => {
       loadHistoryPage();
+
+      const editSurahSel = document.getElementById('edit-confused-surah');
+      if (editSurahSel) editSurahSel.addEventListener('change', () => buildEditAyahOptions(parseInt(editSurahSel.value, 10)));
+      const editCancel = document.getElementById('edit-modal-cancel');
+      if (editCancel) editCancel.addEventListener('click', closeEditModal);
+      const editSave = document.getElementById('edit-modal-save');
+      if (editSave) editSave.addEventListener('click', saveEditModal);
+      const editModal = document.getElementById('history-edit-modal');
+      if (editModal) editModal.addEventListener('click', (e) => { if (e.target === editModal) closeEditModal(); });
 
       if (window.I18N && typeof I18N.onChange === 'function') {
         I18N.onChange(() => {
@@ -551,7 +820,7 @@
           const kpiActiveEl = document.getElementById('kpi-active-count');
           if (kpiArchivedEl) kpiArchivedEl.textContent = countArchivedText;
           if (kpiActiveEl) kpiActiveEl.textContent = countActiveText;
-          renderAnalytics(lastAnalyticsData.topAyahs, lastAnalyticsData.topSurahs);
+          renderAnalytics(lastAnalyticsData);
           renderFeed();
         });
       }

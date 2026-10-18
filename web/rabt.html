@@ -148,6 +148,24 @@
       </div>
 
       <div class="field">
+        <span class="field-label" data-i18n="mistake_severity_label">درجة الخطأ</span>
+        <div class="tag-group" id="mistake-severity">
+          <button type="button" class="tag-btn active" data-sev="1" data-i18n="sev_light">بسيط</button>
+          <button type="button" class="tag-btn" data-sev="2" data-i18n="sev_medium">متوسط</button>
+          <button type="button" class="tag-btn" data-sev="3" data-i18n="sev_severe">شديد</button>
+        </div>
+      </div>
+
+      <div class="field hidden" id="mistake-confused-wrap">
+        <label data-i18n="mistake_confused_label">الالتباس مع آية أخرى (للمتشابهات)</label>
+        <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+          <select id="mistake-confused-surah" style="flex:1; min-width:140px;"></select>
+          <select id="mistake-confused-ayah" style="flex:1; min-width:110px;"></select>
+        </div>
+        <p class="hint" style="margin-top:0.35rem;" data-i18n="mistake_confused_hint">اختياري، ومفيد جداً لأخطاء المتشابهات</p>
+      </div>
+
+      <div class="field">
         <label for="mistake-note" data-i18n="mistake_notes_label">ملاحظة مساعدة للتذكر (اختياري)</label>
         <textarea id="mistake-note" rows="2" maxlength="5000" placeholder="ملاحظة أثناء التلاوة…" data-i18n-placeholder="mistake_notes_ph"></textarea>
       </div>

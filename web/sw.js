@@ -1,6 +1,7 @@
 'use strict';
 
-const CACHE_NAME = 'rafeequl-hifz-v5';
+const CACHE_NAME = 'rafeequl-hifz-v6';
+const AUDIO_CACHE = 'rafeequl-hifz-audio-v1';
 
 const STATIC_ASSETS = [
   'index.html',
@@ -17,6 +18,7 @@ const STATIC_ASSETS = [
   'js/pwa-manifest.js',
   'js/flashcards.js',
   'js/madinah_page_verses.json',
+  'data/quran-uthmani.json',
   'icons/icon-192.png',
   'icons/icon-512.png',
   'icons/icon-maskable-192.png',
@@ -43,7 +45,7 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((keys) => {
       return Promise.all(
         keys.map((key) => {
-          if (key !== CACHE_NAME) {
+          if (key !== CACHE_NAME && key !== AUDIO_CACHE) {
             return caches.delete(key);
           }
         })
@@ -58,6 +60,26 @@ self.addEventListener('fetch', (event) => {
 
   // API calls and non-GET requests must always go to the network directly
   if (req.method !== 'GET' || url.pathname.includes('/api/')) {
+    return;
+  }
+
+  // Recitation audio (cross-origin): cache-first so repeats play offline.
+  if (url.pathname.endsWith('.mp3')) {
+    event.respondWith(
+      caches.open(AUDIO_CACHE).then((cache) =>
+        cache.match(req).then((cached) => {
+          if (cached) return cached;
+          return fetch(req)
+            .then((res) => {
+              if (res && (res.ok || res.type === 'opaque')) {
+                cache.put(req, res.clone());
+              }
+              return res;
+            })
+            .catch(() => new Response('', { status: 504, statusText: 'Audio unavailable offline' }));
+        })
+      )
+    );
     return;
   }
 
