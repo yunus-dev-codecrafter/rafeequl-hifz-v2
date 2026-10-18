@@ -2248,6 +2248,13 @@ html[dir="ltr"] body {
   transform: translateY(-1px);
 }
 
+/* The `.hidden` class MUST always win over the !important display above,
+   otherwise the install button shows on every page even when JS hides it. */
+.header-action-btn.install-app-btn.hidden,
+.header-action-btn.install-app-btn.is-hidden {
+  display: none !important;
+}
+
 .header-action-btn.install-app-btn svg {
   flex-shrink: 0;
   width: 17px !important;
