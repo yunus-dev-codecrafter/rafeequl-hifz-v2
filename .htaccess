@@ -4,24 +4,23 @@
 # =====================================================================
 
 # ---------------------------------------------------------------------
-# 1) FORCE HTTPS  — REQUIRED FOR APP INSTALLATION
+# 1) FORCE HTTPS
 #
-#    Progressive Web Apps can ONLY be installed from a secure origin
+#    Progressive Web Apps can only be installed from a secure origin
 #    (https:// or http://localhost). Over plain http:// the service
 #    worker never registers and phones will never offer "Install app".
 #
-#    >>> IMPORTANT <<<
-#    Uncomment the block below ONLY after your SSL certificate has been
-#    issued and https://your-domain.tld loads correctly in the browser.
-#    On a free *.unaux.com subdomain (no SSL available) leave it
-#    commented out, otherwise the site will stop loading.
-#
-# <IfModule mod_rewrite.c>
-#   RewriteEngine On
-#   RewriteCond %{HTTPS} !=on
-#   RewriteCond %{HTTP:X-Forwarded-Proto} !https
-#   RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L]
-# </IfModule>
+#    InfinityFree free subdomains (e.g. *.infy.click) are protected by a
+#    system-wide SSL certificate automatically (since May 2025), so HTTPS
+#    works out of the box and this redirect is safe to keep enabled.
+#    If you move to a custom domain, issue its certificate first.
+# ---------------------------------------------------------------------
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteCond %{HTTPS} !=on
+  RewriteCond %{HTTP:X-Forwarded-Proto} !https
+  RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L]
+</IfModule>
 # ---------------------------------------------------------------------
 
 # 2) Correct MIME type for the web app manifest (installability requirement)

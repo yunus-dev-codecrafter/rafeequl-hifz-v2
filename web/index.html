@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#0f766e">
-  <link rel="manifest" href="manifest.json">
+  <script src="js/pwa-manifest.js"></script>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="رفيق الحفظ">
@@ -20,15 +20,6 @@
 
   <main class="auth-container">
     <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-bottom:0.75rem;">
-      <!-- Install App Button (PWA) -->
-      <button type="button" id="btn-install-app" class="header-action-btn install-app-btn hidden" title="تثبيت التطبيق على هاتفك" aria-label="تثبيت التطبيق على هاتفك" data-i18n-title="install_app_title">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-          <polyline points="7 10 12 15 17 10"></polyline>
-          <line x1="12" y1="15" x2="12" y2="3"></line>
-        </svg>
-        <span class="install-btn-text" data-i18n="install_app_btn">📲 تثبيت التطبيق</span>
-      </button>
       <button type="button" class="lang-toggle-btn header-action-btn" title="English / العربية" aria-label="تبديل اللغة">
         <span class="lang-code-text">EN</span>
       </button>
@@ -60,28 +51,6 @@
       <h1 data-i18n="brand_name">رفيق الحفظ</h1>
       <p data-i18n="brand_slogan">رفيقك اليومي في رحلة حفظ القرآن الكريم</p>
     </div>
-
-    <!-- PWA Install Banner -->
-    <section id="pwa-install-banner" class="pwa-install-banner hidden" style="margin-bottom:1.25rem;" aria-label="تثبيت التطبيق">
-      <div class="pwa-banner-card" style="display:flex; align-items:center; gap:0.75rem; width:100%; justify-content:space-between; flex-wrap:wrap;">
-        <div style="display:flex; align-items:center; gap:0.6rem; flex:1 1 200px;">
-          <div class="pwa-banner-icon" style="width:38px; height:38px; flex-shrink:0;">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
-              <line x1="12" y1="18" x2="12.01" y2="18"></line>
-            </svg>
-          </div>
-          <div class="pwa-banner-text" style="font-size:0.85rem;">
-            <strong data-i18n="install_banner_title" style="font-size:0.9rem; margin:0 0 0.15rem 0;">ثبّت التطبيق على هاتفك</strong>
-            <p data-i18n="install_banner_desc" style="font-size:0.8rem; margin:0;">لتجربة أسرع بدون شريط المتصفح كأي تطبيق أصيل.</p>
-          </div>
-        </div>
-        <div class="pwa-banner-actions" style="display:flex; gap:0.4rem; align-items:center;">
-          <button type="button" id="btn-banner-install" class="btn btn-primary" style="padding:0.45rem 0.85rem; font-size:0.82rem;" data-i18n="install_banner_btn">📲 تثبيت الآن</button>
-          <button type="button" id="btn-banner-dismiss" class="btn btn-ghost" style="padding:0.45rem 0.6rem; font-size:0.82rem;" data-i18n="install_banner_dismiss">✕</button>
-        </div>
-      </div>
-    </section>
 
     <div class="auth-card">
       <div class="tabs" role="tablist">

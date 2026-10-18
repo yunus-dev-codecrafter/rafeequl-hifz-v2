@@ -26,29 +26,58 @@ DB credentials/env overrides live in `config/database.php` (`DB_HOST`, `DB_NAME`
 **The app can only be installed on phones when it is served over HTTPS.**
 Browsers refuse to register the service worker on plain `http://` origins
 (only `https://` or `http://localhost` count as secure), and without the
-service worker the "Install app" option never appears — this is why users
-on phones could not install the app before.
+service worker the "Install app" option never appears.
 
-### Enable free SSL on InfinityFree
+### HTTPS on InfinityFree
 
-1. The free `*.unaux.com` subdomains **do not support SSL** — you need a
-   custom domain attached to your InfinityFree account (free domains from
-   Freenom / a cheap registrar both work).
-2. In the InfinityFree Client Area → **Control Panel** → **SSL/TLS** →
-   choose **Let's Encrypt** and issue the certificate for your domain.
-   (If the panel shows "Custom SSL", you can paste a certificate there too.)
-3. Wait for the certificate to activate (up to a few hours), then confirm
-   `https://your-domain.tld` loads the site in a mobile browser.
-4. Uncomment the HTTPS-redirect block at the top of `.htaccess` (project
-   root) so every `http://` visit is permanently redirected to `https://`.
-5. Upload the whole project (`api/`, `config/`, `web/`, `index.php`,
-   `.htaccess`) to `htdocs`. Make sure `.htaccess` actually transfers
-   (dotfiles are hidden by default in most FTP clients).
+InfinityFree free subdomains (`*.infy.click`, `*.rf.gd`, `*.wuaze.com`, …)
+are protected by a system-wide SSL certificate **automatically** — there is
+nothing to request or install (this changed in May 2025). HTTPS just works,
+and the force-HTTPS redirect at the top of `.htaccess` is enabled.
 
-After that, Chrome on Android shows **«تثبيت التطبيق / Install app»** in the
+Only a `www.` prefix on a free subdomain is *not* covered by the wildcard
+certificate — use the bare subdomain (`rafeequlhifz.infy.click`).
+
+### Why a plain `manifest.json` cannot work here
+
+InfinityFree's **Browser Security System** answers requests with a
+JavaScript/cookie challenge (`aes.js` → `__test` cookie) until the browser
+solves it. For `manifest.json`, `sw.js`, `.html` and `.json` the challenge
+is returned with `Content-Type: text/html`. Android Chrome fetches the
+manifest in a way that does **not** carry the cookie, receives the challenge
+page instead of JSON, and reports the app as not installable
+(“Manifest: Line 1, column 1, Syntax error”).
+
+The challenge **cannot be disabled** on free hosting (premium only) and
+cannot be exempted per URL — InfinityFree's own knowledge base lists
+progressive web apps among the things that do not work with it.
+
+### The workaround (already applied)
+
+`web/js/pwa-manifest.js` builds the manifest in JavaScript and points
+`<link rel="manifest">` at a **Blob URL**, so the browser never requests
+`manifest.json` and there is nothing for the challenge to intercept. Every
+page loads this script from `<head>` instead of linking `manifest.json`.
+`sw.js` still loads as a normal file: by the time registration runs the page
+has already solved the challenge and the `__test` cookie is present, so
+`sw.js` is served as real JavaScript (registration retries once in case it
+races the cookie).
+
+Reference: <https://forum.infinityfree.com/t/how-to-make-a-working-progressive-web-app/116505>
+
+### Deploy
+
+Upload the whole project (`api/`, `config/`, `web/`, `index.php`,
+`.htaccess`) to `htdocs`. Make sure `.htaccess` actually transfers (dotfiles
+are hidden by default in most FTP clients). Then open
+`https://rafeequlhifz.infy.click/` on the phone.
+
+Chrome on Android then shows **«تثبيت التطبيق / Install app»** in the
 browser menu and the in-app 📲 button triggers the native 1-click install.
-On iPhone (Safari) the in-app button shows the «Add to Home Screen» guide,
-which does not require HTTPS to work but is far more reliable with it.
+On iPhone (Safari) the in-app button shows the «Add to Home Screen» guide.
+
+> Because of the security system, the installed app still needs Internet
+> access periodically so the challenge can reissue its 6-hour cookie.
 
 > Install button behaviour: the button only appears for users who have **not**
 > installed the app yet. Once installed, it is hidden permanently
@@ -111,10 +140,14 @@ iOS (macOS): `npx cap add ios && npx cap sync ios && npx cap open ios`.
 
 ### 4. PWA / Add-to-Home-Screen
 
-`mobile/manifest.json` + meta tags are already configured (standalone display,
-RTL, theme color `#0f766e`). In a normal mobile browser the site offers
-"Add to Home Screen"; icons are placeholders (`mobile/icon-192.png`,
-`mobile/icon-512.png`) — replace them with final artwork before release.
+The installable PWA is the one served from `web/`. Its manifest is generated
+at runtime by `web/js/pwa-manifest.js` (a Blob URL — see the hosting section
+above) and uses the real icons in `web/icons/` (192/512, plus maskable).
+
+`mobile/` also carries a `manifest.json` + meta tags for the Capacitor
+wrapper (standalone display, RTL, theme color `#0f766e`). Its icons
+(`mobile/icon-192.png`, `mobile/icon-512.png`) are placeholders — replace
+them with final artwork before shipping an APK.
 
 ## Gesture notes
 

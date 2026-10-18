@@ -351,21 +351,31 @@ function isAndroid() {
   return /Android/.test(navigator.userAgent);
 }
 
+// Register sw.js with a single retry. InfinityFree's "Browser Security System"
+// serves sw.js as an HTML challenge (wrong MIME type) until its __test cookie
+// is set, so the very first registration attempt can transiently fail.
+function registerServiceWorker(attempt = 0) {
+  if (!('serviceWorker' in navigator) || !window.isSecureContext) {
+    console.warn('[PWA] Insecure origin (http://): Service Worker requires HTTPS to enable automatic installation.');
+    return;
+  }
+  navigator.serviceWorker.register('sw.js')
+    .then((reg) => {
+      console.log('[PWA] Service Worker registered with scope:', reg.scope);
+    })
+    .catch((err) => {
+      if (attempt < 1) {
+        console.warn('[PWA] Service Worker registration failed, retrying:', err);
+        setTimeout(() => registerServiceWorker(attempt + 1), 1500);
+      } else {
+        console.warn('[PWA] Service Worker registration failed:', err);
+      }
+    });
+}
+
 async function initPWAEngine() {
   // 1. Register Service Worker if in secure context (https:// or localhost)
-  if ('serviceWorker' in navigator && window.isSecureContext) {
-    try {
-      navigator.serviceWorker.register('sw.js')
-        .then((reg) => {
-          console.log('[PWA] Service Worker registered with scope:', reg.scope);
-        })
-        .catch((err) => {
-          console.warn('[PWA] Service Worker registration failed:', err);
-        });
-    } catch (e) {}
-  } else {
-    console.warn('[PWA] Insecure origin (http://): Service Worker requires HTTPS to enable automatic installation.');
-  }
+  registerServiceWorker();
 
   const headerInstallBtn = document.getElementById('btn-install-app');
   const banner = document.getElementById('pwa-install-banner');
