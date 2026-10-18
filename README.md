@@ -21,6 +21,42 @@ DB credentials/env overrides live in `config/database.php` (`DB_HOST`, `DB_NAME`
 
 ---
 
+## Hosting & HTTPS (required for app installation)
+
+**The app can only be installed on phones when it is served over HTTPS.**
+Browsers refuse to register the service worker on plain `http://` origins
+(only `https://` or `http://localhost` count as secure), and without the
+service worker the "Install app" option never appears — this is why users
+on phones could not install the app before.
+
+### Enable free SSL on InfinityFree
+
+1. The free `*.unaux.com` subdomains **do not support SSL** — you need a
+   custom domain attached to your InfinityFree account (free domains from
+   Freenom / a cheap registrar both work).
+2. In the InfinityFree Client Area → **Control Panel** → **SSL/TLS** →
+   choose **Let's Encrypt** and issue the certificate for your domain.
+   (If the panel shows "Custom SSL", you can paste a certificate there too.)
+3. Wait for the certificate to activate (up to a few hours), then confirm
+   `https://your-domain.tld` loads the site in a mobile browser.
+4. Uncomment the HTTPS-redirect block at the top of `.htaccess` (project
+   root) so every `http://` visit is permanently redirected to `https://`.
+5. Upload the whole project (`api/`, `config/`, `web/`, `index.php`,
+   `.htaccess`) to `htdocs`. Make sure `.htaccess` actually transfers
+   (dotfiles are hidden by default in most FTP clients).
+
+After that, Chrome on Android shows **«تثبيت التطبيق / Install app»** in the
+browser menu and the in-app 📲 button triggers the native 1-click install.
+On iPhone (Safari) the in-app button shows the «Add to Home Screen» guide,
+which does not require HTTPS to work but is far more reliable with it.
+
+> Install button behaviour: the button only appears for users who have **not**
+> installed the app yet. Once installed, it is hidden permanently
+> (`localStorage.pwa_installed` + `getInstalledRelatedApps()` detection),
+> even when the user later opens the site in a normal browser tab.
+
+---
+
 ## Wrapping with Capacitor (APK / iOS build)
 
 ### 1. Prerequisites

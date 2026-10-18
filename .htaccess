@@ -1,0 +1,49 @@
+# =====================================================================
+#  رفيق الحفظ — Rafeequl Hifz
+#  Apache .htaccess (InfinityFree compatible)
+# =====================================================================
+
+# ---------------------------------------------------------------------
+# 1) FORCE HTTPS  — REQUIRED FOR APP INSTALLATION
+#
+#    Progressive Web Apps can ONLY be installed from a secure origin
+#    (https:// or http://localhost). Over plain http:// the service
+#    worker never registers and phones will never offer "Install app".
+#
+#    >>> IMPORTANT <<<
+#    Uncomment the block below ONLY after your SSL certificate has been
+#    issued and https://your-domain.tld loads correctly in the browser.
+#    On a free *.unaux.com subdomain (no SSL available) leave it
+#    commented out, otherwise the site will stop loading.
+#
+# <IfModule mod_rewrite.c>
+#   RewriteEngine On
+#   RewriteCond %{HTTPS} !=on
+#   RewriteCond %{HTTP:X-Forwarded-Proto} !https
+#   RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L]
+# </IfModule>
+# ---------------------------------------------------------------------
+
+# 2) Correct MIME type for the web app manifest (installability requirement)
+<IfModule mod_mime.c>
+  <FilesMatch "manifest\.json$">
+    ForceType application/manifest+json
+  </FilesMatch>
+</IfModule>
+
+# 3) Caching rules
+#    - The service worker MUST always be revalidated, otherwise clients
+#      keep running an old shell after an update.
+#    - HTML pages are revalidated too so deploys show up immediately.
+#    - Static assets are cached normally (the service worker handles offline).
+<IfModule mod_headers.c>
+  <Files "sw.js">
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+  </Files>
+  <FilesMatch "\.(html|htm)$">
+    Header set Cache-Control "no-cache, must-revalidate"
+  </FilesMatch>
+</IfModule>
+
+# 4) Default character encoding
+AddDefaultCharset UTF-8

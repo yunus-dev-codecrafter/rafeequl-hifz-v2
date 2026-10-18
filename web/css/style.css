@@ -1233,28 +1233,37 @@ input:focus, select:focus, textarea:focus {
 /* ==========================================================================
    Modals & Toasts
    ========================================================================== */
-.modal-overlay {
+.modal-overlay,
+.modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.6);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 1.25rem;
-  z-index: 99;
+  z-index: 99999;
 }
 
-.modal {
+.modal-overlay.hidden,
+.modal-backdrop.hidden {
+  display: none !important;
+}
+
+.modal,
+.modal-box {
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: var(--radius-xl);
-  padding: 1.75rem;
+  padding: 1.5rem;
   width: 100%;
   max-width: 480px;
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
   animation: modalIn 0.2s var(--ease);
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
 @keyframes modalIn {
@@ -2211,19 +2220,25 @@ html[dir="ltr"] body {
    ========================================================================== */
 
 .header-action-btn.install-app-btn {
-  background: linear-gradient(135deg, rgba(15, 118, 110, 0.15), rgba(13, 148, 136, 0.25));
+  background: linear-gradient(135deg, rgba(15, 118, 110, 0.18), rgba(13, 148, 136, 0.3));
   color: var(--primary);
-  border: 1px solid rgba(13, 148, 136, 0.35);
+  border: 1.5px solid rgba(13, 148, 136, 0.45);
   font-weight: 700;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.3rem 0.75rem;
-  width: auto;
-  min-width: 38px;
-  border-radius: 9999px;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.4rem !important;
+  padding: 0.35rem 0.8rem !important;
+  width: auto !important;
+  height: auto !important;
+  min-height: 36px !important;
+  border-radius: 9999px !important;
   cursor: pointer;
   transition: all 0.2s ease;
+  font-size: 0.85rem !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
 }
 
 .header-action-btn.install-app-btn:hover {
@@ -2235,17 +2250,20 @@ html[dir="ltr"] body {
 
 .header-action-btn.install-app-btn svg {
   flex-shrink: 0;
+  width: 17px !important;
+  height: 17px !important;
 }
 
-@media (max-width: 580px) {
-  .header-action-btn.install-app-btn .install-btn-text {
-    display: none;
-  }
+.header-action-btn.install-app-btn .install-btn-text {
+  display: inline-block !important;
+  font-weight: 700;
+}
+
+@media (max-width: 480px) {
   .header-action-btn.install-app-btn {
-    padding: 0.35rem;
-    width: 36px;
-    height: 36px;
-    justify-content: center;
+    padding: 0.28rem 0.6rem !important;
+    font-size: 0.78rem !important;
+    gap: 0.3rem !important;
   }
 }
 

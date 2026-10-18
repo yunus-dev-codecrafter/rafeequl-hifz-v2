@@ -332,6 +332,17 @@ function isAppStandalone() {
   );
 }
 
+// True if the user installed the app on a previous visit (persisted flag).
+// This is what keeps the install button from coming back in a browser tab
+// after the app has been installed.
+function wasInstalledPreviously() {
+  try { return localStorage.getItem('pwa_installed') === 'true'; } catch (e) { return false; }
+}
+
+function markAppInstalled() {
+  try { localStorage.setItem('pwa_installed', 'true'); } catch (e) {}
+}
+
 function isIOS() {
   return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 }
@@ -340,11 +351,11 @@ function isAndroid() {
   return /Android/.test(navigator.userAgent);
 }
 
-function initPWAEngine() {
-  // 1. Register Service Worker immediately (no waiting for window load)
-  if ('serviceWorker' in navigator) {
+async function initPWAEngine() {
+  // 1. Register Service Worker if in secure context (https:// or localhost)
+  if ('serviceWorker' in navigator && window.isSecureContext) {
     try {
-      navigator.serviceWorker.register('sw.js?v=2')
+      navigator.serviceWorker.register('sw.js')
         .then((reg) => {
           console.log('[PWA] Service Worker registered with scope:', reg.scope);
         })
@@ -352,30 +363,24 @@ function initPWAEngine() {
           console.warn('[PWA] Service Worker registration failed:', err);
         });
     } catch (e) {}
+  } else {
+    console.warn('[PWA] Insecure origin (http://): Service Worker requires HTTPS to enable automatic installation.');
   }
 
-  // 2. Standalone check: If already installed / running standalone, hide all install prompts
-  if (isAppStandalone()) {
-    return;
-  }
-
-  // 3. Setup UI triggers
   const headerInstallBtn = document.getElementById('btn-install-app');
   const banner = document.getElementById('pwa-install-banner');
   const bannerInstallBtn = document.getElementById('btn-banner-install');
   const bannerDismissBtn = document.getElementById('btn-banner-dismiss');
 
   const showInstallUI = () => {
-    if (isAppStandalone()) return;
-    if (headerInstallBtn) {
-      headerInstallBtn.classList.remove('hidden');
-    }
+    if (headerInstallBtn) headerInstallBtn.classList.remove('hidden');
     if (banner) {
-      let dismissed = null;
-      try { dismissed = localStorage.getItem('pwa_banner_dismissed'); } catch (e) {}
-      if (!dismissed || Date.now() - parseInt(dismissed, 10) > 3 * 86400000) {
-        banner.classList.remove('hidden');
-      }
+      let dismissed = false;
+      try {
+        const t = localStorage.getItem('pwa_banner_dismissed');
+        if (t && Date.now() - parseInt(t, 10) < 7 * 86400000) dismissed = true;
+      } catch (e) {}
+      if (!dismissed) banner.classList.remove('hidden');
     }
   };
 
@@ -384,30 +389,11 @@ function initPWAEngine() {
     if (banner) banner.classList.add('hidden');
   };
 
-  // 4. Always show install button right away if not standalone!
-  showInstallUI();
-
-  // 5. Capture beforeinstallprompt if fired by Chromium
-  window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    deferredInstallPrompt = e;
-    showInstallUI();
-  });
-
-  // 6. Successful installation listener
-  window.addEventListener('appinstalled', () => {
-    deferredInstallPrompt = null;
-    hideInstallUI();
-    try { localStorage.setItem('pwa_installed', 'true'); } catch (e) {}
-    showToast(window.I18N ? I18N.t('app_installed_toast') : '🎉 تم تثبيت التطبيق بنجاح!');
-  });
-
-  // 7. User clicked Install
+  // Wire up click handlers immediately
   const triggerInstall = (e) => {
     if (e) {
       try { e.preventDefault(); e.stopPropagation(); } catch (err) {}
     }
-    // Open install guide modal with 1-click trigger & direct "Add to Home screen" steps
     showInstallGuideModal();
   };
 
@@ -423,6 +409,30 @@ function initPWAEngine() {
       try { localStorage.setItem('pwa_banner_dismissed', String(Date.now())); } catch (e) {}
     });
   }
+
+  // 2. If app is currently running in standalone mode (already launched as installed app), hide triggers
+  if (isAppStandalone()) {
+    hideInstallUI();
+    return;
+  }
+
+  // 3. Normal browser tab: Always show the install button so user can install or see instructions
+  showInstallUI();
+
+  // 4. Capture native Chromium install prompt
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    showInstallUI();
+  });
+
+  // 5. Successful installation listener
+  window.addEventListener('appinstalled', () => {
+    deferredInstallPrompt = null;
+    hideInstallUI();
+    markAppInstalled();
+    showToast(window.I18N ? I18N.t('app_installed_toast') : '🎉 تم تثبيت التطبيق بنجاح!');
+  });
 }
 
 function showInstallGuideModal() {
@@ -430,30 +440,41 @@ function showInstallGuideModal() {
   if (!modal) {
     modal = document.createElement('div');
     modal.id = 'install-guide-modal';
-    modal.className = 'modal-backdrop hidden';
+    modal.className = 'modal-overlay hidden';
     
     const userIsIOS = isIOS();
-    
+    const userIsAndroid = isAndroid();
+    const userIsDesktop = !userIsIOS && !userIsAndroid;
+    const insecureOrigin = !window.isSecureContext;
+
     modal.innerHTML = `
-      <div class="modal-box ios-install-box" style="max-width:480px;" role="dialog" aria-modal="true">
+      <div class="modal ios-install-box" style="max-width:490px;" role="dialog" aria-modal="true">
         <div class="modal-head">
-          <h3 data-i18n="install_modal_title">تثبيت رفيق الحفظ على هاتفك</h3>
+          <h3 data-i18n="install_modal_title">تثبيت رفيق الحفظ على جهازك</h3>
           <button type="button" class="btn btn-ghost btn-close-guide" style="padding:0.25rem 0.6rem;">✕</button>
         </div>
         <div class="modal-body" style="padding:0.8rem 0;">
-          <div style="display:flex; gap:0.5rem; margin-bottom:1rem; border-bottom:1px solid var(--border-color); padding-bottom:0.5rem;">
-            <button type="button" id="tab-guide-android" class="btn btn-ghost ${!userIsIOS ? 'btn-primary' : ''}" style="flex:1; font-size:0.85rem;" data-i18n="android_install_tab">
+          ${insecureOrigin ? `
+          <div style="background:#fef3c7; border:1px solid #f59e0b; border-radius:8px; padding:0.7rem 0.9rem; margin-bottom:1rem; font-size:0.85rem; color:#92400e; line-height:1.6;">
+            <strong data-i18n="install_insecure_title">⚠️ اتصال غير آمن (http://)</strong><br>
+            <span data-i18n="install_insecure_desc">لتثبيت التطبيق كأيقونة مستقلة بملء الشاشة، افتح الموقع عبر الرابط الآمن (https://) ثم أعد المحاولة.</span>
+          </div>` : ''}
+          <div style="display:flex; gap:0.4rem; margin-bottom:1rem; border-bottom:1px solid var(--border-color); padding-bottom:0.5rem; flex-wrap:wrap;">
+            <button type="button" id="tab-guide-android" class="btn btn-ghost ${userIsAndroid ? 'btn-primary' : ''}" style="flex:1 1 auto; font-size:0.82rem; padding:0.4rem 0.6rem;" data-i18n="android_install_tab">
               🤖 أندرويد (Chrome)
             </button>
-            <button type="button" id="tab-guide-ios" class="btn btn-ghost ${userIsIOS ? 'btn-primary' : ''}" style="flex:1; font-size:0.85rem;" data-i18n="ios_install_tab">
+            <button type="button" id="tab-guide-ios" class="btn btn-ghost ${userIsIOS ? 'btn-primary' : ''}" style="flex:1 1 auto; font-size:0.82rem; padding:0.4rem 0.6rem;" data-i18n="ios_install_tab">
               🍎 آيفون (Safari)
+            </button>
+            <button type="button" id="tab-guide-desktop" class="btn btn-ghost ${userIsDesktop ? 'btn-primary' : ''}" style="flex:1 1 auto; font-size:0.82rem; padding:0.4rem 0.6rem;" data-i18n="desktop_install_tab">
+              💻 كمبيوتر (Chrome / Edge)
             </button>
           </div>
 
           <!-- Android Steps -->
-          <div id="guide-steps-android" class="${userIsIOS ? 'hidden' : ''}">
-            <div id="quick-install-container" class="${deferredInstallPrompt ? '' : 'hidden'}" style="margin-bottom:1.2rem; text-align:center;">
-              <button type="button" id="btn-quick-install-prompt" class="btn btn-primary" style="width:100%; justify-content:center; padding:0.75rem; font-weight:700; font-size:0.95rem;">
+          <div id="guide-steps-android" class="${userIsAndroid ? '' : 'hidden'}">
+            <div id="quick-install-container-android" class="${deferredInstallPrompt ? '' : 'hidden'}" style="margin-bottom:1.2rem; text-align:center;">
+              <button type="button" id="btn-quick-install-prompt-android" class="btn btn-primary" style="width:100%; justify-content:center; padding:0.75rem; font-weight:700; font-size:0.95rem;">
                 <span data-i18n="install_quick_btn">⚡ محاولة التثبيت التلقائي الفوري</span>
               </button>
               <p style="font-size:0.8rem; color:var(--text-muted, #64748b); margin-top:0.4rem; margin-bottom:0;" data-i18n="install_quick_hint">
@@ -478,7 +499,7 @@ function showInstallGuideModal() {
           </div>
 
           <!-- iOS Steps -->
-          <ul id="guide-steps-ios" class="ios-guide-list ${!userIsIOS ? 'hidden' : ''}">
+          <ul id="guide-steps-ios" class="ios-guide-list ${userIsIOS ? '' : 'hidden'}">
             <li class="ios-guide-step">
               <span class="ios-step-num">1</span>
               <span class="ios-step-text" data-i18n="ios_install_step1">اضغط على زر المشاركة (Share ⎋) في شريط متصفح Safari.</span>
@@ -492,6 +513,29 @@ function showInstallGuideModal() {
               <span class="ios-step-text" data-i18n="ios_install_step3">اضغط «إضافة» (Add) في الزاوية وسيظهر التطبيق كأيقونة على شاشتك.</span>
             </li>
           </ul>
+
+          <!-- Desktop Steps -->
+          <div id="guide-steps-desktop" class="${userIsDesktop ? '' : 'hidden'}">
+            <div id="quick-install-container-desktop" class="${deferredInstallPrompt ? '' : 'hidden'}" style="margin-bottom:1.2rem; text-align:center;">
+              <button type="button" id="btn-quick-install-prompt-desktop" class="btn btn-primary" style="width:100%; justify-content:center; padding:0.75rem; font-weight:700; font-size:0.95rem;">
+                <span data-i18n="install_quick_btn">⚡ محاولة التثبيت التلقائي الفوري</span>
+              </button>
+            </div>
+            <ul class="ios-guide-list">
+              <li class="ios-guide-step">
+                <span class="ios-step-num">1</span>
+                <span class="ios-step-text" data-i18n="desktop_install_step1">انقر على أيقونة التثبيت (⊕) في شريط العنوان أعلى المتصفح.</span>
+              </li>
+              <li class="ios-guide-step">
+                <span class="ios-step-num">2</span>
+                <span class="ios-step-text" data-i18n="desktop_install_step2">أو اضغط على قائمة المتصفح (الثلاث نقاط ⋮) واختر «تثبيت رفيق الحفظ» (Install).</span>
+              </li>
+              <li class="ios-guide-step">
+                <span class="ios-step-num">3</span>
+                <span class="ios-step-text" data-i18n="desktop_install_step3">اضغط «تثبيت» وسيفتح التطبيق فوراً في نافذة مستقلة وسريعة كأي برنامج أصيل!</span>
+              </li>
+            </ul>
+          </div>
 
           <!-- Note box -->
           <div style="background:var(--bg-card, #f8f9fa); border:1px solid var(--border-color, #e2e8f0); border-radius:8px; padding:0.75rem 1rem; margin-top:1rem; font-size:0.85rem; color:var(--text-muted, #64748b); line-height:1.5;">
@@ -507,39 +551,42 @@ function showInstallGuideModal() {
 
     const btnAndroid = modal.querySelector('#tab-guide-android');
     const btnIos = modal.querySelector('#tab-guide-ios');
+    const btnDesktop = modal.querySelector('#tab-guide-desktop');
     const stepsAndroid = modal.querySelector('#guide-steps-android');
     const stepsIos = modal.querySelector('#guide-steps-ios');
-    const btnQuickPrompt = modal.querySelector('#btn-quick-install-prompt');
+    const stepsDesktop = modal.querySelector('#guide-steps-desktop');
 
-    if (btnQuickPrompt) {
-      btnQuickPrompt.addEventListener('click', async () => {
-        if (!deferredInstallPrompt) return;
-        try {
-          const promptEvent = deferredInstallPrompt;
-          await promptEvent.prompt();
-          const choice = await promptEvent.userChoice;
-          if (choice && choice.outcome === 'accepted') {
-            console.log('[PWA] User accepted prompt');
-          }
-        } catch (err) {
-          console.warn('[PWA] Prompt error:', err);
+    const handlePrompt = async () => {
+      if (!deferredInstallPrompt) return;
+      try {
+        const promptEvent = deferredInstallPrompt;
+        await promptEvent.prompt();
+        const choice = await promptEvent.userChoice;
+        if (choice && choice.outcome === 'accepted') {
+          console.log('[PWA] User accepted prompt');
+          modal.classList.add('hidden');
         }
-      });
-    }
+      } catch (err) {
+        console.warn('[PWA] Prompt error:', err);
+      }
+    };
 
-    btnAndroid.addEventListener('click', () => {
-      btnAndroid.classList.add('btn-primary');
-      btnIos.classList.remove('btn-primary');
-      stepsAndroid.classList.remove('hidden');
-      stepsIos.classList.add('hidden');
-    });
+    const btnQuickAndroid = modal.querySelector('#btn-quick-install-prompt-android');
+    if (btnQuickAndroid) btnQuickAndroid.addEventListener('click', handlePrompt);
 
-    btnIos.addEventListener('click', () => {
-      btnIos.classList.add('btn-primary');
-      btnAndroid.classList.remove('btn-primary');
-      stepsIos.classList.remove('hidden');
-      stepsAndroid.classList.add('hidden');
-    });
+    const btnQuickDesktop = modal.querySelector('#btn-quick-install-prompt-desktop');
+    if (btnQuickDesktop) btnQuickDesktop.addEventListener('click', handlePrompt);
+
+    const selectTab = (activeBtn, activeSteps) => {
+      [btnAndroid, btnIos, btnDesktop].forEach((b) => b && b.classList.remove('btn-primary'));
+      [stepsAndroid, stepsIos, stepsDesktop].forEach((s) => s && s.classList.add('hidden'));
+      if (activeBtn) activeBtn.classList.add('btn-primary');
+      if (activeSteps) activeSteps.classList.remove('hidden');
+    };
+
+    if (btnAndroid) btnAndroid.addEventListener('click', () => selectTab(btnAndroid, stepsAndroid));
+    if (btnIos) btnIos.addEventListener('click', () => selectTab(btnIos, stepsIos));
+    if (btnDesktop) btnDesktop.addEventListener('click', () => selectTab(btnDesktop, stepsDesktop));
 
     modal.querySelectorAll('.btn-close-guide').forEach((b) => {
       b.addEventListener('click', () => modal.classList.add('hidden'));
@@ -550,13 +597,13 @@ function showInstallGuideModal() {
   }
 
   // Update quick install button visibility if deferredInstallPrompt changed
-  const quickContainer = modal.querySelector('#quick-install-container');
-  if (quickContainer) {
-    if (deferredInstallPrompt) {
-      quickContainer.classList.remove('hidden');
-    } else {
-      quickContainer.classList.add('hidden');
-    }
+  const quickContainerAndroid = modal.querySelector('#quick-install-container-android');
+  if (quickContainerAndroid) {
+    quickContainerAndroid.classList.toggle('hidden', !deferredInstallPrompt);
+  }
+  const quickContainerDesktop = modal.querySelector('#quick-install-container-desktop');
+  if (quickContainerDesktop) {
+    quickContainerDesktop.classList.toggle('hidden', !deferredInstallPrompt);
   }
 
   if (window.I18N && typeof window.I18N.translateContainer === 'function') {

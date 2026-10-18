@@ -1,10 +1,10 @@
 {
-  "id": "./",
+  "id": ".",
   "name": "رفيق الحفظ — دفتر متابعة حفظ القرآن الكريم",
   "short_name": "رفيق الحفظ",
   "description": "تطبيق متكامل لمتابعة الحفظ الجديد، تكرار الأمس، الربط والمراجعة وتثبيت القرآن الكريم وفق منهجية علمية راسخة.",
-  "start_url": "index.html",
-  "scope": "./",
+  "start_url": "./",
+  "scope": ".",
   "display": "standalone",
   "orientation": "portrait-primary",
   "background_color": "#0d9488",

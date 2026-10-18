@@ -1,33 +1,41 @@
-{
-  "name": "رفيق الحفظ",
-  "short_name": "رفيق الحفظ",
-  "lang": "ar",
-  "dir": "rtl",
-  "description": "دفتر متابعة حفظ القرآن الكريم اليومي: حفظ جديد، ربط، مراجعة، ومعالجة الأخطاء.",
-  "start_url": "index.html",
+﻿{
+  "id": ".",
+  "name": "Ø±ÙÙŠÙ‚ Ø§Ù„Ø­ÙØ¸ â€” Ø¯ÙØªØ± Ù…ØªØ§Ø¨Ø¹Ø© Ø­ÙØ¸ Ø§Ù„Ù‚Ø±Ø¢Ù† Ø§Ù„ÙƒØ±ÙŠÙ…",
+  "short_name": "Ø±ÙÙŠÙ‚ Ø§Ù„Ø­ÙØ¸",
+  "description": "ØªØ·Ø¨ÙŠÙ‚ Ù…ØªÙƒØ§Ù…Ù„ Ù„Ù…ØªØ§Ø¨Ø¹Ø© Ø§Ù„Ø­ÙØ¸ Ø§Ù„Ø¬Ø¯ÙŠØ¯ØŒ ØªÙƒØ±Ø§Ø± Ø§Ù„Ø£Ù…Ø³ØŒ Ø§Ù„Ø±Ø¨Ø· ÙˆØ§Ù„Ù…Ø±Ø§Ø¬Ø¹Ø© ÙˆØªØ«Ø¨ÙŠØª Ø§Ù„Ù‚Ø±Ø¢Ù† Ø§Ù„ÙƒØ±ÙŠÙ… ÙˆÙÙ‚ Ù…Ù†Ù‡Ø¬ÙŠØ© Ø¹Ù„Ù…ÙŠØ© Ø±Ø§Ø³Ø®Ø©.",
+  "start_url": "./",
   "scope": ".",
   "display": "standalone",
-  "orientation": "portrait",
-  "background_color": "#f4f7f6",
+  "orientation": "portrait-primary",
+  "background_color": "#0d9488",
   "theme_color": "#0f766e",
+  "lang": "ar",
+  "dir": "rtl",
   "icons": [
     {
-      "src": "icon-192.png",
+      "src": "icons/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "icon-512.png",
+      "src": "icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "icon-512.png",
+      "src": "icons/icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icons/icon-maskable-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
     }
   ]
 }
+

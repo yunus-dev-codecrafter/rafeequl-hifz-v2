@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'rafeequl-hifz-v2';
+const CACHE_NAME = 'rafeequl-hifz-v4';
 
 const STATIC_ASSETS = [
   'index.html',
@@ -14,6 +14,8 @@ const STATIC_ASSETS = [
   'css/style.css',
   'js/i18n.js',
   'js/app.js',
+  'js/flashcards.js',
+  'js/madinah_page_verses.json',
   'icons/icon-192.png',
   'icons/icon-512.png',
   'icons/icon-maskable-192.png',
