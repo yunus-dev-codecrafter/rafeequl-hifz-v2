@@ -224,6 +224,7 @@ try {
     $current    = (int) $user['current_hifz_page'];
     $lastTikrar = (int) ($user['last_tikrar_page'] ?? 0);
     $utype      = (string) $user['user_type'];
+    $murDays    = max(1, min(6, (int) ($user['murajaah_days'] ?? 6)));
     $rabtExtra  = (int) ($user['rabt_extra_pages'] ?? 0);
     $today      = date('Y-m-d');
 
@@ -412,14 +413,14 @@ try {
             $affectedTask = $row;
 
             // If Murajaah task is completed and end_page reaches or exceeds the current Murajaah boundary,
-            // the revision cycle has finished! Roll accumulated extra pages into Murajaah and reset rabt_extra_pages to 0.
+            // or accumulated extra pages reached the cycle days, roll extra pages into Murajaah and reset rabt_extra_pages to 0.
             if ($taskType === 'MURAJAAH' && $isTaskDone) {
                 $murajaahLimit = 604;
                 if ($utype === 'NEW' || $utype === 'EXISTING') {
                     $rabtWin = 30 + $rabtExtra;
                     $murajaahLimit = max(0, $lastTikrar - $rabtWin);
                 }
-                if ($end >= $murajaahLimit && $rabtExtra > 0) {
+                if (($end >= $murajaahLimit || $rabtExtra >= $murDays) && $rabtExtra > 0) {
                     $pdo->prepare('UPDATE `users` SET `rabt_extra_pages` = 0 WHERE `id` = :id')
                         ->execute([':id' => $userId]);
                     $rabtExtra = 0;

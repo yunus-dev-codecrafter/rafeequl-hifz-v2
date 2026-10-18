@@ -2206,4 +2206,191 @@ html[dir="ltr"] body {
   text-align: center;
 }
 
+/* ==========================================================================
+   PWA Installation UI (Install Button, Dashboard Banner, iOS Guide Modal)
+   ========================================================================== */
+
+.header-action-btn.install-app-btn {
+  background: linear-gradient(135deg, rgba(15, 118, 110, 0.15), rgba(13, 148, 136, 0.25));
+  color: var(--primary);
+  border: 1px solid rgba(13, 148, 136, 0.35);
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.75rem;
+  width: auto;
+  min-width: 38px;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.header-action-btn.install-app-btn:hover {
+  background: var(--primary);
+  color: #ffffff;
+  border-color: var(--primary);
+  transform: translateY(-1px);
+}
+
+.header-action-btn.install-app-btn svg {
+  flex-shrink: 0;
+}
+
+@media (max-width: 580px) {
+  .header-action-btn.install-app-btn .install-btn-text {
+    display: none;
+  }
+  .header-action-btn.install-app-btn {
+    padding: 0.35rem;
+    width: 36px;
+    height: 36px;
+    justify-content: center;
+  }
+}
+
+/* Dashboard Install Banner */
+.pwa-install-banner {
+  background: linear-gradient(135deg, rgba(13, 148, 136, 0.12), rgba(15, 118, 110, 0.2));
+  border: 1.5px solid rgba(13, 148, 136, 0.35);
+  border-radius: 1rem;
+  padding: 1.15rem 1.35rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+  box-shadow: 0 4px 14px rgba(13, 148, 136, 0.08);
+  animation: slideDownFade 0.35s ease;
+}
+
+@keyframes slideDownFade {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.pwa-banner-content {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+}
+
+.pwa-banner-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: var(--primary);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 4px 10px rgba(15, 118, 110, 0.25);
+}
+
+.pwa-banner-text strong {
+  display: block;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text-heading);
+  margin-bottom: 0.2rem;
+}
+
+.pwa-banner-text p {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.45;
+}
+
+.pwa-banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-shrink: 0;
+}
+
+.pwa-banner-actions .btn {
+  padding: 0.55rem 1.1rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+@media (max-width: 680px) {
+  .pwa-install-banner {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 1rem;
+    gap: 0.9rem;
+  }
+  .pwa-banner-content {
+    align-items: flex-start;
+  }
+  .pwa-banner-icon {
+    width: 42px;
+    height: 42px;
+  }
+  .pwa-banner-actions {
+    justify-content: flex-end;
+  }
+  .pwa-banner-actions .btn {
+    flex: 1;
+    text-align: center;
+    justify-content: center;
+  }
+}
+
+/* iOS Install Instructions Modal */
+.ios-guide-list {
+  list-style: none;
+  padding: 0;
+  margin: 1.2rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.ios-guide-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 0.75rem;
+  padding: 0.8rem 1rem;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.ios-step-num {
+  width: 28px;
+  height: 28px;
+  background: var(--primary);
+  color: #ffffff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.ios-step-text {
+  flex: 1;
+  color: var(--text-main);
+}
+
+.ios-step-text strong {
+  color: var(--primary);
+}
+
+
 

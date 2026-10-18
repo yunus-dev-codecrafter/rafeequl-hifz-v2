@@ -74,40 +74,40 @@ function findExistingTask(PDO $pdo, int $userId, string $type, string $today): ?
 
 /**
  * Next sequential muraja'ah chunk inside [rangeStart, rangeEnd].
- * Advances from the furthest completed chunk; restarts at rangeStart
- * after the cycle finishes. If cycle finishes and there were pending rabt_extra_pages,
- * rolls those extra pages into murajaah and resets rabt_extra_pages to 0.
+ * If $shouldRestart is true, restarts at rangeStart.
+ * Otherwise, advances from the latest completed chunk or $nextStartOverride.
+ * After the cycle finishes, rolls accumulated extra pages into murajaah and resets rabt_extra_pages to 0.
  */
-function nextMurajaahChunk(PDO $pdo, int $userId, int $rangeStart, int $rangeEnd, int $target): ?array
+function nextMurajaahChunk(PDO $pdo, int $userId, int $rangeStart, int $rangeEnd, int $target, bool $shouldRestart = false, ?int $nextStartOverride = null): ?array
 {
     if ($rangeEnd < $rangeStart) {
         return null;
     }
 
-    $stmt = $pdo->prepare(
-        "SELECT MAX(`end_page`) FROM `daily_task_logs`
-         WHERE `user_id` = :u AND `task_type` = 'MURAJAAH' AND `is_completed` = 1"
-    );
-    $stmt->execute([':u' => $userId]);
-    $max = $stmt->fetchColumn();
-
-    if ($max === false || $max === null || (int) $max < $rangeStart) {
+    if ($shouldRestart) {
         $next = $rangeStart;
-    } else {
-        $next = (int) $max + 1;
+    } elseif ($nextStartOverride !== null) {
+        $next = $nextStartOverride;
         if ($next > $rangeEnd) {
-            $next = $rangeStart; // cycle complete -> restart!
+            $next = $rangeStart;
+        }
+    } else {
+        $stmt = $pdo->prepare(
+            "SELECT `end_page` FROM `daily_task_logs`
+             WHERE `user_id` = :u AND `task_type` = 'MURAJAAH' AND `is_completed` = 1
+             ORDER BY `task_date` DESC, `id` DESC
+             LIMIT 1"
+        );
+        $stmt->execute([':u' => $userId]);
+        $lastEnd = $stmt->fetchColumn();
 
-            // Renewing revision cycle: incorporate accumulated rabt_extra_pages into Murajaah
-            try {
-                $uStmt = $pdo->prepare("SELECT `rabt_extra_pages` FROM `users` WHERE `id` = :u");
-                $uStmt->execute([':u' => $userId]);
-                $extra = (int) $uStmt->fetchColumn();
-                if ($extra > 0) {
-                    $pdo->prepare("UPDATE `users` SET `rabt_extra_pages` = 0 WHERE `id` = :u")
-                        ->execute([':u' => $userId]);
-                }
-            } catch (Throwable $e) {}
+        if ($lastEnd === false || $lastEnd === null || (int) $lastEnd < $rangeStart) {
+            $next = $rangeStart;
+        } else {
+            $next = (int) $lastEnd + 1;
+            if ($next > $rangeEnd) {
+                $next = $rangeStart; // cycle complete -> restart!
+            }
         }
     }
 
@@ -272,6 +272,71 @@ try {
     $utype       = (string) $user['user_type'];
     $murDays     = max(1, min(6, (int) ($user['murajaah_days'] ?? 6)));
     $rabtExtra   = max(0, (int) ($user['rabt_extra_pages'] ?? 0));
+
+    // -----------------------------------------------------------------------
+    // Muraja'ah Cycle & Rabt Reset Analysis (Day 7 transition)
+    // -----------------------------------------------------------------------
+    // Days 1 to $murDays: New pages memorized pass Tikrar Ams and enter Rabt
+    // (Rabt expands from 30 to 30 + $rabtExtra pages).
+    // On Day ($murDays + 1) [e.g. Day 7]: The cycle is complete!
+    // The accumulated extra pages leave Rabt and join Muraja'ah. Rabt resets to 30 pages.
+    // A brand new round begins for Muraja'ah starting from Page 1!
+    // -----------------------------------------------------------------------
+    $mStmt = $pdo->prepare(
+        "SELECT `id`, `start_page`, `end_page`, `task_date`
+         FROM `daily_task_logs`
+         WHERE `user_id` = :u AND `task_type` = 'MURAJAAH' AND `is_completed` = 1
+         ORDER BY `task_date` DESC, `id` DESC
+         LIMIT 50"
+    );
+    $mStmt->execute([':u' => $userId]);
+    $completedMurTasks = $mStmt->fetchAll();
+
+    $tasksInRound = 0;
+    $lastCompletedEnd = 0;
+    if (!empty($completedMurTasks)) {
+        $lastCompletedEnd = (int) $completedMurTasks[0]['end_page'];
+        foreach ($completedMurTasks as $mt) {
+            $tasksInRound++;
+            if ((int) $mt['start_page'] === 1) {
+                break;
+            }
+        }
+    }
+
+    // Previous pool end before any Rabt release
+    $prevPoolEnd = 0;
+    if ($utype === 'COMPLETE') {
+        $prevPoolEnd = 604;
+    } else {
+        $prevRabtWin = 30 + $rabtExtra;
+        $prevPoolEnd = max(0, $lastTikrar - $prevRabtWin);
+    }
+
+    $cycleCompleted = false;
+    if ($tasksInRound >= $murDays) {
+        $cycleCompleted = true;
+    } elseif ($prevPoolEnd > 0 && $lastCompletedEnd >= $prevPoolEnd) {
+        $cycleCompleted = true;
+    } elseif ($rabtExtra >= $murDays) {
+        $cycleCompleted = true;
+    }
+
+    // If cycle completed and today's MURAJAAH task doesn't already exist:
+    // 1. Release accumulated rabt_extra_pages to Muraja'ah (reset rabt_extra_pages to 0).
+    // 2. Rabt returns to 30 pages.
+    // 3. Muraja'ah restarts from Page 1!
+    $existingMurajaah = findExistingTask($pdo, $userId, 'MURAJAAH', $today);
+    if ($cycleCompleted && $existingMurajaah === null) {
+        if ($rabtExtra > 0) {
+            try {
+                $pdo->prepare("UPDATE `users` SET `rabt_extra_pages` = 0 WHERE `id` = :u")
+                    ->execute([':u' => $userId]);
+            } catch (Throwable $e) {}
+            $rabtExtra = 0;
+        }
+    }
+
     $rabtWindow  = 30 + $rabtExtra;
 
     // Active mistakes -> Task 5 (المعالجة), dynamic only (never persisted)
@@ -358,7 +423,8 @@ try {
 
         if ($row === null) {
             if ($type === 'MURAJAAH') {
-                $chunk = nextMurajaahChunk($pdo, $userId, $bounds[0], $bounds[1], $target);
+                $nextStartOverride = ($lastCompletedEnd > 0 && !$cycleCompleted) ? ($lastCompletedEnd + 1) : null;
+                $chunk = nextMurajaahChunk($pdo, $userId, $bounds[0], $bounds[1], $target, $cycleCompleted, $nextStartOverride);
                 if ($chunk === null) {
                     continue; // empty range -> task inactive
                 }

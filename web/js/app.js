@@ -320,6 +320,168 @@ const AudioEngine = {
   }
 };
 
+/* ---------------- 3c. PWA Installation Engine ---------------- */
+
+let deferredInstallPrompt = null;
+
+function isAppStandalone() {
+  return (
+    (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+    window.navigator.standalone === true ||
+    document.referrer.includes('android-app://')
+  );
+}
+
+function isIOS() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+}
+
+function initPWAEngine() {
+  // 1. Register Service Worker
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js')
+        .then((reg) => {
+          console.log('[PWA] Service Worker registered with scope:', reg.scope);
+        })
+        .catch((err) => {
+          console.warn('[PWA] Service Worker registration failed:', err);
+        });
+    });
+  }
+
+  // 2. Standalone check: If already installed / running standalone, hide all install prompts
+  if (isAppStandalone()) {
+    return;
+  }
+
+  // 3. Setup UI triggers
+  const headerInstallBtn = document.getElementById('btn-install-app');
+  const banner = document.getElementById('pwa-install-banner');
+  const bannerInstallBtn = document.getElementById('btn-banner-install');
+  const bannerDismissBtn = document.getElementById('btn-banner-dismiss');
+
+  const showInstallUI = () => {
+    if (isAppStandalone()) return;
+    if (headerInstallBtn) {
+      headerInstallBtn.classList.remove('hidden');
+    }
+    if (banner) {
+      let dismissed = null;
+      try { dismissed = localStorage.getItem('pwa_banner_dismissed'); } catch (e) {}
+      if (!dismissed || Date.now() - parseInt(dismissed, 10) > 3 * 86400000) {
+        banner.classList.remove('hidden');
+      }
+    }
+  };
+
+  const hideInstallUI = () => {
+    if (headerInstallBtn) headerInstallBtn.classList.add('hidden');
+    if (banner) banner.classList.add('hidden');
+  };
+
+  // 4. Capture beforeinstallprompt (Android / Chrome / Edge)
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    showInstallUI();
+  });
+
+  // 5. Successful installation listener
+  window.addEventListener('appinstalled', () => {
+    deferredInstallPrompt = null;
+    hideInstallUI();
+    try { localStorage.setItem('pwa_installed', 'true'); } catch (e) {}
+    showToast(window.I18N ? I18N.t('app_installed_toast') : '🎉 تم تثبيت التطبيق بنجاح!');
+  });
+
+  // 6. User clicked Install
+  const triggerInstall = async () => {
+    if (deferredInstallPrompt) {
+      deferredInstallPrompt.prompt();
+      try {
+        const choice = await deferredInstallPrompt.userChoice;
+        if (choice && choice.outcome === 'accepted') {
+          deferredInstallPrompt = null;
+          hideInstallUI();
+        }
+      } catch (err) {
+        console.warn('[PWA] Prompt error:', err);
+      }
+    } else {
+      // Fallback for iOS or when prompt is not ready
+      showIOSInstallModal();
+    }
+  };
+
+  if (headerInstallBtn) {
+    headerInstallBtn.addEventListener('click', triggerInstall);
+  }
+  if (bannerInstallBtn) {
+    bannerInstallBtn.addEventListener('click', triggerInstall);
+  }
+  if (bannerDismissBtn && banner) {
+    bannerDismissBtn.addEventListener('click', () => {
+      banner.classList.add('hidden');
+      try { localStorage.setItem('pwa_banner_dismissed', String(Date.now())); } catch (e) {}
+    });
+  }
+
+  // 7. On iOS Safari (no beforeinstallprompt event), show install button if not standalone
+  if (isIOS() && !isAppStandalone()) {
+    showInstallUI();
+  }
+}
+
+function showIOSInstallModal() {
+  let modal = document.getElementById('ios-install-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'ios-install-modal';
+    modal.className = 'modal-backdrop hidden';
+    modal.innerHTML = `
+      <div class="modal-box ios-install-box" style="max-width:440px;" role="dialog" aria-modal="true">
+        <div class="modal-head">
+          <h3 data-i18n="ios_install_modal_title">تثبيت التطبيق على جهازك</h3>
+          <button type="button" class="btn btn-ghost btn-close-ios" style="padding:0.25rem 0.6rem;">✕</button>
+        </div>
+        <div class="modal-body" style="padding:1rem 0;">
+          <ul class="ios-guide-list">
+            <li class="ios-guide-step">
+              <span class="ios-step-num">1</span>
+              <span class="ios-step-text" data-i18n="ios_install_step1">اضغط على زر المشاركة (Share ⎋) في شريط متصفح Safari.</span>
+            </li>
+            <li class="ios-guide-step">
+              <span class="ios-step-num">2</span>
+              <span class="ios-step-text" data-i18n="ios_install_step2">مرر للأسفل واختر «إضافة إلى الشاشة الرئيسية» (Add to Home Screen ⊞).</span>
+            </li>
+            <li class="ios-guide-step">
+              <span class="ios-step-num">3</span>
+              <span class="ios-step-text" data-i18n="ios_install_step3">اضغط «إضافة» (Add) في الزاوية وسيظهر التطبيق كأيقونة على شاشتك.</span>
+            </li>
+          </ul>
+        </div>
+        <div class="modal-foot" style="justify-content:flex-end;">
+          <button type="button" class="btn btn-primary btn-close-ios" data-i18n="ios_install_modal_close">فهمت ذلك</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+
+    modal.querySelectorAll('.btn-close-ios').forEach((b) => {
+      b.addEventListener('click', () => modal.classList.add('hidden'));
+    });
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) modal.classList.add('hidden');
+    });
+  }
+
+  if (window.I18N) {
+    window.I18N.apply(modal);
+  }
+  modal.classList.remove('hidden');
+}
+
 /* ---------------- 4. Shared State & Metadata ---------------- */
 
 const sharedState = {
@@ -1981,6 +2143,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initWakeLockEngine();
   AudioEngine.init();
   initKeyboardShortcuts();
+  initPWAEngine();
 
   // Route by current page element
   if (document.getElementById('register-form')) {

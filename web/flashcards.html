@@ -4,6 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#0f766e">
+  <link rel="manifest" href="manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="رفيق الحفظ">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
   <title>المعالجة وبطاقات الأخطاء — رفيق الحفظ</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -25,6 +30,16 @@
       </div>
 
       <div class="header-actions">
+        <!-- Install App Button (PWA) -->
+        <button type="button" id="btn-install-app" class="header-action-btn install-app-btn hidden" title="تثبيت التطبيق على هاتفك" aria-label="تثبيت التطبيق على هاتفك" data-i18n-title="install_app_title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          <span class="install-btn-text" data-i18n="install_app_btn">📲 تثبيت التطبيق</span>
+        </button>
+
         <!-- Language Toggle -->
         <button type="button" class="lang-toggle-btn header-action-btn" title="English / العربية" aria-label="تبديل اللغة">
           <span class="lang-code-text">EN</span>

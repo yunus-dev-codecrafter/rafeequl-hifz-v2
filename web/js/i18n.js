@@ -158,6 +158,20 @@ const I18N_DICTIONARY = {
     menu_reset_account: 'تصفير الحساب والبدء من الصفر',
     menu_logout: 'تسجيل الخروج',
 
+    // PWA Installation
+    install_app_btn: '📲 تثبيت التطبيق',
+    install_app_title: 'تثبيت رفيق الحفظ على هاتفك',
+    install_banner_title: 'ثبّت التطبيق على جوالك لتجربة أسرع وأسهل وصولاً',
+    install_banner_desc: 'يمكنك تثبيت رفيق الحفظ على شاشتك الرئيسية كأي تطبيق أصيل للمتابعة اليومية المباشرة.',
+    install_banner_btn: '📲 تثبيت الآن',
+    install_banner_dismiss: 'لاحقاً',
+    ios_install_modal_title: 'تثبيت التطبيق على جهازك (iPhone / iPad)',
+    ios_install_step1: 'اضغط على زر المشاركة (Share ⎋) في شريط متصفح Safari.',
+    ios_install_step2: 'مرر للأسفل واختر «إضافة إلى الشاشة الرئيسية» (Add to Home Screen ⊞).',
+    ios_install_step3: 'اضغط «إضافة» (Add) في الزاوية العلوية وسيظهر التطبيق كأيقونة على شاشتك الرئيسية.',
+    ios_install_modal_close: 'فهمت ذلك',
+    app_installed_toast: '🎉 تم تثبيت التطبيق بنجاح على جهازك!',
+
     // Back & Nav
     back_to_tasks: 'العودة للمهام',
     back_to_dashboard: 'العودة لدفتر اليوم',
@@ -472,6 +486,20 @@ const I18N_DICTIONARY = {
     menu_lang_toggle: 'تغيير اللغة إلى العربية',
     menu_reset_account: 'Reset Account & Start Fresh',
     menu_logout: 'Sign Out',
+
+    // PWA Installation
+    install_app_btn: '📲 Install App',
+    install_app_title: 'Install Rafeequl Hifz on your phone',
+    install_banner_title: 'Install on your mobile for a fast, standalone experience',
+    install_banner_desc: 'Install Rafeequl Hifz on your home screen for quick daily Quran tracking without the browser bar.',
+    install_banner_btn: '📲 Install Now',
+    install_banner_dismiss: 'Later',
+    ios_install_modal_title: 'Install on iPhone / iPad',
+    ios_install_step1: 'Tap the Share icon (⎋) in the Safari toolbar.',
+    ios_install_step2: 'Scroll down and tap «Add to Home Screen» (⊞).',
+    ios_install_step3: 'Tap «Add» in the top corner to install Rafeequl Hifz on your home screen.',
+    ios_install_modal_close: 'Got it',
+    app_installed_toast: '🎉 App installed successfully!',
 
     // Back & Nav
     back_to_tasks: 'Back to Tasks',
