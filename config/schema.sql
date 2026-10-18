@@ -107,3 +107,17 @@ CREATE TABLE IF NOT EXISTS `mistake_events` (
         FOREIGN KEY (`mistake_id`) REFERENCES `mistakes` (`id`)
         ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 6. page_notes table (per-page recall board: the hifz's own quick-recall notes)
+CREATE TABLE IF NOT EXISTS `page_notes` (
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `user_id` INT NOT NULL,
+    `page_number` INT NOT NULL,
+    `note` TEXT NULL,
+    `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_page_notes_user_page` (`user_id`, `page_number`),
+    CONSTRAINT `fk_page_notes_user`
+        FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
+        ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

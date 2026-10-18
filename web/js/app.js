@@ -1259,6 +1259,7 @@ async function initDedicatedTaskPage(taskType) {
 
   try {
     await loadSharedData();
+    if (window.PageNotes) PageNotes.init(sharedState);
     renderTaskPage(taskType);
     initMistakeModal();
   } catch (err) {
@@ -1382,6 +1383,10 @@ function renderTaskPage(taskType) {
   container.innerHTML = pageHtml;
   renderChipsList(taskType, task, activePage);
   renderActivePageStage(taskType, task, activePage);
+  if (window.PageNotes) {
+    PageNotes.prefetchRange(start, end);
+    PageNotes.decorateChips();
+  }
 }
 
 function renderChipsList(taskType, task, activePage) {
@@ -1540,6 +1545,9 @@ function renderTikrarStage(task) {
       <div class="kbd-hint">
         ${kbdHintText}
       </div>
+
+      <!-- Per-page recall board (notes / anchors / cues) -->
+      <div class="page-notes-root" id="page-notes-root"></div>
     </div>
   `;
 
@@ -1642,6 +1650,8 @@ function renderTikrarStage(task) {
       openMistakeModal(activePage);
     });
   }
+
+  if (window.PageNotes) PageNotes.mount(activePage, 'TIKRAR_AMS');
 }
 
 function renderActivePageStage(taskType, task, activePage) {
@@ -1724,6 +1734,9 @@ function renderActivePageStage(taskType, task, activePage) {
     <div class="kbd-hint">
       ${kbdHintText}
     </div>
+
+    <!-- Per-page recall board (notes / anchors / cues) -->
+    <div class="page-notes-root" id="page-notes-root"></div>
   `;
 
   // Action listeners
@@ -1845,6 +1858,8 @@ function renderActivePageStage(taskType, task, activePage) {
       renderTaskPage(taskType);
     });
   }
+
+  if (window.PageNotes) PageNotes.mount(activePage, taskType);
 }
 
 /* ---------------- 8. Mistake Logging Modal (Shared) ---------------- */
@@ -2474,6 +2489,16 @@ function initKeyboardShortcuts() {
     } else if (e.key === 'm' || e.key === 'M' || e.key === 'ة') {
       const mistBtn = document.getElementById('btn-open-mistake');
       if (mistBtn) mistBtn.click();
+    } else if (e.key === 'n' || e.key === 'N') {
+      const pnToggle = document.getElementById('pn-toggle');
+      if (pnToggle) {
+        e.preventDefault();
+        pnToggle.click();
+        if (window.PageNotes && PageNotes.collapsed === false) {
+          const ta = document.getElementById('pn-note');
+          if (ta) ta.focus();
+        }
+      }
     }
   });
 }

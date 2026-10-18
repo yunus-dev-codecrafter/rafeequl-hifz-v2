@@ -15,6 +15,11 @@ Quran memorization daily logbook: PHP 8 + MySQL backend (`api/`), RTL web fronte
 > spaced-repetition columns to `mistakes` and creates `mistake_events` without
 > touching existing data. Fresh installs get everything from `config/schema.sql`.
 >
+> **Page recall notes (v3)?** `php config/migrate_v3.php` (or open
+> `https://your-host/config/migrate_v3.php?confirm=1`) creates the `page_notes`
+> table used by the per-page recall board. The board still works if you skip it:
+> notes are then kept on the device only.
+>
 > **Offline Quran text?** `php api/data/build_quran_text.php` downloads the
 > Uthmani text once and writes `web/data/quran-uthmani.json` (the flashcard
 > back face + service worker use it offline).
@@ -200,6 +205,34 @@ list:
 - Grade with the buttons, keys **1–4**, or **ف** to reveal; swipe or tap flips.
 - Filters (type / surah / juz), shuffle, and **undo**; ends with a session
   summary (cards reviewed, recall rate, graduated).
+
+## Page Recall Board (بطاقة تثبيت الصفحة)
+
+Every recitation task page (new memorization, yesterday's repetition, rabt,
+murajaah) carries a **per-page recall board** under the page actions, built to
+make a page fast to recall:
+
+- **Verse anchors (رؤوس الآيات)** — the opening words of every ayah on the
+  page, taken from the offline Uthmani bundle. Tap one to drop it into your
+  note (the classic "page map" that chains ayat together), or hit play to hear
+  that ayah's recitation.
+- **Your mistakes on this page** — pulled from your mistake log and shown as
+  ready-made "focus here" cues (type, severity, recurrence), each with an
+  *add to board* action.
+- **Your note** — free-form, RTL-aware, autosaved. It is written to the device
+  immediately and synced to `page_notes` in the background; if the server is
+  unreachable or the table is not migrated yet it stays on the device and
+  retries later.
+- A dot marks page chips that already have a note. **N** toggles the board,
+  **إخفاء (اختبر نفسك)** blurs the note so you can test recall, and **نسخ**
+  copies it out.
+
+| File | Purpose |
+| --- | --- |
+| `api/notes/get_page_notes.php` | read notes for a page or a page range |
+| `api/notes/save_page_notes.php` | upsert / clear one page's note |
+| `web/js/page-notes.js` | the board: anchors, cues, autosave, offline cache |
+| `config/migrate_v3.php` | creates `page_notes` (idempotent) |
 
 ## Gesture notes
 
