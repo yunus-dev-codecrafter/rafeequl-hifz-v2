@@ -1513,7 +1513,7 @@ function renderTikrarStage(task) {
         </div>
       </div>
 
-      <div class="stage-actions" style="margin-top: 1.25rem;">
+      <div class="stage-actions is-sticky" style="margin-top: 1.25rem;">
         ${!isAllDone ? `
           <button type="button" id="btn-add-rep" class="btn btn-repetition-primary">
             ${btnAddText}
@@ -1532,6 +1532,11 @@ function renderTikrarStage(task) {
             ${btnUndoText}
           </button>
         ` : ''}
+
+        <button type="button" id="btn-focus" class="btn btn-ghost btn-focus-toggle" title="${window.I18N ? I18N.t('focus_mode_title') : 'إخفاء العناصر الجانبية والتركيز على التلاوة'}">
+          <span class="focus-enter-label">🎯 ${window.I18N ? I18N.t('focus_mode') : 'وضع التركيز'}</span>
+          <span class="focus-exit-label">✅ ${window.I18N ? I18N.t('focus_exit') : 'إنهاء وضع التركيز'}</span>
+        </button>
 
         <button type="button" id="btn-view-mushaf" class="btn-mushaf-view" title="${mushafBtnText}">
           ${mushafBtnText}
@@ -1704,7 +1709,7 @@ function renderActivePageStage(taskType, task, activePage) {
       </div>
     ` : ''}
 
-    <div class="stage-actions">
+    <div class="stage-actions is-sticky">
       ${!isPageDone ? `
         <button type="button" id="btn-complete-page" class="btn btn-success">
           ${completeBtnText}
@@ -1717,6 +1722,11 @@ function renderActivePageStage(taskType, task, activePage) {
           ${completeBtnText}
         </button>
       `}
+
+      <button type="button" id="btn-focus" class="btn btn-ghost btn-focus-toggle" title="${window.I18N ? I18N.t('focus_mode_title') : 'إخفاء العناصر الجانبية والتركيز على التلاوة'}">
+        <span class="focus-enter-label">🎯 ${window.I18N ? I18N.t('focus_mode') : 'وضع التركيز'}</span>
+        <span class="focus-exit-label">✅ ${window.I18N ? I18N.t('focus_exit') : 'إنهاء وضع التركيز'}</span>
+      </button>
 
       <button type="button" id="btn-view-mushaf" class="btn-mushaf-view" title="${mushafBtnText}">
         ${mushafBtnText}
@@ -2391,6 +2401,34 @@ function openMistakeModal(pageNumber) {
   modal.classList.remove('hidden');
 }
 
+/**
+ * Open the mistake modal pre-filled with a specific surah/ayah (used by the
+ * recall board's long-press, so a wrong ayah can be logged in one gesture).
+ */
+function openMistakeModalForAyah(pageNumber, surahNumber, ayahNumber) {
+  openMistakeModal(pageNumber);
+
+  const surahSelect = document.getElementById('mistake-surah');
+  if (surahSelect && surahNumber) {
+    surahSelect.value = String(surahNumber);
+    renderAyahOptions(surahNumber, pageNumber, false);
+  }
+
+  const ayahSelect = document.getElementById('mistake-ayah');
+  if (ayahSelect && ayahNumber) {
+    ayahSelect.value = String(ayahNumber);
+    // renderAyahOptions built the chips before we set the value — sync them.
+    document.querySelectorAll('#ayah-chips-group .ayah-chip').forEach((chip) => {
+      chip.classList.toggle('active', parseInt(chip.dataset.ayah, 10) === Number(ayahNumber));
+    });
+  }
+
+  const note = document.getElementById('mistake-note');
+  if (note) {
+    setTimeout(() => { try { note.focus(); } catch (e) {} }, 80);
+  }
+}
+
 function closeMistakeModal() {
   const modal = document.getElementById('mistake-modal');
   if (modal) modal.classList.add('hidden');
@@ -2489,6 +2527,11 @@ function initKeyboardShortcuts() {
     } else if (e.key === 'm' || e.key === 'M' || e.key === 'ة') {
       const mistBtn = document.getElementById('btn-open-mistake');
       if (mistBtn) mistBtn.click();
+    } else if (e.key === 'f' || e.key === 'F') {
+      if (document.getElementById('btn-focus')) {
+        e.preventDefault();
+        toggleFocusMode();
+      }
     } else if (e.key === 'n' || e.key === 'N') {
       const pnToggle = document.getElementById('pn-toggle');
       if (pnToggle) {
@@ -2503,6 +2546,61 @@ function initKeyboardShortcuts() {
   });
 }
 
+/* ---------------- 8d. Focus Mode & Sticky Action Bar ---------------- */
+
+function syncHeaderHeightVar() {
+  const header = document.querySelector('.app-header');
+  if (!header) return;
+  const h = document.body.classList.contains('focus-mode') ? 0 : header.offsetHeight;
+  document.documentElement.style.setProperty('--header-h', h + 'px');
+}
+
+function applyFocusMode(on) {
+  document.body.classList.toggle('focus-mode', on);
+
+  let exit = document.getElementById('focus-exit');
+  if (on) {
+    if (!exit) {
+      exit = document.createElement('button');
+      exit.id = 'focus-exit';
+      exit.type = 'button';
+      exit.className = 'focus-exit-btn';
+      exit.innerHTML = '✕ ' + (window.I18N ? I18N.t('focus_exit') : 'إنهاء وضع التركيز');
+      exit.addEventListener('click', () => applyFocusMode(false));
+      document.body.appendChild(exit);
+    }
+    exit.classList.remove('hidden');
+  } else if (exit) {
+    exit.classList.add('hidden');
+  }
+
+  try { localStorage.setItem('rh_focus_mode', on ? '1' : '0'); } catch (e) {}
+  requestAnimationFrame(syncHeaderHeightVar);
+}
+
+function toggleFocusMode() {
+  applyFocusMode(!document.body.classList.contains('focus-mode'));
+}
+
+function initFocusMode() {
+  let on = false;
+  try { on = localStorage.getItem('rh_focus_mode') === '1'; } catch (e) {}
+
+  syncHeaderHeightVar();
+  window.addEventListener('resize', syncHeaderHeightVar);
+
+  // Delegated so it keeps working after the stage re-renders.
+  document.addEventListener('click', (e) => {
+    const btn = e.target && e.target.closest ? e.target.closest('#btn-focus') : null;
+    if (btn) {
+      e.preventDefault();
+      toggleFocusMode();
+    }
+  });
+
+  if (on) applyFocusMode(true);
+}
+
 /* ---------------- 9. DOM Ready Initialization ---------------- */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -2510,6 +2608,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initWakeLockEngine();
   AudioEngine.init();
   initKeyboardShortcuts();
+  initFocusMode();
   initPWAEngine();
 
   // Route by current page element

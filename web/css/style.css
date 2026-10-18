@@ -2957,3 +2957,97 @@ html[dir="ltr"] body {
   .pn-cue-add { margin-inline-start: 0; }
 }
 
+/* Play-the-page button + section tools */
+.pn-section-tools { display: inline-flex; align-items: center; gap: 0.35rem; }
+.pn-mini.pn-play-page.is-active {
+  background: var(--accent);
+  color: #ffffff;
+  border-color: var(--accent);
+}
+.pn-hint-strong { color: var(--accent); font-weight: 700; }
+
+/* Ayah currently being recited */
+.pn-anchor.is-playing {
+  border-color: var(--accent);
+  background: rgba(13, 148, 136, 0.2);
+  animation: pnPulse 1.5s ease-in-out infinite;
+}
+.pn-anchor.is-playing .pn-anchor-play { background: var(--accent); color: #ffffff; }
+
+@keyframes pnPulse {
+  0%, 100% { box-shadow: 0 0 0 2px var(--accent-glow); }
+  50%      { box-shadow: 0 0 0 6px var(--accent-glow); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pn-anchor.is-playing { animation: none; }
+}
+
+/* ==========================================================================
+   Sticky recitation action bar + Focus mode
+   ========================================================================== */
+
+.stage-actions.is-sticky {
+  position: sticky;
+  top: calc(var(--header-h, 64px) + 0.5rem);
+  z-index: 25;
+  background: var(--card);
+  padding: 0.55rem 0.7rem;
+  margin: 0 -0.7rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+}
+
+/* Focus-mode toggle: one of the two labels is shown by CSS, so it stays in
+   sync after the stage re-renders without extra JS. */
+.btn-focus-toggle .focus-exit-label { display: none; }
+body.focus-mode .btn-focus-toggle .focus-enter-label { display: none; }
+body.focus-mode .btn-focus-toggle .focus-exit-label { display: inline; }
+body.focus-mode .btn-focus-toggle {
+  background: var(--accent);
+  color: #ffffff;
+  border-color: var(--accent);
+}
+
+.focus-exit-btn {
+  position: fixed;
+  bottom: 1rem;
+  inset-inline-start: 1rem;
+  z-index: 60;
+  padding: 0.45rem 0.85rem;
+  border-radius: 9999px;
+  border: 1.5px solid var(--line);
+  background: var(--card);
+  color: var(--ink);
+  font-size: 0.78rem;
+  font-weight: 700;
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+}
+.focus-exit-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+body.focus-mode .app-header,
+body.focus-mode .mobile-bottom-nav,
+body.focus-mode .chips-card,
+body.focus-mode .kbd-hint,
+body.focus-mode .task-page-head .progress-wrap {
+  display: none !important;
+}
+
+body.focus-mode .container { padding-top: 1rem; max-width: 900px; }
+body.focus-mode .recitation-stage {
+  border-color: transparent;
+  box-shadow: none;
+  background: transparent;
+  padding: 0.5rem 0.25rem 1rem;
+}
+body.focus-mode .stage-page-title { font-size: 2rem; }
+body.focus-mode .pn-anchor-txt { font-size: 1.12rem; }
+body.focus-mode .pn-textarea {
+  font-size: 1.12rem;
+  line-height: 2.1;
+  min-height: 150px;
+}
+body.focus-mode .stage-actions.is-sticky { top: 0.5rem; }
+

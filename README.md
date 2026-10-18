@@ -223,9 +223,25 @@ make a page fast to recall:
   immediately and synced to `page_notes` in the background; if the server is
   unreachable or the table is not migrated yet it stays on the device and
   retries later.
+- **Play the page** — recites every ayah on the page in order, highlighting
+  each one as it goes (follow-the-recitation), with a per-ayah play button too.
+- **Long-press an ayah** (or right-click) to open the mistake log **pre-filled**
+  with that surah/ayah — one gesture from noticing a slip to logging it.
+- **Print / PDF** — exports the page map (note + verse openings + your
+  mistakes) via the browser's print dialog.
 - A dot marks page chips that already have a note. **N** toggles the board,
   **إخفاء (اختبر نفسك)** blurs the note so you can test recall, and **نسخ**
   copies it out.
+
+## Focus mode & sticky actions
+
+- The recitation action bar (**إتمام الصفحة / سجل خطأ / المصحف**) sticks to the
+  top of the viewport as you scroll, so it stays reachable while reading the
+  board below.
+- **وضع التركيز** (or key **F**) hides the header, bottom nav, page chips and
+  hint strips and enlarges the recitation text for distraction-free memorizing.
+  A floating **إنهاء وضع التركيز** button (bottom-left) exits. The choice is
+  remembered across visits.
 
 | File | Purpose |
 | --- | --- |
