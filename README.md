@@ -271,3 +271,118 @@ make a page fast to recall:
   **1 = أخطأت, 2 = صعب, 3 = جيد, 4 = سهل**. **↩ تراجع** reverts the last grade.
 - Gestures are implemented natively in `web/js/app.js` and `web/js/flashcards.js`;
   `mobile/index.html` only provides a fallback bridge for stale bundles.
+
+## Owner & administration (v4)
+
+The platform now has an authoritative owner account ("the president") that is
+separate from learners. It can see every account, its progress and its usage,
+and can activate / suspend / disable accounts.
+
+### 1. Apply the schema (once)
+
+```bash
+php config/migrate_v4.php                     # local
+# https://your-host/config/migrate_v4.php?confirm=1   (web)
+```
+
+This is additive and idempotent: it adds `role`, `status`, `status_reason`,
+`suspended_at`, `last_login_at`, `last_seen_at`, `login_count` and
+`must_change_password` to `users`, and creates `user_activity`, `admin_audit`
+and `login_attempts`. Nothing is dropped or rewritten.
+
+### 2. Create the owner
+
+```bash
+php config/seed_admin.php
+# or set a specific password:
+php config/seed_admin.php password=YourStrongPassword
+```
+
+The default email is **`muhaffiz125@gmail.com`**. With no `password=` argument a
+strong random password is generated and printed **once** to the operator's
+console. Either way the account is flagged `must_change_password = 1`, and the
+app forces a change on the first login.
+
+Re-running is safe: it only re-ensures `SUPER_ADMIN` / `ACTIVE`. It never
+silently resets an existing password — use `reset=1` for that:
+
+```bash
+php config/seed_admin.php reset=1
+```
+
+### 3. Sign in
+
+Open `web/index.html`, sign in with the owner email, set a new password, and
+you land on `web/admin.html`. The dashboard dropdown also gains a
+**لوحة الإدارة** entry for administrators.
+
+### What the owner can see
+
+- Platform KPIs: learners, new signups, DAU / WAU / MAU, "online in the last
+  hour", pages memorized, active / due / graduated mistakes, lifetime reviews.
+- A searchable, paginated learner directory (name, email, status, current page,
+  active mistakes, due now, active days in the last 30, last seen).
+- A per-account drill-down: progress, usage calendar (30 days), day streak,
+  login count and timestamps, mistake type distribution, weakest surahs, recent
+  review events and recent task logs.
+- An append-only **admin action log** (`admin_audit`) of status and role changes.
+
+### Roles & states
+
+| Role | Meaning |
+| --- | --- |
+| `USER` | Learner (default for every registration) |
+| `ADMIN` | Reserved tier; read access to the console |
+| `SUPER_ADMIN` | The owner: status + role changes |
+
+| Status | Effect |
+| --- | --- |
+| `ACTIVE` | Full access |
+| `SUSPENDED` | Blocked immediately (even mid-session); reason shown on login |
+| `DISABLED` | Same as suspended, for permanent closures |
+
+Safeguards: an owner cannot change their own status or role, and the last
+active super admin cannot be suspended or demoted.
+
+### Security hardening included
+
+- **Session is authoritative.** All 14 learner endpoints now derive the user
+  from the session; a client-supplied `user_id` is only honoured for
+  administrators. This closes the previous IDOR (any visitor could read or wipe
+  another account by passing its id).
+- **Status is re-checked on every request**, so suspension takes effect at once;
+  the session is destroyed server-side.
+- **Real logout** (`api/auth/logout.php`): the old button only removed a
+  localStorage name while the PHP session stayed valid.
+- **Login hardening**: `session_regenerate_id()`, 8 failed attempts / 15 min
+  throttle per email, and a generic credential error.
+- **Passwords**: `password_hash()` / `password_verify()`, rehash on login when
+  the default cost changes. No password is ever stored in the repository.
+
+### Endpoints
+
+| File | Purpose |
+| --- | --- |
+| `config/auth.php` | guards: `rh_require_login`, `rh_require_admin`, `rh_require_super_admin`, `rh_resolve_user_id`, activity tracking, audit, throttling |
+| `api/auth/me.php` | current session user (side-effect free) |
+| `api/auth/logout.php` | destroy the session |
+| `api/auth/change_password.php` | change own password (forced first change) |
+| `api/admin/overview.php` | platform KPIs |
+| `api/admin/list_users.php` | paginated, searchable directory |
+| `api/admin/get_user.php` | full per-account detail |
+| `api/admin/set_status.php` | activate / suspend / disable (super admin) |
+| `api/admin/set_role.php` | change role (super admin) |
+| `api/admin/audit_log.php` | recent admin actions |
+| `web/admin.html`, `web/js/admin.js` | the console |
+| `web/change-password.html`, `web/js/change-password.js` | forced / voluntary password change |
+
+### Deploy order
+
+1. Upload `config/auth.php`, `config/migrate_v4.php`, `config/seed_admin.php`, `config/schema.sql`.
+2. Upload the new/changed `api/` files.
+3. Upload `web/admin.html`, `web/change-password.html`, the changed JS/CSS and `web/sw.js` (cache is now `v10`).
+4. Run `migrate_v4.php?confirm=1`, then `seed_admin.php?confirm=1` and copy the printed password.
+5. Hard-refresh once so the new service worker takes over.
+
+> Back up the database before step 4 on a live site. Nothing destructive is
+> executed, but a backup is always the right first move.

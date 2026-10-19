@@ -46,18 +46,12 @@ if (is_string($raw) && $raw !== '') {
     $input = array_merge($input, $_POST);
 }
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+require_once __DIR__ . '/../../config/auth.php';
 
-$userId = $input['user_id'] ?? $_SESSION['user_id'] ?? null;
-if ($userId === null || $userId === '') {
-    json_out(401, ['success' => false, 'error' => 'Authentication required.']);
-}
-if (!filter_var($userId, FILTER_VALIDATE_INT)) {
-    json_out(400, ['success' => false, 'error' => 'Invalid user_id.']);
-}
-$userId = (int) $userId;
+// Session is authoritative. A client-supplied user_id is accepted only from an
+// administrator (so the admin panel can act on other accounts).
+$authUser = rh_require_login($pdo);
+$userId   = rh_resolve_user_id($pdo, $authUser, $input['user_id'] ?? null);
 
 $mistakeId = $input['mistake_id'] ?? null;
 if (is_string($mistakeId) && ctype_digit($mistakeId)) $mistakeId = (int) $mistakeId;

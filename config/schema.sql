@@ -14,6 +14,14 @@ CREATE TABLE IF NOT EXISTS `users` (
     `email` VARCHAR(255) NOT NULL,
     `password_hash` VARCHAR(255) NOT NULL,
     `user_type` ENUM('NEW', 'EXISTING', 'COMPLETE') NOT NULL DEFAULT 'NEW',
+    `role` ENUM('USER', 'ADMIN', 'SUPER_ADMIN') NOT NULL DEFAULT 'USER',
+    `status` ENUM('ACTIVE', 'SUSPENDED', 'DISABLED') NOT NULL DEFAULT 'ACTIVE',
+    `status_reason` VARCHAR(255) NULL,
+    `suspended_at` DATETIME NULL,
+    `last_login_at` DATETIME NULL,
+    `last_seen_at` DATETIME NULL,
+    `login_count` INT NOT NULL DEFAULT 0,
+    `must_change_password` TINYINT NOT NULL DEFAULT 0,
     `current_hifz_page` INT NOT NULL DEFAULT 0,
     `daily_murajaah_target_pages` INT NOT NULL DEFAULT 100,
     `murajaah_days` INT NOT NULL DEFAULT 6,
@@ -21,7 +29,10 @@ CREATE TABLE IF NOT EXISTS `users` (
     `last_tikrar_page` INT NOT NULL DEFAULT 0,
     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_users_email` (`email`)
+    UNIQUE KEY `uq_users_email` (`email`),
+    KEY `idx_users_role` (`role`),
+    KEY `idx_users_status` (`status`),
+    KEY `idx_users_last_seen` (`last_seen_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 2. madinah_pages_meta table (pages 1 to 604)
@@ -120,4 +131,49 @@ CREATE TABLE IF NOT EXISTS `page_notes` (
     CONSTRAINT `fk_page_notes_user`
         FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
         ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 7. user_activity table (one row per user per day; drives DAU / WAU / MAU)
+CREATE TABLE IF NOT EXISTS `user_activity` (
+    `user_id` INT NOT NULL,
+    `activity_date` DATE NOT NULL,
+    `first_seen_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `last_seen_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `hits` INT NOT NULL DEFAULT 0,
+    PRIMARY KEY (`user_id`, `activity_date`),
+    KEY `idx_user_activity_date` (`activity_date`),
+    CONSTRAINT `fk_user_activity_user`
+        FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
+        ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 8. admin_audit table (append-only log of administrator actions)
+CREATE TABLE IF NOT EXISTS `admin_audit` (
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `admin_user_id` INT NOT NULL,
+    `action` VARCHAR(64) NOT NULL,
+    `target_user_id` INT NULL,
+    `details` TEXT NULL,
+    `ip` VARCHAR(45) NULL,
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    KEY `idx_admin_audit_admin` (`admin_user_id`),
+    KEY `idx_admin_audit_target` (`target_user_id`),
+    KEY `idx_admin_audit_created` (`created_at`),
+    CONSTRAINT `fk_admin_audit_admin`
+        FOREIGN KEY (`admin_user_id`) REFERENCES `users` (`id`)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_admin_audit_target`
+        FOREIGN KEY (`target_user_id`) REFERENCES `users` (`id`)
+        ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 9. login_attempts table (brute-force throttling)
+CREATE TABLE IF NOT EXISTS `login_attempts` (
+    `email` VARCHAR(255) NOT NULL,
+    `ip` VARCHAR(45) NOT NULL DEFAULT '',
+    `attempts` INT NOT NULL DEFAULT 0,
+    `last_attempt_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`email`),
+    KEY `idx_login_attempts_time` (`last_attempt_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

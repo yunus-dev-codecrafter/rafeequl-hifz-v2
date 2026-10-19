@@ -618,6 +618,18 @@ const I18N_DICTIONARY = {
     stat_due_mistakes: 'بطاقات مستحقة اليوم',
     streak_unit: 'يوم',
     task_mistakes_due: '{count} بطاقة مستحقة للمراجعة',
+    // Administration & account
+    admin_menu: 'لوحة الإدارة',
+    cp_title: 'تغيير كلمة المرور',
+    cp_reason: 'لأمان حسابك، اختر كلمة مرور جديدة قبل المتابعة.',
+    cp_current: 'كلمة المرور الحالية',
+    cp_new: 'كلمة المرور الجديدة',
+    cp_confirm: 'تأكيد كلمة المرور الجديدة',
+    cp_save: 'حفظ ومتابعة',
+    cp_err_short: 'كلمة المرور الجديدة يجب أن تكون 8 أحرف على الأقل.',
+    cp_err_mismatch: 'كلمتا المرور غير متطابقتين.',
+    cp_err_same: 'اختر كلمة مرور مختلفة عن الحالية.',
+    cp_success: 'تم تغيير كلمة المرور بنجاح ✓',
   },
 
   en: {
@@ -1113,6 +1125,19 @@ const I18N_DICTIONARY = {
     stat_due_mistakes: 'Cards due today',
     streak_unit: 'day(s)',
     task_mistakes_due: '{count} cards due for review',
+
+    // Administration & account
+    admin_menu: 'Admin panel',
+    cp_title: 'Change password',
+    cp_reason: 'For your security, choose a new password before continuing.',
+    cp_current: 'Current password',
+    cp_new: 'New password',
+    cp_confirm: 'Confirm new password',
+    cp_save: 'Save and continue',
+    cp_err_short: 'The new password must be at least 8 characters.',
+    cp_err_mismatch: 'The two passwords do not match.',
+    cp_err_same: 'Choose a password different from the current one.',
+    cp_success: 'Password changed successfully ✓',
   }
 };
 

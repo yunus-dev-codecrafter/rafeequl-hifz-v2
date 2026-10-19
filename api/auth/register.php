@@ -144,10 +144,11 @@ try {
 
 // --- Session --------------------------------------------------------------
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+require_once __DIR__ . '/../../config/auth.php';
+rh_session_start();
+session_regenerate_id(true);
 $_SESSION['user_id'] = $userId;
+$_SESSION['rh_activity_ts'] = time();
 
 // --- Response -------------------------------------------------------------
 
@@ -159,6 +160,9 @@ echo json_encode([
         'name'                        => $name,
         'email'                       => $email,
         'user_type'                   => $userType,
+        'role'                        => 'USER',
+        'status'                      => 'ACTIVE',
+        'must_change_password'        => false,
         'current_hifz_page'           => $currentPage,
         'last_tikrar_page'            => $currentPage,
         'daily_murajaah_target_pages' => $dailyTarget,

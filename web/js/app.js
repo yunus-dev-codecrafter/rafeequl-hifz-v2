@@ -743,6 +743,12 @@ async function loadSharedData() {
   sharedState.user = tasksRes.user || null;
   sharedState.date = tasksRes.date || '';
 
+  // A forced first-login password change takes priority over everything else.
+  if (sharedState.user && sharedState.user.must_change_password) {
+    location.replace('change-password.html');
+    return { tasks: [], user: sharedState.user, history: [] };
+  }
+
   sharedState.history = historyRes.history || [];
   sharedState.analytics = historyRes.analytics || null;
   sharedState.badges = {};
@@ -762,11 +768,17 @@ function initAuthPage() {
   const errorBox = document.getElementById('auth-error');
   const existingFields = document.getElementById('existing-fields');
 
-  // If user already has an active session, auto-redirect to dashboard
-  API.call('tasks/get_daily_tasks.php', { method: 'GET' })
+  // If user already has an active session, route them to the right landing page.
+  API.call('auth/me.php', { method: 'GET' })
     .then((res) => {
       if (res && res.success && res.user) {
-        location.href = 'dashboard.html';
+        if (res.user.must_change_password) {
+          location.href = 'change-password.html';
+        } else if (res.user.role === 'SUPER_ADMIN' || res.user.role === 'ADMIN') {
+          location.href = 'admin.html';
+        } else {
+          location.href = 'dashboard.html';
+        }
       }
     })
     .catch(() => {});
@@ -850,7 +862,11 @@ function initAuthPage() {
         localStorage.setItem('hifz_name', res.user.name);
       }
       showToast(window.I18N ? I18N.t('auth_login_toast') : 'تم تسجيل الدخول بنجاح ✓');
-      setTimeout(() => { location.href = 'dashboard.html'; }, 300);
+      const isAdmin = res.user && (res.user.role === 'SUPER_ADMIN' || res.user.role === 'ADMIN');
+      const dest = res.user && res.user.must_change_password
+        ? 'change-password.html'
+        : (isAdmin ? 'admin.html' : 'dashboard.html');
+      setTimeout(() => { location.href = dest; }, 300);
     } catch (err) {
       showError(err.message);
       btn.disabled = false;
@@ -876,7 +892,12 @@ async function initDashboard() {
 
   const logoutBtn = document.getElementById('logout-btn');
   if (logoutBtn) {
-    logoutBtn.addEventListener('click', () => {
+    logoutBtn.addEventListener('click', async () => {
+      try {
+        await API.call('auth/logout.php', { method: 'POST' });
+      } catch (e) {
+        // Even if the request fails (offline), leave the UI.
+      }
       localStorage.removeItem('hifz_name');
       location.href = 'index.html';
     });
@@ -892,6 +913,8 @@ async function initDashboard() {
       if (n && document.getElementById('greeting')) {
         document.getElementById('greeting').textContent = I18N.t('greeting_prefix') + n;
       }
+      const adminLink = document.getElementById('menu-admin-link');
+      if (adminLink) adminLink.textContent = I18N.t('admin_menu');
       renderDashboardUI();
     });
     window._dashLangBound = true;
@@ -899,6 +922,7 @@ async function initDashboard() {
 
   try {
     await loadSharedData();
+    injectAdminMenuLink(sharedState.user);
     renderDashboardUI();
   } catch (err) {
     if (err.status !== 401) {
@@ -907,6 +931,23 @@ async function initDashboard() {
       showToast(err.message, true);
     }
   }
+}
+
+/** Add the "Admin panel" entry for administrators (dashboard dropdown). */
+function injectAdminMenuLink(user) {
+  if (!user || (user.role !== 'SUPER_ADMIN' && user.role !== 'ADMIN')) return;
+  const dropdown = document.getElementById('header-dropdown-menu');
+  if (!dropdown || document.getElementById('menu-admin-link')) return;
+
+  const link = document.createElement('a');
+  link.id = 'menu-admin-link';
+  link.className = 'header-dropdown-item';
+  link.href = 'admin.html';
+  link.textContent = window.I18N ? I18N.t('admin_menu') : 'لوحة الإدارة';
+
+  const divider = dropdown.querySelector('.header-dropdown-divider');
+  if (divider) dropdown.insertBefore(link, divider);
+  else dropdown.appendChild(link);
 }
 
 function initHeaderDropdown() {
