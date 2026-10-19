@@ -23,6 +23,7 @@ const FC = {
   lastAction: null,
   audio: null,
   audioPlaying: false,
+  pairPlaying: false,
 };
 
 const fcEl = (id) => document.getElementById(id);
@@ -171,7 +172,12 @@ function fcRender() {
   if (b.occurrence_count > 1) flags.push(`<span class="fc-flag fc-flag-occ">${fcT('fc_card_occurrence', { count: b.occurrence_count })}</span>`);
   if (f.confused_with_surah && f.confused_with_ayah) {
     const csName = (window.I18N) ? I18N.getSurahName(f.confused_with_surah) : (f.confused_with_surah_name || '');
-    flags.push(`<span class="fc-flag fc-flag-confused">${fcT('fc_card_confused', { surah: csName, ayah: f.confused_with_ayah })}</span>`);
+    if (f.mistake_type === 'TRANSITION_FAILURE') {
+      // Never reveal the next verse on the front — that is the answer.
+      flags.push(`<span class="fc-flag fc-flag-link">${fcT('fc_card_transition')}</span>`);
+    } else {
+      flags.push(`<span class="fc-flag fc-flag-confused">${fcT('fc_card_confused', { surah: csName, ayah: f.confused_with_ayah })}</span>`);
+    }
   }
   if (fcEl('fc-flags')) fcEl('fc-flags').innerHTML = flags.join('');
 
@@ -185,6 +191,7 @@ function fcRender() {
 
   // Back: ayah text + notes
   fcRenderAyahText(card);
+  fcRenderLink(card);
   if (fcEl('fc-notes')) {
     fcEl('fc-notes').textContent = b.notes || fcT('fc_card_no_notes');
   }
@@ -219,21 +226,24 @@ function fcRenderAyahText(card) {
 
 function fcStopAudio() {
   if (FC.audio) {
-    try { FC.audio.pause(); } catch (e) {}
-    FC.audioPlaying = false;
+    try { FC.audio.onended = null; FC.audio.pause(); } catch (e) {}
   }
+  FC.audioPlaying = false;
+  FC.pairPlaying = false;
   const btn = fcEl('btn-play-ayah');
   if (btn) btn.textContent = fcT('fc_play_btn');
+  const pbtn = fcEl('btn-play-pair');
+  if (pbtn) pbtn.textContent = fcT('fc_play_pair');
 }
 
 function fcToggleAudio() {
   const card = fcCard();
   if (!card) return;
-  const btn = fcEl('btn-play-ayah');
-  if (FC.audioPlaying && FC.audio) {
+  if (FC.audioPlaying || FC.pairPlaying) {
     fcStopAudio();
     return;
   }
+  const btn = fcEl('btn-play-ayah');
   const url = recitationUrl(card.front.surah_number, card.front.ayah_number);
   if (!FC.audio) FC.audio = new Audio();
   FC.audio.src = url;
@@ -245,6 +255,69 @@ function fcToggleAudio() {
   }).catch(() => {
     fcStopAudio();
     showToast(fcT('fc_audio_error'), true);
+  });
+}
+
+/* Play ayah A then its linked ayah B, so the ear learns the junction. */
+function fcPlayPair() {
+  const card = fcCard();
+  if (!card) return;
+  const f = card.front;
+  if (!f.confused_with_surah || !f.confused_with_ayah) return;
+  if (FC.audioPlaying || FC.pairPlaying) {
+    fcStopAudio();
+    return;
+  }
+
+  const seq = [
+    { surah: f.surah_number, ayah: f.ayah_number },
+    { surah: f.confused_with_surah, ayah: f.confused_with_ayah },
+  ];
+  if (!FC.audio) FC.audio = new Audio();
+  const btn = fcEl('btn-play-pair');
+  FC.pairPlaying = true;
+  if (btn) btn.textContent = fcT('fc_stop_pair');
+
+  let i = 0;
+  const step = () => {
+    if (!FC.pairPlaying) return;
+    if (i >= seq.length) { fcStopAudio(); return; }
+    const it = seq[i++];
+    FC.audio.src = recitationUrl(it.surah, it.ayah);
+    FC.audio.onended = step;
+    FC.audio.onerror = () => { showToast(fcT('fc_audio_error'), true); fcStopAudio(); };
+    FC.audio.play().catch(() => fcStopAudio());
+  };
+  step();
+}
+
+/* Reveal the linked ("next") verse on the card back. */
+function fcRenderLink(card) {
+  const row = fcEl('fc-link-row');
+  const pairBtn = fcEl('btn-play-pair');
+  const f = card.front;
+  const hasLink = !!(f.confused_with_surah && f.confused_with_ayah);
+
+  if (row) row.classList.toggle('hidden', !hasLink);
+  if (pairBtn) pairBtn.classList.toggle('hidden', !hasLink);
+  if (!hasLink) return;
+
+  const csName = (window.I18N) ? I18N.getSurahName(f.confused_with_surah) : (f.confused_with_surah_name || '');
+  const csDisplay = (window.I18N && I18N.lang === 'en') ? ('Surah ' + csName) : ('سورة ' + csName);
+  if (fcEl('fc-link-ref')) {
+    fcEl('fc-link-ref').textContent = csDisplay + ' · ' + fcT('ayah_label', { num: f.confused_with_ayah });
+  }
+
+  const el = fcEl('fc-link-text');
+  if (!el) return;
+  const cached = QuranText.get(f.confused_with_surah, f.confused_with_ayah);
+  if (cached) { el.textContent = cached; return; }
+  el.textContent = fcT('fc_ayah_unavailable');
+  QuranText.load().then(() => {
+    const current = fcCard();
+    if (!current || current.mistake_id !== card.mistake_id) return;
+    const txt = QuranText.get(f.confused_with_surah, f.confused_with_ayah);
+    el.textContent = txt || fcT('fc_ayah_unavailable');
   });
 }
 
@@ -599,6 +672,9 @@ function initFlashcardsPage() {
 
   const playBtn = fcEl('btn-play-ayah');
   if (playBtn) playBtn.addEventListener('click', (e) => { e.stopPropagation(); fcToggleAudio(); });
+
+  const pairBtn = fcEl('btn-play-pair');
+  if (pairBtn) pairBtn.addEventListener('click', (e) => { e.stopPropagation(); fcPlayPair(); });
 
   const delBtn = fcEl('btn-delete-card');
   if (delBtn) delBtn.addEventListener('click', (e) => { e.stopPropagation(); fcDelete(); });

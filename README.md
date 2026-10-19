@@ -203,6 +203,9 @@ list:
 - Card **back** now shows the actual **ayah text** (offline bundle) and a
   **recitation play** button (per-ayah audio, cached by the service worker).
 - Grade with the buttons, keys **1–4**, or **ف** to reveal; swipe or tap flips.
+- **Transition cards** (mistakes whose next verse is attached) never reveal the
+  next verse on the front; the back shows it under "الآية التالية" with a
+  **▶ الآيتان معاً** button that recites the pair in order.
 - Filters (type / surah / juz), shuffle, and **undo**; ends with a session
   summary (cards reviewed, recall rate, graduated).
 
@@ -227,6 +230,17 @@ make a page fast to recall:
   each one as it goes (follow-the-recitation), with a per-ayah play button too.
 - **Long-press an ayah** (or right-click) to open the mistake log **pre-filled**
   with that surah/ayah — one gesture from noticing a slip to logging it.
+- **Link two verses (ربط الآيتين)** — tap the 🔗 button on any anchor to log a
+  *transition* mistake (`TRANSITION_FAILURE`) with the **next verse** attached.
+  In the mistake modal the pair section is now labelled "الآية التالية التي نسيتها"
+  and auto-fills to the following ayah (wrapping to the next surah at a
+  boundary), so the row records exactly where the recitation broke. The same
+  pair field still powers متشابهات confusion, now shown on the card back.
+- **Test page transitions (اختبر الانتقالات)** — walks every ayah boundary on
+  the page, shows the current ayah, and asks for the opening of the next one.
+  Reveal, then mark ✓ recalled or ✗ missed; each miss is logged automatically as
+  a transition mistake tied to the verse that follows, and the drill ends with a
+  score.
 - **Print / PDF** — exports the page map (note + verse openings + your
   mistakes) via the browser's print dialog.
 - A dot marks page chips that already have a note. **N** toggles the board,

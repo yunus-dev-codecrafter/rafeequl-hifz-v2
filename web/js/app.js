@@ -2135,6 +2135,7 @@ function renderAyahOptions(sId, pageNumber, showAll = false) {
         ayahSelect.value = val;
         chipsGroup.querySelectorAll('.ayah-chip').forEach((b) => b.classList.remove('active'));
         btn.classList.add('active');
+        if (modalSelectedTag === 'TRANSITION_FAILURE') autoFillNextVerse(true);
       });
     });
   } else if (chipsWrap) {
@@ -2190,6 +2191,81 @@ function renderConfusedAyahOptions(sId) {
   if (current) sel.value = current;
 }
 
+/**
+ * The verse that follows (surah, ayah) in mushaf order. Used to pre-fill the
+ * "next verse" of a TRANSITION_FAILURE — the verse the reciter could not move
+ * on to. Wraps to the first ayah of the following surah at a surah boundary.
+ */
+function nextAyahRef(surahNumber, ayahNumber) {
+  const list = window.SURAHS_DATA || SURAHS_LIST;
+  const sData = list.find((s) => s.id === surahNumber);
+  if (!sData) return null;
+  if (ayahNumber < sData.ayahs) return { surah: surahNumber, ayah: ayahNumber + 1 };
+  const next = list.find((s) => s.id === surahNumber + 1);
+  if (next) return { surah: next.id, ayah: 1 };
+  return null; // end of the mushaf
+}
+
+/**
+ * The pair section doubles as "confused with" (MUTASHABIHAT) and "the next
+ * verse I forgot" (TRANSITION_FAILURE). Relabel it for the active type.
+ */
+function applyMistakePairUI() {
+  const wrap = document.getElementById('mistake-confused-wrap');
+  if (!wrap) return;
+
+  const isTransition = modalSelectedTag === 'TRANSITION_FAILURE';
+  const show = isTransition || modalSelectedTag === 'MUTASHABIHAT';
+  wrap.classList.toggle('hidden', !show);
+  if (!show) return;
+
+  const label = wrap.querySelector('label');
+  if (label) {
+    label.textContent = window.I18N
+      ? I18N.t(isTransition ? 'mistake_next_verse_label' : 'mistake_confused_label')
+      : (isTransition ? 'الآية التالية التي نسيتها' : 'الالتباس مع آية أخرى');
+  }
+
+  const hint = wrap.querySelector('.hint');
+  if (hint) {
+    hint.textContent = window.I18N
+      ? I18N.t(isTransition ? 'mistake_next_verse_hint' : 'mistake_confused_hint')
+      : (isTransition
+          ? 'تُملأ تلقائياً بالآية التالية — عدّلها إن أردت'
+          : 'اختياري، ومفيد جداً لأخطاء المتشابهات');
+  }
+
+  const btn = document.getElementById('btn-next-verse');
+  if (btn) {
+    btn.classList.toggle('hidden', !isTransition);
+    btn.textContent = window.I18N ? I18N.t('btn_next_verse') : '↻ الآية التالية تلقائياً';
+  }
+}
+
+/**
+ * Fill the pair with the verse that follows the selected ayah. `force`
+ * overwrites an existing choice (used when the selected ayah itself changes).
+ */
+function autoFillNextVerse(force) {
+  const surahSel = document.getElementById('mistake-surah');
+  const ayahSel = document.getElementById('mistake-ayah');
+  const csSel = document.getElementById('mistake-confused-surah');
+  const caSel = document.getElementById('mistake-confused-ayah');
+  if (!surahSel || !ayahSel || !csSel || !caSel) return;
+
+  const s = parseInt(surahSel.value, 10);
+  const a = parseInt(ayahSel.value, 10);
+  if (!s || !a) return;
+  if (!force && csSel.value && caSel.value) return;
+
+  const next = nextAyahRef(s, a);
+  if (!next) return;
+
+  csSel.value = String(next.surah);
+  renderConfusedAyahOptions(next.surah);
+  caSel.value = String(next.ayah);
+}
+
 function refreshMistakeModalLabels() {
   populateSurahOptions(modalActivePage);
   populateConfusedSurahOptions();
@@ -2202,6 +2278,7 @@ function refreshMistakeModalLabels() {
   document.querySelectorAll('#mistake-tags .tag-btn').forEach((btn) => {
     if (window.I18N) btn.textContent = I18N.getMistakeLabel(btn.dataset.type);
   });
+  applyMistakePairUI();
 }
 
 function initMistakeModal() {
@@ -2236,6 +2313,7 @@ function initMistakeModal() {
           b.classList.toggle('active', parseInt(b.dataset.ayah, 10) === val);
         });
       }
+      if (modalSelectedTag === 'TRANSITION_FAILURE') autoFillNextVerse(true);
     });
   }
 
@@ -2252,8 +2330,8 @@ function initMistakeModal() {
       document.querySelectorAll('#mistake-tags .tag-btn').forEach((b) => b.classList.remove('active'));
       btn.classList.add('active');
       modalSelectedTag = btn.dataset.type;
-      const wrap = document.getElementById('mistake-confused-wrap');
-      if (wrap) wrap.classList.toggle('hidden', modalSelectedTag !== 'MUTASHABIHAT');
+      applyMistakePairUI();
+      if (modalSelectedTag === 'TRANSITION_FAILURE') autoFillNextVerse(false);
     });
   });
 
@@ -2266,6 +2344,20 @@ function initMistakeModal() {
   });
 
   populateConfusedSurahOptions();
+
+  // "Use the next verse" shortcut — only meaningful for transition mistakes.
+  const pairWrap = document.getElementById('mistake-confused-wrap');
+  if (pairWrap && !document.getElementById('btn-next-verse')) {
+    const nextBtn = document.createElement('button');
+    nextBtn.type = 'button';
+    nextBtn.id = 'btn-next-verse';
+    nextBtn.className = 'btn btn-ghost hidden';
+    nextBtn.style.cssText = 'font-size:0.78rem; margin-top:0.45rem;';
+    nextBtn.textContent = window.I18N ? I18N.t('btn_next_verse') : '↻ الآية التالية تلقائياً';
+    nextBtn.addEventListener('click', () => autoFillNextVerse(true));
+    pairWrap.appendChild(nextBtn);
+  }
+
   const confusedSurahSel = document.getElementById('mistake-confused-surah');
   if (confusedSurahSel) {
     confusedSurahSel.addEventListener('change', () => {
@@ -2373,8 +2465,7 @@ function openMistakeModal(pageNumber) {
     document.querySelectorAll('#mistake-severity .tag-btn').forEach((b) => b.classList.remove('active'));
     sevFirst.classList.add('active');
   }
-  const confusedWrap = document.getElementById('mistake-confused-wrap');
-  if (confusedWrap) confusedWrap.classList.add('hidden');
+  // Reset the pair (mutashabihat confusion / transition "next verse")
   if (document.getElementById('mistake-confused-surah')) document.getElementById('mistake-confused-surah').value = '';
   if (document.getElementById('mistake-confused-ayah')) document.getElementById('mistake-confused-ayah').value = '';
   populateConfusedSurahOptions();
@@ -2398,15 +2489,25 @@ function openMistakeModal(pageNumber) {
     modalSelectedTag = firstTag.dataset?.type || 'TRANSITION_FAILURE';
   }
 
+  applyMistakePairUI();
   modal.classList.remove('hidden');
 }
 
 /**
  * Open the mistake modal pre-filled with a specific surah/ayah (used by the
  * recall board's long-press, so a wrong ayah can be logged in one gesture).
+ * Passing `mistakeType` selects that tag; for TRANSITION_FAILURE the "next
+ * verse" is auto-filled from the chosen ayah.
  */
-function openMistakeModalForAyah(pageNumber, surahNumber, ayahNumber) {
+function openMistakeModalForAyah(pageNumber, surahNumber, ayahNumber, mistakeType) {
   openMistakeModal(pageNumber);
+
+  if (mistakeType) {
+    modalSelectedTag = mistakeType;
+    document.querySelectorAll('#mistake-tags .tag-btn').forEach((b) => {
+      b.classList.toggle('active', b.dataset.type === mistakeType);
+    });
+  }
 
   const surahSelect = document.getElementById('mistake-surah');
   if (surahSelect && surahNumber) {
@@ -2422,6 +2523,9 @@ function openMistakeModalForAyah(pageNumber, surahNumber, ayahNumber) {
       chip.classList.toggle('active', parseInt(chip.dataset.ayah, 10) === Number(ayahNumber));
     });
   }
+
+  applyMistakePairUI();
+  if (modalSelectedTag === 'TRANSITION_FAILURE') autoFillNextVerse(true);
 
   const note = document.getElementById('mistake-note');
   if (note) {

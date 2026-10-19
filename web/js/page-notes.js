@@ -34,6 +34,7 @@ const PageNotes = {
   playingKey: null,
   statusKey: 'saved',
   collapsed: false,
+  drill: null,         // { list, idx, ok, missed, revealed, logged }
 };
 
 const PN_LS_NOTES = () => 'rh_page_notes_v1_' + PageNotes.userId;
@@ -154,6 +155,25 @@ PageNotes.firstWords = function (surah, ayah, count) {
   return words.slice(0, count || 4).join(' ');
 };
 
+PageNotes.lastWords = function (surah, ayah, count) {
+  const full = this.ayahText(surah, ayah);
+  if (!full) return '';
+  const words = full.trim().split(/\s+/);
+  const n = count || 5;
+  return words.slice(Math.max(0, words.length - n)).join(' ');
+};
+
+/** The verse that follows (surah, ayah) in mushaf order (null at the very end). */
+PageNotes.nextRef = function (surah, ayah) {
+  if (!this.quran) return null;
+  const arr = this.quran[String(surah)];
+  if (!arr) return null;
+  if (ayah < arr.length) return { surah, ayah: ayah + 1 };
+  const nextArr = this.quran[String(surah + 1)];
+  if (nextArr && nextArr.length) return { surah: surah + 1, ayah: 1 };
+  return null;
+};
+
 /* ---------------- Server sync ---------------- */
 
 PageNotes.prefetchRange = async function (from, to) {
@@ -270,6 +290,7 @@ PageNotes.mount = function (page, taskType) {
 
   this.stopAudio();
   this.mountedPage = page;
+  this.drill = null;
 
   const entry = this.cache[page] || { note: '', updated_at: null, dirty: false };
   if (!this.cache[page]) {
@@ -311,6 +332,9 @@ PageNotes.mount = function (page, taskType) {
           <div class="pn-section-head">
             <span class="pn-section-title">🔗 ${pnEsc(anchorsLabel)}</span>
             <span class="pn-section-tools">
+              <button type="button" class="pn-mini pn-drill-start" id="pn-drill-start">🎯 ${pnEsc(
+                pnStatic('pn_drill_start', 'اختبر الانتقالات')
+              )}</button>
               <button type="button" class="pn-mini pn-play-page" id="pn-play-page">▶ ${pnEsc(
                 pnStatic('pn_play_page', 'تشغيل الصفحة')
               )}</button>
@@ -325,6 +349,16 @@ PageNotes.mount = function (page, taskType) {
           <div class="pn-anchors" id="pn-anchors">
             <span class="pn-loading">…</span>
           </div>
+        </div>
+
+        <div class="pn-section hidden" id="pn-drill-section">
+          <div class="pn-section-head">
+            <span class="pn-section-title">🎯 ${pnEsc(
+              pnStatic('pn_drill_title', 'اختبر انتقالات الصفحة')
+            )}</span>
+            <span class="pn-drill-score" id="pn-drill-score"></span>
+          </div>
+          <div class="pn-drill" id="pn-drill"></div>
         </div>
 
         <div class="pn-section hidden" id="pn-cues-section">
@@ -393,6 +427,11 @@ PageNotes.wireBoard = function (page) {
   const playPageBtn = document.getElementById('pn-play-page');
   if (playPageBtn) {
     playPageBtn.addEventListener('click', () => this.playPage(playPageBtn));
+  }
+
+  const drillBtn = document.getElementById('pn-drill-start');
+  if (drillBtn) {
+    drillBtn.addEventListener('click', () => this.startDrill(page));
   }
 
   const clearBtn = document.getElementById('pn-clear');
@@ -506,6 +545,9 @@ PageNotes.renderAnchors = async function (page) {
             )}">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
           </button>
+          <button type="button" class="pn-anchor-link" data-surah="${sec.surahId}" data-ayah="${ayah}"
+            title="${pnEsc(pnStatic('pn_link_title', 'سجّل خطأ الانتقال للآية التالية'))}"
+            aria-label="${pnEsc(pnStatic('pn_link_title', 'سجّل خطأ الانتقال للآية التالية'))}">🔗</button>
         </div>
       `);
     }
@@ -525,6 +567,17 @@ PageNotes.renderAnchors = async function (page) {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       this.playAyah(parseInt(btn.dataset.surah, 10), parseInt(btn.dataset.ayah, 10));
+    });
+  });
+
+  box.querySelectorAll('.pn-anchor-link').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.logMistake(
+        parseInt(btn.dataset.surah, 10),
+        parseInt(btn.dataset.ayah, 10),
+        'TRANSITION_FAILURE'
+      );
     });
   });
 };
@@ -575,11 +628,11 @@ PageNotes.bindAnchorPress = function (btn, surah, ayah) {
   });
 };
 
-PageNotes.logMistake = function (surah, ayah) {
+PageNotes.logMistake = function (surah, ayah, mistakeType) {
   this.stopAudio();
   const page = this.mountedPage;
   if (typeof openMistakeModalForAyah === 'function') {
-    openMistakeModalForAyah(page, surah, ayah);
+    openMistakeModalForAyah(page, surah, ayah, mistakeType);
   } else if (typeof openMistakeModal === 'function') {
     openMistakeModal(page);
   }
@@ -764,6 +817,13 @@ PageNotes.renderCues = function (page) {
       : '';
     const note = (m.notes || '').trim();
     const occ = Number(m.occurrence_count) || 1;
+    const linkS = Number(m.confused_with_surah) || null;
+    const linkA = Number(m.confused_with_ayah) || null;
+    const linkLine = (linkS && linkA)
+      ? `<p class="pn-cue-link">🔗 ${pnEsc(pnStatic('pn_cue_link', 'ثم'))}: ${pnEsc(
+          pnSurahName(linkS)
+        )}:${linkA}</p>`
+      : '';
     return `
       <div class="pn-cue" data-surah="${surah}" data-ayah="${ayah}">
         <div class="pn-cue-top">
@@ -773,6 +833,7 @@ PageNotes.renderCues = function (page) {
           ${occ > 1 ? `<span class="pn-cue-occ">×${occ}</span>` : ''}
           <button type="button" class="pn-cue-add" data-surah="${surah}" data-ayah="${ayah}">＋ ${pnEsc(addLabel)}</button>
         </div>
+        ${linkLine}
         ${note ? `<p class="pn-cue-note">${pnEsc(note)}</p>` : ''}
       </div>
     `;
@@ -787,6 +848,191 @@ PageNotes.renderCues = function (page) {
       this.insertIntoNote(text ? label + ' ' + text + '…' : label);
     });
   });
+};
+
+/* ---------------- Transition drill ---------------- */
+
+PageNotes.buildDrillList = function (page) {
+  if (typeof getPageVerseSections !== 'function') return [];
+  const sections = getPageVerseSections(page) || [];
+  const list = [];
+  for (const sec of sections) {
+    for (let a = sec.fromAyah; a <= sec.toAyah && list.length < 60; a++) {
+      const b = this.nextRef(sec.surahId, a);
+      if (!b) continue;
+      // Only drill boundaries whose next verse we actually have text for.
+      if (!this.ayahText(b.surah, b.ayah)) continue;
+      list.push({ a: { surah: sec.surahId, ayah: a }, b });
+    }
+  }
+  return list;
+};
+
+PageNotes.startDrill = async function (page) {
+  const section = document.getElementById('pn-drill-section');
+  const box = document.getElementById('pn-drill');
+  if (!section || !box) return;
+
+  await this.loadQuran();
+  const list = this.buildDrillList(page);
+  if (!list.length) {
+    if (typeof showToast === 'function') {
+      showToast(pnStatic('pn_drill_empty', 'لا توجد انتقالات في هذه الصفحة'), true);
+    }
+    section.classList.add('hidden');
+    return;
+  }
+
+  this.stopAudio();
+  this.drill = { list, idx: 0, ok: 0, missed: 0, logged: 0 };
+  section.classList.remove('hidden');
+  this.renderDrillStep();
+  try { section.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (e) {}
+};
+
+PageNotes.renderDrillStep = function () {
+  const d = this.drill;
+  const box = document.getElementById('pn-drill');
+  const score = document.getElementById('pn-drill-score');
+  if (!box || !d) return;
+
+  if (d.idx >= d.list.length) {
+    if (score) score.textContent = '';
+    const pct = Math.round((d.ok / d.list.length) * 100);
+    let loggedMsg = '';
+    if (d.logged) {
+      loggedMsg = pnT('pn_drill_logged', { count: d.logged }, '');
+      if (!loggedMsg) loggedMsg = 'سُجّل ' + d.logged + ' خطأ انتقال';
+    }
+    box.innerHTML = `
+      <div class="pn-drill-summary">
+        <div class="pn-drill-big">${d.ok} / ${d.list.length}</div>
+        <div class="pn-drill-sub">${pnEsc(pnStatic('pn_drill_summary', 'انتقالات سليمة'))} · ${pct}%</div>
+        ${loggedMsg ? `<div class="pn-drill-logged">${pnEsc(loggedMsg)}</div>` : ''}
+        <div class="pn-drill-actions">
+          <button type="button" class="pn-btn" id="pn-drill-restart">↻ ${pnEsc(
+            pnStatic('pn_drill_retry', 'أعد المحاولة')
+          )}</button>
+          <button type="button" class="pn-btn" id="pn-drill-close">${pnEsc(
+            pnStatic('pn_drill_close', 'إغلاق')
+          )}</button>
+        </div>
+      </div>`;
+    const restart = document.getElementById('pn-drill-restart');
+    if (restart) restart.addEventListener('click', () => this.startDrill(this.mountedPage));
+    const close = document.getElementById('pn-drill-close');
+    if (close) close.addEventListener('click', () => this.closeDrill());
+    return;
+  }
+
+  const item = d.list[d.idx];
+  if (score) score.textContent = (d.idx + 1) + ' / ' + d.list.length;
+
+  box.innerHTML = `
+    <div class="pn-drill-card">
+      <div class="pn-drill-row">
+        <span class="pn-drill-ref">${item.a.surah}:${item.a.ayah}</span>
+        <span class="pn-drill-txt">…${pnEsc(this.lastWords(item.a.surah, item.a.ayah, 5))}</span>
+        <button type="button" class="pn-anchor-play" id="pn-drill-play-a" title="${pnEsc(
+          pnStatic('pn_play', 'تشغيل التلاوة')
+        )}">▶</button>
+      </div>
+      <div class="pn-drill-q">${pnEsc(pnStatic('pn_drill_q', 'ما بداية الآية التالية؟'))}</div>
+      <div class="pn-drill-answer hidden" id="pn-drill-answer">
+        <div class="pn-drill-row">
+          <span class="pn-drill-ref">${item.b.surah}:${item.b.ayah}</span>
+          <span class="pn-drill-txt">${pnEsc(this.firstWords(item.b.surah, item.b.ayah, 5))}…</span>
+          <button type="button" class="pn-anchor-play" id="pn-drill-play-b" title="${pnEsc(
+            pnStatic('pn_play', 'تشغيل التلاوة')
+          )}">▶</button>
+        </div>
+      </div>
+    </div>
+    <div class="pn-drill-actions">
+      <button type="button" class="pn-btn" id="pn-drill-reveal">👁️ ${pnEsc(
+        pnStatic('pn_drill_reveal', 'أظهر')
+      )}</button>
+      <button type="button" class="pn-btn hidden" id="pn-drill-ok">✓ ${pnEsc(
+        pnStatic('pn_drill_ok', 'تذكرت')
+      )}</button>
+      <button type="button" class="pn-btn pn-drill-miss hidden" id="pn-drill-miss">✗ ${pnEsc(
+        pnStatic('pn_drill_miss', 'نسيت')
+      )}</button>
+    </div>`;
+
+  const reveal = document.getElementById('pn-drill-reveal');
+  const okBtn = document.getElementById('pn-drill-ok');
+  const missBtn = document.getElementById('pn-drill-miss');
+  const answer = document.getElementById('pn-drill-answer');
+  const playA = document.getElementById('pn-drill-play-a');
+  const playB = document.getElementById('pn-drill-play-b');
+
+  const playBtn = (el, ref) => {
+    if (el) el.addEventListener('click', () => this.playAyah(ref.surah, ref.ayah));
+  };
+  playBtn(playA, item.a);
+  playBtn(playB, item.b);
+
+  if (reveal) {
+    reveal.addEventListener('click', () => {
+      if (answer) answer.classList.remove('hidden');
+      reveal.classList.add('hidden');
+      if (okBtn) okBtn.classList.remove('hidden');
+      if (missBtn) missBtn.classList.remove('hidden');
+    });
+  }
+
+  if (okBtn) {
+    okBtn.addEventListener('click', () => {
+      d.ok += 1;
+      d.idx += 1;
+      this.renderDrillStep();
+    });
+  }
+
+  if (missBtn) {
+    missBtn.addEventListener('click', async () => {
+      d.missed += 1;
+      d.idx += 1;
+      const res = await this.logTransition(item.a, item.b);
+      if (res) d.logged += 1;
+      this.renderDrillStep();
+    });
+  }
+};
+
+PageNotes.closeDrill = function () {
+  this.stopAudio();
+  this.drill = null;
+  const section = document.getElementById('pn-drill-section');
+  if (section) section.classList.add('hidden');
+  const box = document.getElementById('pn-drill');
+  if (box) box.innerHTML = '';
+  const score = document.getElementById('pn-drill-score');
+  if (score) score.textContent = '';
+};
+
+/** Silently log a transition failure: at ayah A the reciter lost ayah B. */
+PageNotes.logTransition = async function (a, b) {
+  try {
+    const res = await API.call('mistakes/record_mistake.php', {
+      method: 'POST',
+      body: {
+        page_number: this.mountedPage,
+        surah_number: a.surah,
+        ayah_number: a.ayah,
+        mistake_type: 'TRANSITION_FAILURE',
+        severity: 2,
+        confused_with_surah: b.surah,
+        confused_with_ayah: b.ayah,
+        source_task: document.body.dataset.taskType || null,
+      },
+      redirectOn401: false,
+    });
+    return res;
+  } catch (e) {
+    return null;
+  }
 };
 
 /* ---------------- Print / PDF export ---------------- */
@@ -817,9 +1063,12 @@ PageNotes.buildPrintable = function (page) {
     cuesHtml = '<ul>' + cues.map((m) => {
       const tl = (window.I18N && I18N.getMistakeLabel) ? I18N.getMistakeLabel(m.mistake_type) : m.mistake_type;
       const extra = (m.notes || '').trim();
+      const linkS = Number(m.confused_with_surah) || 0;
+      const linkA = Number(m.confused_with_ayah) || 0;
+      const link = (linkS && linkA) ? ' 🔗 ' + linkS + ':' + linkA : '';
       return `<li><span class="ref">${m.surah_number}:${m.ayah_number}</span><span class="txt"><b>${pnEsc(
         tl
-      )}</b>${extra ? ' — ' + pnEsc(extra) : ''}</span></li>`;
+      )}</b>${link}${extra ? ' — ' + pnEsc(extra) : ''}</span></li>`;
     }).join('') + '</ul>';
   }
 

@@ -3051,3 +3051,113 @@ body.focus-mode .pn-textarea {
 }
 body.focus-mode .stage-actions.is-sticky { top: 0.5rem; }
 
+/* ==========================================================================
+   Verse linking — transition capture, drill & paired cards
+   ========================================================================== */
+
+/* 🔗 "log the transition" button attached to each verse anchor */
+.pn-anchor-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  background: transparent;
+  border: 0;
+  border-inline-start: 1.5px solid var(--accent-soft-border, var(--line));
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 0.8rem;
+  line-height: 1;
+}
+.pn-anchor-link:hover { background: rgba(13, 148, 136, 0.14); }
+
+/* "then →" line on a cue that carries a linked verse */
+.pn-cue-link {
+  margin: 0.35rem 0 0;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+/* Transition drill */
+.pn-mini.pn-drill-start { white-space: nowrap; }
+
+.pn-drill { display: flex; flex-direction: column; gap: 0.75rem; }
+.pn-drill-score { font-size: 0.78rem; font-weight: 800; color: var(--ink-secondary); }
+
+.pn-drill-card {
+  border: 1.5px solid var(--accent-soft-border, var(--line));
+  border-radius: 0.7rem;
+  background: var(--accent-soft);
+  padding: 0.7rem 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.pn-drill-row { display: flex; align-items: center; gap: 0.5rem; }
+
+.pn-drill-ref {
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: var(--accent);
+  background: var(--card);
+  border-radius: 9999px;
+  padding: 0.05rem 0.4rem;
+  flex-shrink: 0;
+}
+
+.pn-drill-txt {
+  font-family: 'Amiri', 'Traditional Arabic', 'Cairo', serif;
+  font-size: 1rem;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pn-drill-q { font-size: 0.82rem; font-weight: 700; color: var(--ink-secondary); }
+.pn-drill-answer { border-top: 1px dashed var(--line); padding-top: 0.5rem; }
+.pn-drill-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+
+.pn-drill-miss { border-color: var(--danger-border); color: var(--danger); }
+.pn-drill-miss:hover { background: var(--danger-soft); color: var(--danger); }
+
+.pn-drill-summary {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.6rem 0;
+}
+.pn-drill-big { font-size: 2rem; font-weight: 800; color: var(--accent); }
+.pn-drill-sub { font-size: 0.85rem; color: var(--ink-secondary); }
+.pn-drill-logged { font-size: 0.8rem; font-weight: 700; color: var(--danger); }
+
+/* Card back — the linked "next" verse */
+.fc-link-row {
+  margin-top: 0.75rem;
+  border: 1.5px solid var(--accent-soft-border, var(--line));
+  border-radius: 0.7rem;
+  background: var(--accent-soft);
+  padding: 0.6rem 0.7rem;
+}
+.fc-link-head {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--accent);
+  margin-bottom: 0.35rem;
+}
+.fc-link-ref { color: var(--ink-secondary); font-weight: 700; }
+.fc-link-text {
+  font-family: 'Amiri', 'Traditional Arabic', 'Cairo', serif;
+  font-size: 1.1rem;
+  line-height: 1.9;
+  text-align: center;
+  color: var(--ink);
+}
+.fc-flag-link { background: var(--accent-soft); color: var(--accent); border-color: var(--accent-soft-border); }
+
