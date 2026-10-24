@@ -42,7 +42,9 @@ const API = {
 
     if (res.status === 401 && redirectOn401) {
       location.href = 'index.html';
-      throw new Error('انتهت الجلسة. يرجى تسجيل الدخول مجدداً.');
+      const authErr = new Error('انتهت الجلسة. يرجى تسجيل الدخول مجدداً.');
+      authErr.status = 401;
+      throw authErr;
     }
 
     if (!res.ok) {
@@ -880,9 +882,19 @@ const TASK_DESTINATIONS = {
   HIFZ_JADID: { url: 'hifz.html',       cls: 'task-green',  keyTitle: 'task_hifz_title',     keySub: 'task_hifz_sub',     title: 'الحفظ الجديد',     sub: 'صفحة جديدة اليوم' },
   TIKRAR_AMS: { url: 'tikrar.html',     cls: 'task-amber',  keyTitle: 'task_tikrar_title',   keySub: 'task_tikrar_sub',   title: 'تكرار حفظ الأمس',   sub: 'تكرار ١٠ مرات لتثبيت الحفظ قبل الربط' },
   RABT:       { url: 'rabt.html',       cls: 'task-blue',   keyTitle: 'task_rabt_title',     keySub: 'task_rabt_sub',     title: 'الربط',            sub: 'نافذة الربط المستمرة' },
+  RUB_TAMKIN: { url: 'rub.html',        cls: 'task-teal',   keyTitle: 'task_rub_title',      keySub: 'task_rub_sub',      title: 'تثبيت الربع',       sub: 'ربع واحد من محفوظك، كل موقف ٣ مرات' },
   MURAJAAH:   { url: 'murajaah.html',   cls: 'task-purple', keyTitle: 'task_murajaah_title', keySub: 'task_murajaah_sub', title: 'المراجعة',         sub: 'ختم دوري مقسم على الأيام' },
   MISTAKES:   { url: 'flashcards.html', cls: 'task-red',    keyTitle: 'task_mistakes_title', keySub: 'task_mistakes_sub', title: 'المعالجة',         sub: 'تدريب البطاقات الذكية' },
 };
+
+function formatAyahRefLabel(ref) {
+  if (!ref) return '';
+  const parts = String(ref).split(':');
+  const surahId = parseInt(parts[0], 10);
+  const ayah = parts[1] || '';
+  const name = window.I18N ? I18N.getSurahName(surahId) : ('سورة ' + surahId);
+  return name + ' ' + ayah;
+}
 
 async function initDashboard() {
   const name = localStorage.getItem('hifz_name');
@@ -1177,11 +1189,11 @@ function renderDashboardUI() {
   const dateEl = document.getElementById('tasks-date');
   if (dateEl) dateEl.textContent = sharedState.date;
 
-  // Render 4 Dynamic Task Cards
+  // Render the dynamic task cards (Hifz, Tikrar, Rabt, Rub, Murajaah, Mistakes)
   const grid = document.getElementById('tasks-grid');
   if (!grid) return;
 
-  const order = ['HIFZ_JADID', 'TIKRAR_AMS', 'RABT', 'MURAJAAH', 'MISTAKES'];
+  const order = ['HIFZ_JADID', 'TIKRAR_AMS', 'RABT', 'RUB_TAMKIN', 'MURAJAAH', 'MISTAKES'];
   grid.innerHTML = order.map((type) => {
     const meta = TASK_DESTINATIONS[type];
     const task = sharedState.tasks.find((t) => t.task_type === type);
@@ -1218,7 +1230,12 @@ function renderDashboardUI() {
           <div class="progress-bar"><div class="progress-fill fill-blue" style="width:${count > 0 ? 100 : 0}%"></div></div>
         </div>`;
     } else if (task) {
-      if (task.start_page === task.end_page) {
+      if (type === 'RUB_TAMKIN') {
+        const from = formatAyahRefLabel(task.start_ref);
+        const to = formatAyahRefLabel(task.end_ref);
+        const rubLabel = window.I18N ? I18N.t('rub_quarter_label') : 'الربع';
+        rangeHtml = rubLabel + ' ' + task.rub_id + ' · ' + from + ' — ' + to;
+      } else if (task.start_page === task.end_page) {
         rangeHtml = window.I18N ? I18N.t('single_page_format', { page: task.start_page }) : ('صفحة ' + task.start_page);
       } else {
         rangeHtml = window.I18N ? I18N.t('multi_page_format', { start: task.start_page, end: task.end_page }) : ('صفحات ' + task.start_page + ' – ' + task.end_page);
@@ -1243,6 +1260,19 @@ function renderDashboardUI() {
             </div>
             <div class="progress-bar"><div class="progress-fill fill-amber" style="width:${percent}%"></div></div>
           </div>`;
+      } else if (type === 'RUB_TAMKIN') {
+        statusPill = task.is_completed
+          ? `<span class="task-status done">${window.I18N ? I18N.t('task_status_done_today') : '✓ مكتمل اليوم'}</span>`
+          : `<span class="task-status">${window.I18N ? I18N.t('rub_station_pill', { count, total }) : `${count} / ${total} موقف`}</span>`;
+
+        progressHtml = `
+          <div class="progress-wrap">
+            <div class="progress-header">
+              <span>${window.I18N ? I18N.t('rub_progress_title') : 'المواقف المثبتة'}</span>
+              <span><strong>${count}</strong> ${window.I18N ? I18N.t('rub_of_total', { total, percent }) : `من ${total} (${percent}%)`}</span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill fill-teal" style="width:${percent}%"></div></div>
+          </div>`;
       } else {
         statusPill = task.is_completed
           ? `<span class="task-status done">${window.I18N ? I18N.t('task_status_done_today') : '✓ مكتمل اليوم'}</span>`
@@ -1263,7 +1293,9 @@ function renderDashboardUI() {
         carriedFlag = `<span class="task-flag">${window.I18N ? I18N.t('task_flag_carried') : 'محولة من أمس'}</span>`;
       }
     } else {
-      rangeHtml = window.I18N ? I18N.t('task_status_inactive_today') : 'غير مفعّل اليوم';
+      rangeHtml = type === 'RUB_TAMKIN'
+        ? (window.I18N ? I18N.t('review_rub_inactive') : 'يثبت الربع بعد تراكم صفحات محفوظة')
+        : (window.I18N ? I18N.t('task_status_inactive_today') : 'غير مفعّل اليوم');
       statusPill = `<span class="task-status">${window.I18N ? I18N.t('task_status_inactive') : 'غير مفعّل'}</span>`;
     }
 
@@ -1308,6 +1340,148 @@ async function initDedicatedTaskPage(taskType) {
       showToast(err.message, true);
     }
   }
+}
+
+/* ---------------- 7b. Muraja'ah five-prayer plan ---------------- */
+
+const PRAYER_SESSIONS = [
+  { key: 'fajr', labelKey: 'prayer_fajr', nameAr: 'الفجر', icon: '🌅' },
+  { key: 'dhuhr', labelKey: 'prayer_dhuhr', nameAr: 'الظهر', icon: '☀️' },
+  { key: 'asr', labelKey: 'prayer_asr', nameAr: 'العصر', icon: '🌤️' },
+  { key: 'maghrib', labelKey: 'prayer_maghrib', nameAr: 'المغرب', icon: '🌇' },
+  { key: 'isha', labelKey: 'prayer_isha', nameAr: 'العشاء', icon: '🌙' },
+];
+
+/**
+ * Split a muraja'ah page range into five contiguous sessions, one per prayer.
+ * The remainder pages are distributed over the first sessions, so 42 pages
+ * become 9 + 9 + 8 + 8 + 8.
+ */
+function buildPrayerSessions(task, completedList) {
+  const start = parseInt(task && task.start_page, 10);
+  const end = parseInt(task && task.end_page, 10);
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) return [];
+
+  const totalPages = end - start + 1;
+  const base = Math.floor(totalPages / PRAYER_SESSIONS.length);
+  const remainder = totalPages % PRAYER_SESSIONS.length;
+  const doneSet = new Set((Array.isArray(completedList) ? completedList : []).map((p) => parseInt(p, 10)));
+
+  let cursor = start;
+  return PRAYER_SESSIONS.map((prayer, index) => {
+    const size = base + (index < remainder ? 1 : 0);
+    const sessionStart = cursor;
+    const sessionEnd = size > 0 ? cursor + size - 1 : cursor - 1;
+    cursor += size;
+
+    let completed = 0;
+    let firstUncompleted = null;
+    for (let p = sessionStart; p <= sessionEnd; p++) {
+      if (doneSet.has(p)) {
+        completed++;
+      } else if (firstUncompleted === null) {
+        firstUncompleted = p;
+      }
+    }
+
+    const isEmpty = size === 0;
+    return {
+      ...prayer,
+      start: sessionStart,
+      end: sessionEnd,
+      total: size,
+      completed,
+      done: !isEmpty && completed >= size,
+      isEmpty,
+      percent: isEmpty ? 0 : Math.round((completed / size) * 100),
+      firstUncompleted: firstUncompleted !== null ? firstUncompleted : (isEmpty ? null : sessionStart),
+    };
+  });
+}
+
+function prayerSessionRangeLabel(session) {
+  if (!session || session.isEmpty) return '—';
+  if (session.total === 1) {
+    return window.I18N ? I18N.t('prayer_session_one', { page: session.start }) : `صفحة ${session.start}`;
+  }
+  return window.I18N
+    ? I18N.t('prayer_session_range', { start: session.start, end: session.end })
+    : `صفحة ${session.start}–${session.end}`;
+}
+
+function renderPrayerPlan(taskType, task, activePage) {
+  if (taskType !== 'MURAJAAH') return '';
+
+  const sessions = buildPrayerSessions(task, task.completed_pages || []);
+  if (!sessions.length) return '';
+
+  const totalPages = Math.max(1, parseInt(task.end_page, 10) - parseInt(task.start_page, 10) + 1);
+  const nonEmpty = sessions.filter((s) => !s.isEmpty).length;
+  const title = window.I18N ? I18N.t('prayer_plan_title') : 'خطة المراجعة بعد الصلوات';
+  const hint = window.I18N
+    ? (totalPages === 1
+        ? I18N.t('prayer_plan_hint_one')
+        : I18N.t('prayer_plan_hint', { total: totalPages }))
+    : (totalPages === 1
+        ? 'وُزّعت مراجعة اليوم (صفحة واحدة) على خمس جلسات بعد الصلوات الخمس.'
+        : `وُزّعت مراجعة اليوم (${totalPages} صفحة) على خمس جلسات بعد الصلوات الخمس.`);
+  const aria = window.I18N ? I18N.t('prayer_plan_aria') : 'تقسيم المراجعة على الصلوات الخمس';
+  const badge = window.I18N
+    ? (nonEmpty === 1 ? I18N.t('prayer_plan_sessions_one') : I18N.t('prayer_plan_sessions', { count: nonEmpty }))
+    : (nonEmpty === 1 ? 'جلسة واحدة' : `${nonEmpty} جلسات`);
+
+  const cards = sessions.map((session) => {
+    const isActive = !session.isEmpty && activePage >= session.start && activePage <= session.end;
+    const range = prayerSessionRangeLabel(session);
+    const name = window.I18N ? I18N.t(session.labelKey) : session.nameAr;
+    const status = session.isEmpty
+      ? (window.I18N ? I18N.t('prayer_session_empty') : 'لا توجد صفحات')
+      : session.done
+        ? (window.I18N ? I18N.t('prayer_session_done') : 'مكتملة')
+        : isActive
+          ? (window.I18N ? I18N.t('prayer_session_active') : 'الجلسة الحالية')
+          : (window.I18N ? I18N.t('stage_page_pending') : 'بانتظار التلاوة');
+    const pageTarget = session.firstUncompleted || session.start;
+    const classes = [
+      'prayer-card',
+      isActive ? 'is-active' : '',
+      session.done ? 'is-done' : '',
+      session.isEmpty ? 'is-empty' : '',
+    ].filter(Boolean).join(' ');
+    const countLabel = session.isEmpty ? '—' : session.completed + ' / ' + session.total;
+
+    return `
+      <button type="button" class="${classes}"
+        data-page="${pageTarget}"
+        data-session-done="${session.done ? '1' : '0'}"
+        ${session.isEmpty ? 'disabled' : ''}
+        ${isActive ? 'aria-current="step"' : ''}
+        aria-label="${esc(name + ' · ' + range + ' · ' + countLabel + ' · ' + status)}">
+        <span class="prayer-card-top">
+          <span class="prayer-icon" aria-hidden="true">${session.icon}</span>
+          <span class="prayer-name">${esc(name)}</span>
+          ${isActive ? `<span class="prayer-now">${esc(window.I18N ? I18N.t('prayer_now') : 'الآن')}</span>` : ''}
+        </span>
+        <span class="prayer-range">${esc(range)}</span>
+        <span class="prayer-meter" aria-hidden="true"><span style="width:${session.percent}%"></span></span>
+        <span class="prayer-foot">
+          <span class="prayer-count">${esc(countLabel)}</span>
+          <span class="prayer-status">${esc(status)}</span>
+        </span>
+      </button>`;
+  }).join('');
+
+  return `
+    <section class="prayer-plan" aria-label="${esc(aria)}">
+      <div class="prayer-plan-head">
+        <div>
+          <h3>${esc(title)}</h3>
+          <p class="hint">${esc(hint)}</p>
+        </div>
+        <span class="prayer-plan-badge">${esc(badge)}</span>
+      </div>
+      <div class="prayer-grid">${cards}</div>
+    </section>`;
 }
 
 function renderTaskPage(taskType) {
@@ -1381,6 +1555,7 @@ function renderTaskPage(taskType) {
   const progressLbl = window.I18N ? I18N.t('daily_recitation_progress') : 'تقدم التلاوة اليومي';
   const chipsTitle = window.I18N ? I18N.t('chips_title_text') : 'اختر صفحة للتلاوة أو تسجيل خطأ:';
   const chipsHint = window.I18N ? I18N.t('chips_hint_text') : 'كل صفحة تُتلى وتُحدد تُسجل كصفحة منجزة بشكل فردي';
+  const prayerPlanHtml = renderPrayerPlan(taskType, task, activePage);
 
   const pageHtml = `
     <div class="task-page-head">
@@ -1404,6 +1579,8 @@ function renderTaskPage(taskType) {
       </div>
     </div>
 
+    ${prayerPlanHtml}
+
     <!-- Active Page Recitation Stage -->
     <div class="recitation-stage" id="recitation-stage">
       <!-- Populated by renderActivePageStage -->
@@ -1422,6 +1599,23 @@ function renderTaskPage(taskType) {
   `;
 
   container.innerHTML = pageHtml;
+  container.querySelectorAll('.prayer-card:not(:disabled)').forEach((card) => {
+    card.addEventListener('click', () => {
+      const page = parseInt(card.dataset.page, 10);
+      if (!Number.isFinite(page)) return;
+      sessionStorage.setItem('selected_page_' + taskType, page);
+      if (card.dataset.sessionDone === '1') {
+        sessionStorage.setItem('view_completed_' + taskType, '1');
+      } else {
+        sessionStorage.removeItem('view_completed_' + taskType);
+      }
+      renderTaskPage(taskType);
+      requestAnimationFrame(() => {
+        const stage = document.getElementById('recitation-stage');
+        if (stage) stage.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+  });
   renderChipsList(taskType, task, activePage);
   renderActivePageStage(taskType, task, activePage);
   if (window.PageNotes) {
@@ -1713,9 +1907,15 @@ function renderActivePageStage(taskType, task, activePage) {
   const statusPill = isPageDone
     ? `<span class="task-status done">${window.I18N ? I18N.t('stage_page_recited') : '✓ تمت تلاوتها'}</span>`
     : `<span class="task-status">${window.I18N ? I18N.t('stage_page_pending') : 'بانتظار التلاوة'}</span>`;
+  const prayerSessions = taskType === 'MURAJAAH' ? buildPrayerSessions(task, completedList) : [];
+  const activePrayer = prayerSessions.find((s) => !s.isEmpty && activePage >= s.start && activePage <= s.end) || null;
   const stageMeta = taskType === 'HIFZ_JADID'
     ? (window.I18N ? I18N.t('stage_meta_hifz') : 'الحفظ الجديد (صفحة اليوم)')
-    : (window.I18N ? I18N.t('stage_meta_range', { task: taskTitle }) : ('صفحة داخل نطاق ' + taskTitle));
+    : activePrayer
+      ? (window.I18N
+          ? I18N.t('stage_meta_prayer', { prayer: I18N.t(activePrayer.labelKey), range: prayerSessionRangeLabel(activePrayer) })
+          : `جلسة ${activePrayer.nameAr} · ${prayerSessionRangeLabel(activePrayer)}`)
+      : (window.I18N ? I18N.t('stage_meta_range', { task: taskTitle }) : ('صفحة داخل نطاق ' + taskTitle));
 
   const completeBtnText = isPageDone
     ? (window.I18N ? I18N.t('btn_complete_page_reconfirm') : '✓ تم إتمام هذه الصفحة (إعادة التأكيد)')
@@ -1916,8 +2116,24 @@ function renderActivePageStage(taskType, task, activePage) {
 /* ---------------- 8. Mistake Logging Modal (Shared) ---------------- */
 
 let modalActivePage = 1;
-let modalSelectedTag = 'TRANSITION_FAILURE';
+let modalSelectedTag = 'MUTASHABIHAT';
 let modalSeverity = 1;
+
+/**
+ * Show / hide the mistake-type tags for the active entry flow.
+ * TRANSITION_FAILURE is offered only when the modal is opened from the 🔗
+ * link icon, so a normal mistake log can never become a "forgot next verse"
+ * record by accident.
+ */
+function setMistakeTag(type) {
+  modalSelectedTag = type;
+  const isTransition = type === 'TRANSITION_FAILURE';
+  document.querySelectorAll('#mistake-tags .tag-btn').forEach((btn) => {
+    const transitionBtn = btn.dataset.type === 'TRANSITION_FAILURE';
+    btn.classList.toggle('hidden', transitionBtn && !isTransition);
+    btn.classList.toggle('active', btn.dataset.type === type);
+  });
+}
 
 const SURAHS_LIST = [
   { id: 1, name: "الفاتحة", ayahs: 7 },
@@ -2176,6 +2392,8 @@ function renderAyahOptions(sId, pageNumber, showAll = false) {
         ayahSelect.value = val;
         chipsGroup.querySelectorAll('.ayah-chip').forEach((b) => b.classList.remove('active'));
         btn.classList.add('active');
+        // Only the 🔗 link-icon flow can be in transition mode, so this never
+        // turns a normal mistake into a "forgot next verse" record.
         if (modalSelectedTag === 'TRANSITION_FAILURE') autoFillNextVerse(true);
       });
     });
@@ -2319,6 +2537,7 @@ function refreshMistakeModalLabels() {
   document.querySelectorAll('#mistake-tags .tag-btn').forEach((btn) => {
     if (window.I18N) btn.textContent = I18N.getMistakeLabel(btn.dataset.type);
   });
+  setMistakeTag(modalSelectedTag);
   applyMistakePairUI();
 }
 
@@ -2342,6 +2561,7 @@ function initMistakeModal() {
       const sId = parseInt(surahSelect.value, 10);
       modalShowAllAyahs = false;
       renderAyahOptions(sId, modalActivePage, false);
+      if (modalSelectedTag === 'TRANSITION_FAILURE') autoFillNextVerse(true);
     });
   }
 
@@ -2354,6 +2574,7 @@ function initMistakeModal() {
           b.classList.toggle('active', parseInt(b.dataset.ayah, 10) === val);
         });
       }
+      // Keep the transition pair in sync when the ayah changes (link-icon flow only).
       if (modalSelectedTag === 'TRANSITION_FAILURE') autoFillNextVerse(true);
     });
   }
@@ -2372,7 +2593,7 @@ function initMistakeModal() {
       btn.classList.add('active');
       modalSelectedTag = btn.dataset.type;
       applyMistakePairUI();
-      if (modalSelectedTag === 'TRANSITION_FAILURE') autoFillNextVerse(false);
+      if (modalSelectedTag === 'TRANSITION_FAILURE') autoFillNextVerse(true);
     });
   });
 
@@ -2429,8 +2650,11 @@ function initMistakeModal() {
       try {
         const confusedSurahEl = document.getElementById('mistake-confused-surah');
         const confusedAyahEl = document.getElementById('mistake-confused-ayah');
-        const confusedSurah = confusedSurahEl && confusedSurahEl.value ? parseInt(confusedSurahEl.value, 10) : null;
-        const confusedAyah = confusedAyahEl && confusedAyahEl.value ? parseInt(confusedAyahEl.value, 10) : null;
+        // A paired verse only belongs to transition (forgotten next verse) and
+        // mutashabihat (confused verse) mistakes.
+        const sendsPair = modalSelectedTag === 'TRANSITION_FAILURE' || modalSelectedTag === 'MUTASHABIHAT';
+        const confusedSurah = sendsPair && confusedSurahEl && confusedSurahEl.value ? parseInt(confusedSurahEl.value, 10) : null;
+        const confusedAyah = sendsPair && confusedAyahEl && confusedAyahEl.value ? parseInt(confusedAyahEl.value, 10) : null;
 
         const res = await API.call('mistakes/record_mistake.php', {
           method: 'POST',
@@ -2472,9 +2696,15 @@ function initMistakeModal() {
   }
 }
 
-function openMistakeModal(pageNumber) {
+/**
+ * Open the mistake modal for a page.
+ * `opts.mistakeType` is passed by the recall board's 🔗 link icon; without it
+ * the modal opens as a normal mistake log (never a transition).
+ */
+function openMistakeModal(pageNumber, opts = {}) {
   modalActivePage = pageNumber;
   modalShowAllAyahs = false;
+  const initialType = opts.mistakeType || 'MUTASHABIHAT';
   const modal = document.getElementById('mistake-modal');
   if (!modal) return;
 
@@ -2522,13 +2752,8 @@ function openMistakeModal(pageNumber) {
     renderAyahOptions(detectedSurah, pageNumber, false);
   }
 
-  // Reset tag selection to first tag
-  const firstTag = document.querySelector('#mistake-tags .tag-btn');
-  if (firstTag) {
-    document.querySelectorAll('#mistake-tags .tag-btn').forEach((b) => b.classList.remove('active'));
-    firstTag.classList.add('active');
-    modalSelectedTag = firstTag.dataset?.type || 'TRANSITION_FAILURE';
-  }
+  // Reset the type tags. Only the 🔗 link-icon flow offers TRANSITION_FAILURE.
+  setMistakeTag(initialType);
 
   applyMistakePairUI();
   modal.classList.remove('hidden');
@@ -2541,14 +2766,7 @@ function openMistakeModal(pageNumber) {
  * verse" is auto-filled from the chosen ayah.
  */
 function openMistakeModalForAyah(pageNumber, surahNumber, ayahNumber, mistakeType) {
-  openMistakeModal(pageNumber);
-
-  if (mistakeType) {
-    modalSelectedTag = mistakeType;
-    document.querySelectorAll('#mistake-tags .tag-btn').forEach((b) => {
-      b.classList.toggle('active', b.dataset.type === mistakeType);
-    });
-  }
+  openMistakeModal(pageNumber, { mistakeType: mistakeType || 'MUTASHABIHAT' });
 
   const surahSelect = document.getElementById('mistake-surah');
   if (surahSelect && surahNumber) {
@@ -2761,7 +2979,8 @@ document.addEventListener('DOMContentLoaded', () => {
     initAuthPage();
   } else if (document.getElementById('tasks-grid')) {
     initDashboard();
-  } else if (document.body.dataset.taskType) {
+  } else if (document.body.dataset.taskType && document.body.dataset.taskType !== 'RUB_TAMKIN') {
+    // RUB_TAMKIN has its own controller (js/rub.js) and markup.
     initDedicatedTaskPage(document.body.dataset.taskType);
   }
 });

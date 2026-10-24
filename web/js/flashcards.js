@@ -24,6 +24,7 @@ const FC = {
   audio: null,
   audioPlaying: false,
   pairPlaying: false,
+  linkRevealed: false,
 };
 
 const fcEl = (id) => document.getElementById(id);
@@ -295,11 +296,17 @@ function fcPlayPair() {
 function fcRenderLink(card) {
   const row = fcEl('fc-link-row');
   const pairBtn = fcEl('btn-play-pair');
+  const revealBtn = fcEl('btn-reveal-link');
   const f = card.front;
   const hasLink = !!(f.confused_with_surah && f.confused_with_ayah);
+  // Only a forgotten-next-verse (transition) card has a hidden answer. A
+  // mutashabihat card shows its "confused with" verse as a hint.
+  const gate = hasLink && f.mistake_type === 'TRANSITION_FAILURE';
 
-  if (row) row.classList.toggle('hidden', !hasLink);
-  if (pairBtn) pairBtn.classList.toggle('hidden', !hasLink);
+  FC.linkRevealed = false;
+  if (row) row.classList.toggle('hidden', gate || !hasLink);
+  if (pairBtn) pairBtn.classList.toggle('hidden', gate || !hasLink);
+  if (revealBtn) revealBtn.classList.toggle('hidden', !gate);
   if (!hasLink) return;
 
   const csName = (window.I18N) ? I18N.getSurahName(f.confused_with_surah) : (f.confused_with_surah_name || '');
@@ -321,6 +328,33 @@ function fcRenderLink(card) {
   });
 }
 
+/* Show the linked verse (and its pair audio) after an explicit tap. */
+function fcRevealLink() {
+  const row = fcEl('fc-link-row');
+  const pairBtn = fcEl('btn-play-pair');
+  const revealBtn = fcEl('btn-reveal-link');
+  if (row) row.classList.remove('hidden');
+  if (pairBtn) pairBtn.classList.remove('hidden');
+  if (revealBtn) revealBtn.classList.add('hidden');
+  FC.linkRevealed = true;
+}
+
+/* Re-hide the linked verse every time the card is flipped to its back. */
+function fcResetLinkReveal() {
+  const row = fcEl('fc-link-row');
+  const pairBtn = fcEl('btn-play-pair');
+  const revealBtn = fcEl('btn-reveal-link');
+  const card = fcCard();
+  const front = card ? card.front : {};
+  const hasLink = !!(front.confused_with_surah && front.confused_with_ayah);
+  const gate = hasLink && front.mistake_type === 'TRANSITION_FAILURE';
+  FC.linkRevealed = false;
+  // Non-gated cards (mutashabihat) keep their paired verse visible.
+  if (row) row.classList.toggle('hidden', gate || !hasLink);
+  if (pairBtn) pairBtn.classList.toggle('hidden', gate || !hasLink);
+  if (revealBtn) revealBtn.classList.toggle('hidden', !gate);
+}
+
 /* ---------------- Flip & animation ---------------- */
 
 function fcFlip(force) {
@@ -329,6 +363,7 @@ function fcFlip(force) {
   cardEl.classList.remove('exiting-left', 'exiting-right');
   FC.flipped = typeof force === 'boolean' ? force : !FC.flipped;
   cardEl.classList.toggle('is-flipped', FC.flipped);
+  if (FC.flipped) fcResetLinkReveal();
 
   if (fcEl('deck-actions')) fcEl('deck-actions').classList.toggle('hidden', !FC.flipped);
   if (fcEl('btn-show-hint')) fcEl('btn-show-hint').classList.toggle('hidden', FC.flipped);
@@ -675,6 +710,9 @@ function initFlashcardsPage() {
 
   const pairBtn = fcEl('btn-play-pair');
   if (pairBtn) pairBtn.addEventListener('click', (e) => { e.stopPropagation(); fcPlayPair(); });
+
+  const revealLinkBtn = fcEl('btn-reveal-link');
+  if (revealLinkBtn) revealLinkBtn.addEventListener('click', (e) => { e.stopPropagation(); fcRevealLink(); });
 
   const delBtn = fcEl('btn-delete-card');
   if (delBtn) delBtn.addEventListener('click', (e) => { e.stopPropagation(); fcDelete(); });

@@ -51,15 +51,32 @@ CREATE TABLE IF NOT EXISTS `daily_task_logs` (
     `id` INT NOT NULL AUTO_INCREMENT,
     `user_id` INT NOT NULL,
     `task_date` DATE NOT NULL,
-    `task_type` ENUM('HIFZ_JADID', 'TIKRAR_AMS', 'RABT', 'MURAJAAH') NOT NULL,
+    `task_type` ENUM('HIFZ_JADID', 'TIKRAR_AMS', 'RABT', 'MURAJAAH', 'RUB_TAMKIN', 'MISTAKES') NOT NULL,
     `start_page` INT NOT NULL,
     `end_page` INT NOT NULL,
     `completed_pages` TEXT NULL,
     `repetition_count` INT NOT NULL DEFAULT 0,
+    `rub_id` INT NULL,
+    `completed_stations` TEXT NULL,
     `is_completed` BOOLEAN NOT NULL DEFAULT 0,
     PRIMARY KEY (`id`),
     KEY `idx_daily_task_logs_user_date` (`user_id`, `task_date`),
     CONSTRAINT `fk_daily_task_logs_user`
+        FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
+        ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 3b. rub_history table (fair random rotation for RUB_TAMKIN)
+CREATE TABLE IF NOT EXISTS `rub_history` (
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `user_id` INT NOT NULL,
+    `rub_id` INT NOT NULL,
+    `last_done_date` DATE NULL,
+    `times_done` INT NOT NULL DEFAULT 0,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_rub_history_user_rub` (`user_id`, `rub_id`),
+    KEY `idx_rub_history_user_date` (`user_id`, `last_done_date`),
+    CONSTRAINT `fk_rub_history_user`
         FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
         ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -76,7 +93,7 @@ CREATE TABLE IF NOT EXISTS `mistakes` (
     `severity` TINYINT NOT NULL DEFAULT 1,
     `confused_with_surah` INT NULL,
     `confused_with_ayah` INT NULL,
-    `source_task` ENUM('HIFZ_JADID', 'TIKRAR_AMS', 'RABT', 'MURAJAAH') NULL,
+    `source_task` ENUM('HIFZ_JADID', 'TIKRAR_AMS', 'RABT', 'MURAJAAH', 'RUB_TAMKIN') NULL,
     `status` ENUM('ACTIVE', 'ARCHIVED') NOT NULL DEFAULT 'ACTIVE',
     `mastery_count` INT NOT NULL DEFAULT 0,
     `occurrence_count` INT NOT NULL DEFAULT 1,

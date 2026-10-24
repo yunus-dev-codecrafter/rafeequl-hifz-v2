@@ -21,7 +21,7 @@ const MISTAKE_TYPES = [
     'TASHKEEL',
     'LAFDH',
 ];
-const SOURCE_TASKS = ['HIFZ_JADID', 'TIKRAR_AMS', 'RABT', 'MURAJAAH'];
+const SOURCE_TASKS = ['HIFZ_JADID', 'TIKRAR_AMS', 'RABT', 'MURAJAAH', 'RUB_TAMKIN'];
 
 function json_out(int $code, array $payload): void
 {
@@ -142,6 +142,13 @@ if ($notes !== null && mb_strlen($notes) > 5000) {
 }
 $notes = $notes !== null && $notes !== '' ? $notes : null;
 
+// A paired verse is only meaningful for a forgotten next verse (transition) or
+// a confusable verse (mutashabihat). Never persist it on other mistake types.
+if (!in_array($mistakeType, ['TRANSITION_FAILURE', 'MUTASHABIHAT'], true)) {
+    $confusedSurah = null;
+    $confusedAyah = null;
+}
+
 if ($errors) {
     json_out(400, ['success' => false, 'errors' => $errors]);
 }
@@ -182,6 +189,8 @@ try {
                  `severity`      = GREATEST(`severity`, :sev),
                  `notes`         = COALESCE(:n, `notes`),
                  `source_task`   = COALESCE(:src, `source_task`),
+                 `confused_with_surah` = COALESCE(:cs, `confused_with_surah`),
+                 `confused_with_ayah`  = COALESCE(:ca, `confused_with_ayah`),
                  `interval_days` = 0,
                  `streak_correct` = 0,
                  `lapses`        = `lapses` + 1,
@@ -190,6 +199,7 @@ try {
         );
         $stmt->execute([
             ':sev' => $severity, ':n' => $notes, ':src' => $sourceTask,
+            ':cs' => $confusedSurah, ':ca' => $confusedAyah,
             ':id' => $mistakeId, ':u' => $userId,
         ]);
         srs_log_event($pdo, $userId, $mistakeId, 'LOGGED');

@@ -127,6 +127,7 @@
       task_HIFZ_JADID: 'حفظ جديد',
       task_TIKRAR_AMS: 'تكرار الأمس',
       task_RABT: 'ربط',
+      task_RUB_TAMKIN: 'تثبيت الربع',
       task_MURAJAAH: 'مراجعة',
     },
     en: {
@@ -243,6 +244,7 @@
       task_HIFZ_JADID: 'New memorization',
       task_TIKRAR_AMS: "Yesterday's repetition",
       task_RABT: 'Rabt',
+      task_RUB_TAMKIN: "Rub' consolidation",
       task_MURAJAAH: 'Murajaah',
     },
   };

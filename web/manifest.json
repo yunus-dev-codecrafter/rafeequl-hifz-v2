@@ -11,6 +11,20 @@
   "theme_color": "#0f766e",
   "lang": "ar",
   "dir": "rtl",
+  "shortcuts": [
+    {
+      "name": "تثبيت الربع",
+      "short_name": "الربع",
+      "url": "./rub.html",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "مركز المراجعة",
+      "short_name": "المراجعة",
+      "url": "./review.html",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ],
   "icons": [
     {
       "src": "icons/icon-192.png",

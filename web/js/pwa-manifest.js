@@ -32,6 +32,10 @@
       theme_color: '#0f766e',
       lang: 'ar',
       dir: 'rtl',
+      shortcuts: [
+        { name: 'تثبيت الربع', short_name: 'الربع', url: base + 'rub.html', icons: [{ src: base + 'icons/icon-192.png', sizes: '192x192', type: 'image/png' }] },
+        { name: 'مركز المراجعة', short_name: 'المراجعة', url: base + 'review.html', icons: [{ src: base + 'icons/icon-192.png', sizes: '192x192', type: 'image/png' }] }
+      ],
       icons: [
         { src: base + 'icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
         { src: base + 'icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },

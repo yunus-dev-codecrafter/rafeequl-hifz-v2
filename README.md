@@ -20,6 +20,20 @@ Quran memorization daily logbook: PHP 8 + MySQL backend (`api/`), RTL web fronte
 > table used by the per-page recall board. The board still works if you skip it:
 > notes are then kept on the device only.
 >
+> **Cleaning old paired verses (v5)?** `php config/migrate_v5.php` (or open
+> `https://your-host/config/migrate_v5.php?confirm=1`) clears stray
+> `confused_with_*` values that older builds attached to tawaqquf / tashkeel /
+> lafdh mistakes. Only transition and mutashabihat cards keep a paired verse.
+>
+> **Rub' consolidation (v6)?** `php config/migrate_v6.php` (or open
+> `https://your-host/config/migrate_v6.php?confirm=1`) adds the `RUB_TAMKIN`
+> task type, the rub' columns on `daily_task_logs`, and the `rub_history`
+> rotation table. The daily endpoint also adds the columns lazily, so the
+> feature keeps working if the migration is delayed. The catalog itself is
+> committed at `api/data/rub_quarters.json`; rebuild it with
+> `php config/build_rub_quarters.php` and verify it with
+> `php config/verify_rub.php`.
+>
 > **Offline Quran text?** `php api/data/build_quran_text.php` downloads the
 > Uthmani text once and writes `web/data/quran-uthmani.json` (the flashcard
 > back face + service worker use it offline).
@@ -246,6 +260,39 @@ make a page fast to recall:
 - A dot marks page chips that already have a note. **N** toggles the board,
   **إخفاء (اختبر نفسك)** blurs the note so you can test recall, and **نسخ**
   copies it out.
+
+## Rub' consolidation — تثبيت الربع (v6)
+
+One random **rub' al-hizb** (ربع) per day, drawn from the pages the user has
+already consolidated (`last_tikrar_page`; `COMPLETE` accounts draw from all
+240). The same rub' is kept for the whole day, rolls over if unfinished, and
+does not repeat until the eligible pool has been used once.
+
+- Every verse is split at the **stop-preferring** waqf signs only: ۘ لازم,
+  ۗ قلى, ۛ معانقة (first of the pair) and ۜ سكتة. ۖ صلى, ۙ لا and ۚ ج remain in
+  the text as a legend, without splitting.
+- Each station must be repeated **3 times, slowly**. A verse without a stop sign
+  is one station.
+- Progress is the count of completed stations, stored as a JSON key list on the
+  task row (`completed_stations`) so retries are idempotent. The page also keeps
+  a per-task local copy and an offline queue; the latest state wins.
+- The exact 240 boundaries come from Quran.com's `rub_el_hizb_number` field,
+  cross-checked against the app's own page map. `verify_rub.php` asserts all
+  6,236 verses are covered exactly once (6,872 stations in total).
+
+| File | Purpose |
+| --- | --- |
+| `api/data/rub_quarters.json` | committed catalog: boundaries, pages, station counts |
+| `api/tasks/_rub.php` | splitter, catalog loaders, fair random picker, history |
+| `api/tasks/get_rub_verses.php` | verses + stations for one task/rub' |
+| `api/tasks/update_rub.php` | idempotent station progress + completion |
+| `web/rub.html`, `web/js/rub.js` | recitation page, local state, offline queue |
+| `config/build_rub_quarters.php` | rebuilds the catalog (one-off, cached downloads) |
+| `config/verify_rub.php` | catalog + splitter regression checks |
+
+The mobile navigation is now five tabs — الرئيسية / الحفظ / المراجعة / البطاقات /
+المزيد — where **المزيد** opens a bottom sheet with تكرار الأمس، الربط، المراجعة،
+تثبيت الربع and السجل. The shared markup lives in `web/js/nav.js`.
 
 ## Focus mode & sticky actions
 

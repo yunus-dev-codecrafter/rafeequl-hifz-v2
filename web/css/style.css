@@ -63,9 +63,14 @@
   --task-red-bg: #fff1f2;
   --task-red-border: #fecdd3;
 
+  --task-teal: #0d9488;
+  --task-teal-bg: #f0fdfa;
+  --task-teal-border: #99f6e4;
+
   /* Radii */
   --radius-xl: 20px;
   --radius: 16px;
+  --radius-lg: 16px;
   --radius-md: 12px;
   --radius-sm: 8px;
   --radius-full: 9999px;
@@ -144,6 +149,10 @@
   --task-red: #fb7185;
   --task-red-bg: rgba(251, 113, 133, 0.12);
   --task-red-border: rgba(251, 113, 133, 0.25);
+
+  --task-teal: #2dd4bf;
+  --task-teal-bg: rgba(45, 212, 191, 0.12);
+  --task-teal-border: rgba(45, 212, 191, 0.25);
 
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
   --shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.4);
@@ -582,6 +591,9 @@ h1, h2, h3, h4 {
 .task-card.task-red .task-dot { background: var(--task-red); }
 .task-card.task-red:hover { border-color: var(--task-red); }
 
+.task-card.task-teal .task-dot { background: var(--task-teal); }
+.task-card.task-teal:hover { border-color: var(--task-teal); }
+
 .task-card.is-completed {
   border-color: var(--task-green-border);
   background: linear-gradient(180deg, var(--card) 0%, var(--task-green-bg) 100%);
@@ -679,6 +691,10 @@ h1, h2, h3, h4 {
 
 .progress-fill.fill-purple {
   background: linear-gradient(90deg, var(--task-purple) 0%, #a78bfa 100%);
+}
+
+.progress-fill.fill-teal {
+  background: linear-gradient(90deg, var(--task-teal) 0%, #2dd4bf 100%);
 }
 
 /* ==========================================================================
@@ -826,6 +842,7 @@ h1, h2, h3, h4 {
   gap: 1.25rem;
   position: relative;
   transition: all var(--duration) var(--ease);
+  scroll-margin-top: calc(var(--header-h, 64px) + 0.75rem);
 }
 
 .stage-top {
@@ -974,6 +991,202 @@ h1, h2, h3, h4 {
 }
 
 /* ==========================================================================
+   Muraja'ah Five-Prayer Plan
+   ========================================================================== */
+.prayer-plan {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1rem 1.1rem;
+  margin-bottom: 1.25rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.prayer-plan-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.8rem;
+}
+
+.prayer-plan-head h3 {
+  margin: 0 0 0.2rem;
+  font-size: 1rem;
+  color: var(--ink);
+}
+
+.prayer-plan-head .hint {
+  margin: 0;
+  max-width: 60ch;
+  font-size: 0.76rem;
+  line-height: 1.65;
+  color: var(--muted);
+}
+
+.prayer-plan-badge {
+  flex: none;
+  padding: 0.15rem 0.5rem;
+  border: 1px solid var(--task-purple-border);
+  border-radius: 999px;
+  background: var(--task-purple-bg);
+  color: var(--task-purple);
+  font-size: 0.68rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.prayer-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.prayer-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+  padding: 0.55rem 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--bg);
+  color: var(--ink);
+  font-family: inherit;
+  text-align: start;
+  cursor: pointer;
+  transition: border-color var(--duration) var(--ease), background var(--duration) var(--ease), transform var(--duration) var(--ease);
+}
+
+.prayer-card:hover:not(:disabled) {
+  border-color: var(--task-purple);
+  transform: translateY(-1px);
+}
+
+.prayer-card.is-done {
+  border-color: var(--task-green-border);
+  background: var(--task-green-bg);
+}
+
+.prayer-card.is-active {
+  border-color: var(--task-purple);
+  background: var(--task-purple-bg);
+  box-shadow: 0 0 0 2px var(--task-purple-bg);
+}
+
+.prayer-card.is-done.is-active {
+  box-shadow: 0 0 0 2px var(--task-purple-bg);
+}
+
+.prayer-card:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.prayer-card-top {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.prayer-icon {
+  flex: none;
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.prayer-name {
+  overflow: hidden;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.prayer-now {
+  flex: none;
+  margin-inline-start: auto;
+  padding: 0.05rem 0.3rem;
+  border: 1px solid var(--task-purple-border);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--task-purple);
+  font-size: 0.58rem;
+  font-weight: 800;
+}
+
+.prayer-range {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.68rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.prayer-meter {
+  display: block;
+  height: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--line);
+}
+
+.prayer-meter span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--task-purple);
+  transition: width var(--duration) var(--ease);
+}
+
+.prayer-card.is-done .prayer-meter span {
+  background: var(--task-green);
+}
+
+.prayer-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.3rem;
+  color: var(--muted);
+  font-size: 0.62rem;
+}
+
+.prayer-count {
+  flex: none;
+  color: var(--ink-secondary);
+  font-weight: 800;
+}
+
+.prayer-status {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 820px) {
+  .prayer-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .prayer-card:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 420px) {
+  .prayer-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .prayer-card:last-child:nth-child(odd) {
+    grid-column: auto;
+  }
+}
+
+/* ==========================================================================
    Buttons & Form Controls
    ========================================================================== */
 .btn {
@@ -1116,14 +1329,15 @@ input:focus, select:focus, textarea:focus {
    ========================================================================== */
 .flashcard-stage {
   perspective: 1200px;
-  max-width: 580px;
+  max-width: 640px;
   margin: 1.5rem auto;
 }
 
 .flashcard {
   position: relative;
+  display: grid;
   width: 100%;
-  min-height: 360px;
+  min-height: clamp(440px, 66vh, 680px);
   border-radius: var(--radius-xl);
   transform-style: preserve-3d;
   transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
@@ -1135,12 +1349,13 @@ input:focus, select:focus, textarea:focus {
 }
 
 .card-face {
-  position: absolute;
-  inset: 0;
+  position: relative;
+  grid-area: 1 / 1;
+  align-self: stretch;
   border-radius: var(--radius-xl);
   background: var(--card);
   border: 1.5px solid var(--line);
-  padding: 2rem 1.75rem;
+  padding: clamp(1.25rem, 3vw, 2rem) clamp(1rem, 3vw, 1.75rem);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -1899,6 +2114,13 @@ kbd {
   }
 }
 
+@media (max-width: 380px) {
+  .mobile-nav-link {
+    font-size: 0.6rem;
+    padding-inline: 0.1rem;
+  }
+}
+
 /* ==========================================================================
    Revision Plan Modal & Controls
    ========================================================================== */
@@ -2582,16 +2804,15 @@ html[dir="ltr"] body {
 .fc-sev-2 { background: var(--warning-soft); color: var(--warning); border-color: var(--warning-border); }
 .fc-sev-3 { background: var(--danger-soft); color: var(--danger); border-color: var(--danger-border); }
 
-/* Ayah text on the back */
+/* Ayah text on the back — never clipped: the card grows to fit the verse. */
 .fc-ayah-text {
-  flex: 1;
-  font-size: 1.35rem;
+  flex: 1 1 auto;
+  font-size: clamp(1.2rem, 2.5vw, 1.5rem);
   line-height: 2.1;
   text-align: center;
   color: var(--ink);
   padding: 1rem 0.5rem;
-  overflow-y: auto;
-  max-height: 220px;
+  overflow: visible;
   font-family: 'Cairo', 'Traditional Arabic', serif;
 }
 
@@ -3027,6 +3248,11 @@ body.focus-mode .btn-focus-toggle {
 }
 .focus-exit-btn:hover { border-color: var(--accent); color: var(--accent); }
 
+/* Keep the focus-mode exit button above the Rub' recitation dock. */
+body.focus-mode .focus-exit-btn {
+  bottom: calc(74px + env(safe-area-inset-bottom));
+}
+
 body.focus-mode .app-header,
 body.focus-mode .mobile-bottom-nav,
 body.focus-mode .chips-card,
@@ -3133,6 +3359,16 @@ body.focus-mode .stage-actions.is-sticky { top: 0.5rem; }
 .pn-drill-big { font-size: 2rem; font-weight: 800; color: var(--accent); }
 .pn-drill-sub { font-size: 0.85rem; color: var(--ink-secondary); }
 .pn-drill-logged { font-size: 0.8rem; font-weight: 700; color: var(--danger); }
+
+/* Reveal button — the linked verse is hidden until tapped */
+#btn-reveal-link {
+  align-self: center;
+  border: 1.5px dashed var(--accent-soft-border, var(--line));
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 700;
+}
+#btn-reveal-link:hover { background: var(--accent); color: var(--accent-ink); }
 
 /* Card back — the linked "next" verse */
 .fc-link-row {
@@ -3653,3 +3889,967 @@ body.focus-mode .stage-actions.is-sticky { top: 0.5rem; }
   .admin-logout span { display: none; }
 }
 
+
+/* ==========================================================================
+   Rub' Consolidation (تثبيت الربع)
+   ========================================================================== */
+.rub-container {
+  padding-bottom: 8rem;
+}
+
+.rub-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 4rem 1rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.rub-spinner {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 3px solid var(--line);
+  border-top-color: var(--task-teal);
+  animation: rub-spin 0.8s linear infinite;
+}
+
+@keyframes rub-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Hero */
+.rub-hero {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 1.15rem 1.2rem;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
+  transition: border-color var(--duration) var(--ease), box-shadow var(--duration) var(--ease);
+}
+
+.rub-hero.is-complete {
+  border-color: var(--task-teal-border);
+  box-shadow: 0 0 0 3px var(--task-teal-bg);
+}
+
+.rub-hero-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.rub-hero-main { min-width: 0; }
+
+.rub-eyebrow {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: var(--task-teal);
+  margin-bottom: 0.2rem;
+}
+
+.rub-title {
+  margin: 0;
+  font-size: 1.55rem;
+  font-weight: 800;
+  color: var(--ink);
+  line-height: 1.3;
+}
+
+.rub-refs {
+  margin-top: 0.25rem;
+  font-size: 0.85rem;
+  color: var(--ink-secondary);
+  line-height: 1.6;
+}
+
+.rub-ring {
+  position: relative;
+  width: 76px;
+  height: 76px;
+  flex: none;
+}
+
+.rub-ring svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.rub-ring circle {
+  fill: none;
+  stroke-width: 4;
+}
+
+.rub-ring-bg { stroke: var(--line); }
+
+.rub-ring-fg {
+  stroke: var(--task-teal);
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.45s var(--ease);
+}
+
+.rub-ring strong {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 0.92rem;
+  color: var(--ink);
+}
+
+.rub-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.9rem;
+}
+
+.rub-chip {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--muted);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.22rem 0.55rem;
+}
+
+.rub-chip-flag {
+  color: var(--task-amber);
+  background: var(--task-amber-bg);
+  border-color: var(--task-amber-border);
+}
+
+.rub-steps {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin: 1rem 0 0;
+  padding: 0;
+}
+
+.rub-steps li {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--muted);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.28rem 0.6rem;
+}
+
+.rub-steps li span {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--line);
+  color: var(--muted);
+  display: grid;
+  place-items: center;
+  font-size: 0.62rem;
+  font-weight: 800;
+}
+
+.rub-steps li em { font-style: normal; }
+
+.rub-steps li.is-on {
+  color: var(--task-teal);
+  background: var(--task-teal-bg);
+  border-color: var(--task-teal-border);
+}
+
+.rub-steps li.is-on span {
+  background: var(--task-teal);
+  color: #fff;
+}
+
+.rub-blur-hint {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0.7rem 0 0;
+  font-size: 0.72rem;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.rub-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.rub-reset-all { color: var(--muted); }
+
+.rub-reveal-all .rub-eye {
+  width: 14px;
+  height: 14px;
+}
+
+.rub-reveal-all[aria-pressed="true"] {
+  color: var(--task-teal);
+  border-color: var(--task-teal-border);
+  background: var(--task-teal-bg);
+}
+
+/* Legend */
+.rub-legend {
+  margin: 1rem 0;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 0.7rem 0.9rem;
+}
+
+.rub-legend summary {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  font-size: 0.86rem;
+  color: var(--ink-secondary);
+}
+
+.rub-legend-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.45rem;
+  margin-top: 0.75rem;
+}
+
+.rub-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.76rem;
+  color: var(--ink-secondary);
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  padding: 0.35rem 0.5rem;
+}
+
+.rub-legend-soft { opacity: 0.7; }
+
+.rub-stop-mark {
+  font-family: 'Amiri Quran', 'Amiri', 'Traditional Arabic', serif;
+  font-size: 1.15rem;
+  line-height: 1;
+  color: var(--task-teal);
+}
+
+.rub-legend-foot {
+  margin: 0.7rem 0 0;
+  font-size: 0.74rem;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+/* Verse cards */
+.rub-verses {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.rub-verse {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.rub-verse-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  padding: 0.65rem 0.9rem;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line-subtle);
+}
+
+.rub-verse-title {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.rub-verse-surah {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.rub-verse-ayah {
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.rub-verse-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.rub-vbadge {
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: var(--muted);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.14rem 0.45rem;
+}
+
+.rub-vbadge-rub {
+  color: var(--task-teal);
+  background: var(--task-teal-bg);
+  border-color: var(--task-teal-border);
+}
+
+.rub-vbadge-sajdah {
+  color: var(--task-amber);
+  background: var(--task-amber-bg);
+  border-color: var(--task-amber-border);
+}
+
+.rub-stations {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.55rem;
+}
+
+.rub-station {
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  padding: 0.6rem 0.75rem 0.5rem;
+  cursor: pointer;
+  transition: background var(--duration) var(--ease), border-color var(--duration) var(--ease), opacity var(--duration) var(--ease);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.rub-station:hover { background: var(--bg); }
+
+.rub-station.is-active {
+  border-color: var(--task-teal-border);
+  background: var(--task-teal-bg);
+  box-shadow: 0 0 0 2px var(--task-teal-bg);
+}
+
+.rub-station.is-done {
+  opacity: 0.55;
+}
+
+.rub-station.is-done .rub-station-text {
+  color: var(--muted);
+}
+
+.rub-station-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.rub-station-no {
+  font-size: 0.66rem;
+  font-weight: 800;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+}
+
+.rub-stop-badge {
+  font-size: 0.64rem;
+  font-weight: 700;
+  color: var(--task-amber);
+  background: var(--task-amber-bg);
+  border: 1px solid var(--task-amber-border);
+  border-radius: 999px;
+  padding: 0.12rem 0.45rem;
+  white-space: nowrap;
+}
+
+.rub-stop-badge.rub-stop-lazim {
+  color: var(--danger);
+  background: var(--danger-soft);
+  border-color: var(--danger-border);
+}
+
+.rub-stop-badge.rub-stop-end {
+  color: var(--muted);
+  background: var(--bg);
+  border-color: var(--line);
+}
+
+.rub-station-text {
+  margin: 0;
+  font-family: 'Amiri Quran', 'Amiri', 'Traditional Arabic', 'Cairo', serif;
+  font-size: 1.45rem;
+  line-height: 2.15;
+  text-align: right;
+  color: var(--ink);
+  word-spacing: 0.06em;
+  transition: filter 180ms ease, opacity 180ms ease;
+}
+
+.rub-station-text.is-blurred {
+  filter: blur(7px);
+  -webkit-filter: blur(7px);
+  opacity: 0.9;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.rub-station-tools {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.rub-reveal-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.22rem;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.2;
+  min-height: 30px;
+  padding: 0.28rem 0.55rem;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color var(--duration) var(--ease), border-color var(--duration) var(--ease), background var(--duration) var(--ease);
+}
+
+.rub-reveal-btn:hover,
+.rub-reveal-btn[aria-pressed="true"] {
+  color: var(--task-teal);
+  background: var(--task-teal-bg);
+  border-color: var(--task-teal-border);
+}
+
+.rub-eye {
+  width: 12px;
+  height: 12px;
+  flex: none;
+}
+
+.rub-station-foot {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+}
+
+.rub-dots {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.rub-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--line);
+  transition: background var(--duration) var(--ease), transform var(--duration) var(--ease);
+}
+
+.rub-dot.is-on {
+  background: var(--task-teal);
+  transform: scale(1.05);
+}
+
+.rub-rep-count {
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: var(--muted);
+}
+
+.rub-reset-btn {
+  margin-inline-start: auto;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0.15rem 0.3rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.rub-reset-btn:hover {
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+
+/* Completion card */
+.rub-end-card {
+  margin-top: 1rem;
+  text-align: center;
+  background: var(--task-teal-bg);
+  border: 1px solid var(--task-teal-border);
+  border-radius: var(--radius-lg);
+  padding: 1.4rem 1rem;
+}
+
+.rub-end-icon {
+  width: 42px;
+  height: 42px;
+  margin: 0 auto 0.5rem;
+  border-radius: 50%;
+  background: var(--task-teal);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 1.1rem;
+}
+
+.rub-end-card h3 {
+  margin: 0 0 0.3rem;
+  font-size: 1.05rem;
+  color: var(--ink);
+}
+
+.rub-end-card p {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--ink-secondary);
+  line-height: 1.7;
+}
+
+/* Sticky dock */
+.rub-dock {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 45;
+  background: var(--card);
+  border-top: 1px solid var(--line);
+  padding: 0.55rem 0.75rem calc(0.55rem + env(safe-area-inset-bottom));
+  box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.08);
+}
+
+.rub-dock-inner {
+  max-width: 720px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.rub-dock-status {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.rub-dock-status strong {
+  font-size: 0.85rem;
+  color: var(--ink);
+}
+
+.rub-dock-status span {
+  font-size: 0.67rem;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rub-main-btn {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0.5rem 1rem;
+  min-width: 148px;
+  border-radius: var(--radius-md);
+}
+
+.rub-main-label { font-size: 0.8rem; font-weight: 800; }
+.rub-main-count { font-size: 0.68rem; opacity: 0.9; }
+
+.rub-undo-btn {
+  flex: none;
+  padding: 0.55rem 0.7rem;
+  font-size: 1rem;
+}
+
+body.focus-mode .rub-dock { bottom: 0; }
+body.focus-mode .rub-hero,
+body.focus-mode .rub-legend { display: none; }
+body.focus-mode .rub-station-text {
+  font-size: 1.75rem;
+  line-height: 2.25;
+}
+body.focus-mode .rub-verse-head { background: transparent; }
+
+@media (max-width: 640px) {
+  .rub-dock {
+    bottom: calc(58px + env(safe-area-inset-bottom));
+  }
+  .rub-container {
+    padding-bottom: 10rem;
+  }
+  .rub-title { font-size: 1.3rem; }
+  .rub-ring { width: 64px; height: 64px; }
+  .rub-station-text { font-size: 1.32rem; line-height: 2.05; }
+  .rub-main-btn { min-width: 128px; }
+  .rub-dock-status span { max-width: 42vw; }
+}
+
+/* Empty state */
+.rub-empty {
+  text-align: center;
+  padding: 3rem 1.25rem;
+}
+
+.rub-empty-icon {
+  font-family: 'Amiri Quran', 'Amiri', serif;
+  font-size: 3rem;
+  line-height: 1;
+  color: var(--task-teal);
+  opacity: 0.65;
+  margin-bottom: 0.5rem;
+}
+
+.rub-empty-actions {
+  display: flex;
+  justify-content: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+/* Completion modal */
+.rub-complete-modal { text-align: center; }
+
+.rub-complete-burst {
+  font-family: 'Amiri Quran', 'Amiri', serif;
+  font-size: 2.8rem;
+  line-height: 1;
+  color: var(--task-teal);
+  margin-bottom: 0.4rem;
+}
+
+.rub-complete-modal h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.15rem;
+}
+
+.rub-complete-modal p {
+  margin: 0;
+  color: var(--ink-secondary);
+  font-size: 0.86rem;
+  line-height: 1.8;
+}
+
+.rub-complete-stats {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin: 1.1rem 0;
+}
+
+.rub-complete-stats div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.rub-complete-stats strong {
+  font-size: 1.55rem;
+  color: var(--task-teal);
+}
+
+.rub-complete-stats span {
+  font-size: 0.72rem;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+/* ==========================================================================
+   "More" navigation sheet (5-tab mobile nav)
+   ========================================================================== */
+button.mobile-nav-link {
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+body.nav-sheet-open {
+  overflow: hidden;
+}
+
+.nav-sheet-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(2px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--duration) var(--ease);
+}
+
+.nav-sheet-overlay.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.nav-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 91;
+  max-width: 520px;
+  margin: 0 auto;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-bottom: none;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  padding: 0.6rem 0.9rem calc(1rem + env(safe-area-inset-bottom));
+  transform: translateY(105%);
+  transition: transform 0.28s var(--ease);
+  box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.18);
+}
+
+.nav-sheet.is-open { transform: translateY(0); }
+
+.nav-sheet-handle {
+  width: 40px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--line);
+  margin: 0 auto 0.6rem;
+}
+
+.nav-sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.7rem;
+}
+
+.nav-sheet-head h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--ink);
+}
+
+.nav-sheet-close {
+  border: none;
+  background: var(--bg);
+  color: var(--muted);
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.nav-sheet-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.nav-sheet-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.7rem 0.75rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--ink);
+  text-decoration: none;
+  font-size: 0.82rem;
+  font-weight: 700;
+  transition: border-color var(--duration) var(--ease), background var(--duration) var(--ease);
+}
+
+.nav-sheet-item:hover,
+.nav-sheet-item.is-active {
+  border-color: var(--accent-soft-border);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.nav-sheet-item svg {
+  width: 20px;
+  height: 20px;
+  flex: none;
+}
+
+.nav-sheet-item small {
+  display: block;
+  font-size: 0.66rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.nav-sheet-sep {
+  grid-column: 1 / -1;
+  height: 1px;
+  background: var(--line);
+  margin: 0.25rem 0;
+}
+
+/* ==========================================================================
+   Review hub (المراجعة)
+   ========================================================================== */
+.review-hub {
+  padding-bottom: 6rem;
+}
+
+.review-hub-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.review-hub-head h1 {
+  margin: 0 0 0.25rem;
+  font-size: 1.4rem;
+  color: var(--ink);
+}
+
+.review-hub-head .hint {
+  margin: 0;
+  max-width: 54ch;
+  font-size: 0.82rem;
+  line-height: 1.75;
+  color: var(--muted);
+}
+
+.review-date {
+  flex: none;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--muted);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.25rem 0.6rem;
+}
+
+.review-summary {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 0.9rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.review-summary-text {
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  margin-bottom: 0.5rem;
+}
+
+.review-summary-text strong {
+  font-size: 1.3rem;
+  color: var(--task-teal);
+}
+
+.review-summary-text span {
+  font-size: 0.78rem;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.review-summary-bar {
+  margin: 0;
+}
+
+.review-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.review-card {
+  height: 100%;
+}
+
+.review-icon {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-md);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  font-family: 'Amiri Quran', 'Amiri', 'Cairo', serif;
+  font-size: 1.05rem;
+  flex: none;
+}
+
+.review-hub-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 1.4rem;
+}
+
+.review-foot-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--ink-secondary);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 0.55rem 0.8rem;
+  text-decoration: none;
+}
+
+.review-foot-link:hover {
+  border-color: var(--accent-soft-border);
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+@media (max-width: 640px) {
+  .review-grid {
+    grid-template-columns: 1fr;
+  }
+  .review-hub-head {
+    flex-direction: column;
+  }
+}

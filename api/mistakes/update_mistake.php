@@ -88,6 +88,13 @@ if ($notes !== null && mb_strlen($notes) > 5000) {
 }
 $notes = ($notes !== null && $notes !== '') ? $notes : null;
 
+// A paired verse is only meaningful for a forgotten next verse (transition) or
+// a confusable verse (mutashabihat). Never persist it on other mistake types.
+if (!in_array($mistakeType, ['TRANSITION_FAILURE', 'MUTASHABIHAT'], true)) {
+    $confusedSurah = null;
+    $confusedAyah = null;
+}
+
 if ($errors) {
     json_out(400, ['success' => false, 'errors' => $errors]);
 }

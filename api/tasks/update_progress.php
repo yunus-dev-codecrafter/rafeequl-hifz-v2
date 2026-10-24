@@ -24,8 +24,27 @@ try {
     $pdo->exec("ALTER TABLE `daily_task_logs` ADD COLUMN `completed_pages` TEXT NULL");
 } catch (Throwable $t) {}
 try {
-    $pdo->exec("ALTER TABLE `daily_task_logs` MODIFY COLUMN `task_type` ENUM('HIFZ_JADID', 'TIKRAR_AMS', 'RABT', 'MURAJAAH') NOT NULL");
-} catch (Throwable $t) {}
+    // Avoid an unnecessary table rebuild on every request. If information_schema
+    // is unavailable, fall back to running the ALTER.
+    $needsEnumAlter = true;
+    $taskTypeCol = $pdo->query(
+        "SELECT `COLUMN_TYPE` FROM `information_schema`.`COLUMNS`
+         WHERE `TABLE_SCHEMA` = DATABASE()
+           AND `TABLE_NAME` = 'daily_task_logs'
+           AND `COLUMN_NAME` = 'task_type'
+         LIMIT 1"
+    )->fetchColumn();
+    if ($taskTypeCol !== false) {
+        $needsEnumAlter = strpos((string) $taskTypeCol, "'RUB_TAMKIN'") === false;
+    }
+    if ($needsEnumAlter) {
+        $pdo->exec("ALTER TABLE `daily_task_logs` MODIFY COLUMN `task_type` ENUM('HIFZ_JADID', 'TIKRAR_AMS', 'RABT', 'MURAJAAH', 'RUB_TAMKIN', 'MISTAKES') NOT NULL");
+    }
+} catch (Throwable $t) {
+    try {
+        $pdo->exec("ALTER TABLE `daily_task_logs` MODIFY COLUMN `task_type` ENUM('HIFZ_JADID', 'TIKRAR_AMS', 'RABT', 'MURAJAAH', 'RUB_TAMKIN', 'MISTAKES') NOT NULL");
+    } catch (Throwable $t2) {}
+}
 try {
     $pdo->exec("ALTER TABLE `daily_task_logs` ADD COLUMN `repetition_count` INT NOT NULL DEFAULT 0");
 } catch (Throwable $t) {}

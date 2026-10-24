@@ -1,0 +1,4087 @@
+{
+    "version": 1,
+    "source": "quran.com rub_el_hizb_number + web\/js\/madinah_page_verses.json",
+    "built_at": "2026-10-23T18:52:38+00:00",
+    "rubs": [
+        {
+            "id": 1,
+            "juz": 1,
+            "hizb": 1,
+            "start": {
+                "surah": 1,
+                "ayah": 1
+            },
+            "end": {
+                "surah": 2,
+                "ayah": 25
+            },
+            "start_page": 1,
+            "end_page": 5,
+            "verse_count": 32,
+            "segments_total": 34
+        },
+        {
+            "id": 2,
+            "juz": 1,
+            "hizb": 1,
+            "start": {
+                "surah": 2,
+                "ayah": 26
+            },
+            "end": {
+                "surah": 2,
+                "ayah": 43
+            },
+            "start_page": 5,
+            "end_page": 7,
+            "verse_count": 18,
+            "segments_total": 19
+        },
+        {
+            "id": 3,
+            "juz": 1,
+            "hizb": 1,
+            "start": {
+                "surah": 2,
+                "ayah": 44
+            },
+            "end": {
+                "surah": 2,
+                "ayah": 59
+            },
+            "start_page": 7,
+            "end_page": 9,
+            "verse_count": 16,
+            "segments_total": 16
+        },
+        {
+            "id": 4,
+            "juz": 1,
+            "hizb": 1,
+            "start": {
+                "surah": 2,
+                "ayah": 60
+            },
+            "end": {
+                "surah": 2,
+                "ayah": 74
+            },
+            "start_page": 9,
+            "end_page": 11,
+            "verse_count": 15,
+            "segments_total": 19
+        },
+        {
+            "id": 5,
+            "juz": 1,
+            "hizb": 1,
+            "start": {
+                "surah": 2,
+                "ayah": 75
+            },
+            "end": {
+                "surah": 2,
+                "ayah": 91
+            },
+            "start_page": 11,
+            "end_page": 14,
+            "verse_count": 17,
+            "segments_total": 20
+        },
+        {
+            "id": 6,
+            "juz": 1,
+            "hizb": 2,
+            "start": {
+                "surah": 2,
+                "ayah": 92
+            },
+            "end": {
+                "surah": 2,
+                "ayah": 105
+            },
+            "start_page": 14,
+            "end_page": 16,
+            "verse_count": 14,
+            "segments_total": 18
+        },
+        {
+            "id": 7,
+            "juz": 1,
+            "hizb": 2,
+            "start": {
+                "surah": 2,
+                "ayah": 106
+            },
+            "end": {
+                "surah": 2,
+                "ayah": 123
+            },
+            "start_page": 17,
+            "end_page": 19,
+            "verse_count": 18,
+            "segments_total": 33
+        },
+        {
+            "id": 8,
+            "juz": 1,
+            "hizb": 2,
+            "start": {
+                "surah": 2,
+                "ayah": 124
+            },
+            "end": {
+                "surah": 2,
+                "ayah": 141
+            },
+            "start_page": 19,
+            "end_page": 21,
+            "verse_count": 18,
+            "segments_total": 22
+        },
+        {
+            "id": 9,
+            "juz": 2,
+            "hizb": 3,
+            "start": {
+                "surah": 2,
+                "ayah": 142
+            },
+            "end": {
+                "surah": 2,
+                "ayah": 157
+            },
+            "start_page": 22,
+            "end_page": 24,
+            "verse_count": 16,
+            "segments_total": 22
+        },
+        {
+            "id": 10,
+            "juz": 2,
+            "hizb": 3,
+            "start": {
+                "surah": 2,
+                "ayah": 158
+            },
+            "end": {
+                "surah": 2,
+                "ayah": 176
+            },
+            "start_page": 24,
+            "end_page": 26,
+            "verse_count": 19,
+            "segments_total": 23
+        },
+        {
+            "id": 11,
+            "juz": 2,
+            "hizb": 3,
+            "start": {
+                "surah": 2,
+                "ayah": 177
+            },
+            "end": {
+                "surah": 2,
+                "ayah": 188
+            },
+            "start_page": 27,
+            "end_page": 29,
+            "verse_count": 12,
+            "segments_total": 19
+        },
+        {
+            "id": 12,
+            "juz": 2,
+            "hizb": 3,
+            "start": {
+                "surah": 2,
+                "ayah": 189
+            },
+            "end": {
+                "surah": 2,
+                "ayah": 202
+            },
+            "start_page": 29,
+            "end_page": 31,
+            "verse_count": 14,
+            "segments_total": 23
+        },
+        {
+            "id": 13,
+            "juz": 2,
+            "hizb": 4,
+            "start": {
+                "surah": 2,
+                "ayah": 203
+            },
+            "end": {
+                "surah": 2,
+                "ayah": 218
+            },
+            "start_page": 32,
+            "end_page": 34,
+            "verse_count": 16,
+            "segments_total": 27
+        },
+        {
+            "id": 14,
+            "juz": 2,
+            "hizb": 4,
+            "start": {
+                "surah": 2,
+                "ayah": 219
+            },
+            "end": {
+                "surah": 2,
+                "ayah": 232
+            },
+            "start_page": 34,
+            "end_page": 37,
+            "verse_count": 14,
+            "segments_total": 30
+        },
+        {
+            "id": 15,
+            "juz": 2,
+            "hizb": 4,
+            "start": {
+                "surah": 2,
+                "ayah": 233
+            },
+            "end": {
+                "surah": 2,
+                "ayah": 242
+            },
+            "start_page": 37,
+            "end_page": 39,
+            "verse_count": 10,
+            "segments_total": 15
+        },
+        {
+            "id": 16,
+            "juz": 2,
+            "hizb": 4,
+            "start": {
+                "surah": 2,
+                "ayah": 243
+            },
+            "end": {
+                "surah": 2,
+                "ayah": 252
+            },
+            "start_page": 39,
+            "end_page": 41,
+            "verse_count": 10,
+            "segments_total": 14
+        },
+        {
+            "id": 17,
+            "juz": 3,
+            "hizb": 5,
+            "start": {
+                "surah": 2,
+                "ayah": 253
+            },
+            "end": {
+                "surah": 2,
+                "ayah": 262
+            },
+            "start_page": 42,
+            "end_page": 44,
+            "verse_count": 10,
+            "segments_total": 19
+        },
+        {
+            "id": 18,
+            "juz": 3,
+            "hizb": 5,
+            "start": {
+                "surah": 2,
+                "ayah": 263
+            },
+            "end": {
+                "surah": 2,
+                "ayah": 271
+            },
+            "start_page": 44,
+            "end_page": 46,
+            "verse_count": 9,
+            "segments_total": 17
+        },
+        {
+            "id": 19,
+            "juz": 3,
+            "hizb": 5,
+            "start": {
+                "surah": 2,
+                "ayah": 272
+            },
+            "end": {
+                "surah": 2,
+                "ayah": 282
+            },
+            "start_page": 46,
+            "end_page": 48,
+            "verse_count": 11,
+            "segments_total": 18
+        },
+        {
+            "id": 20,
+            "juz": 3,
+            "hizb": 5,
+            "start": {
+                "surah": 2,
+                "ayah": 283
+            },
+            "end": {
+                "surah": 3,
+                "ayah": 14
+            },
+            "start_page": 49,
+            "end_page": 51,
+            "verse_count": 18,
+            "segments_total": 31
+        },
+        {
+            "id": 21,
+            "juz": 3,
+            "hizb": 5,
+            "start": {
+                "surah": 3,
+                "ayah": 15
+            },
+            "end": {
+                "surah": 3,
+                "ayah": 32
+            },
+            "start_page": 51,
+            "end_page": 54,
+            "verse_count": 18,
+            "segments_total": 30
+        },
+        {
+            "id": 22,
+            "juz": 3,
+            "hizb": 6,
+            "start": {
+                "surah": 3,
+                "ayah": 33
+            },
+            "end": {
+                "surah": 3,
+                "ayah": 51
+            },
+            "start_page": 54,
+            "end_page": 56,
+            "verse_count": 19,
+            "segments_total": 22
+        },
+        {
+            "id": 23,
+            "juz": 3,
+            "hizb": 6,
+            "start": {
+                "surah": 3,
+                "ayah": 52
+            },
+            "end": {
+                "surah": 3,
+                "ayah": 74
+            },
+            "start_page": 56,
+            "end_page": 59,
+            "verse_count": 23,
+            "segments_total": 28
+        },
+        {
+            "id": 24,
+            "juz": 3,
+            "hizb": 6,
+            "start": {
+                "surah": 3,
+                "ayah": 75
+            },
+            "end": {
+                "surah": 3,
+                "ayah": 92
+            },
+            "start_page": 59,
+            "end_page": 62,
+            "verse_count": 18,
+            "segments_total": 21
+        },
+        {
+            "id": 25,
+            "juz": 3,
+            "hizb": 6,
+            "start": {
+                "surah": 3,
+                "ayah": 93
+            },
+            "end": {
+                "surah": 3,
+                "ayah": 112
+            },
+            "start_page": 62,
+            "end_page": 64,
+            "verse_count": 20,
+            "segments_total": 28
+        },
+        {
+            "id": 26,
+            "juz": 4,
+            "hizb": 7,
+            "start": {
+                "surah": 3,
+                "ayah": 113
+            },
+            "end": {
+                "surah": 3,
+                "ayah": 132
+            },
+            "start_page": 64,
+            "end_page": 66,
+            "verse_count": 20,
+            "segments_total": 27
+        },
+        {
+            "id": 27,
+            "juz": 4,
+            "hizb": 7,
+            "start": {
+                "surah": 3,
+                "ayah": 133
+            },
+            "end": {
+                "surah": 3,
+                "ayah": 152
+            },
+            "start_page": 67,
+            "end_page": 69,
+            "verse_count": 20,
+            "segments_total": 27
+        },
+        {
+            "id": 28,
+            "juz": 4,
+            "hizb": 7,
+            "start": {
+                "surah": 3,
+                "ayah": 153
+            },
+            "end": {
+                "surah": 3,
+                "ayah": 170
+            },
+            "start_page": 69,
+            "end_page": 72,
+            "verse_count": 18,
+            "segments_total": 32
+        },
+        {
+            "id": 29,
+            "juz": 4,
+            "hizb": 7,
+            "start": {
+                "surah": 3,
+                "ayah": 171
+            },
+            "end": {
+                "surah": 3,
+                "ayah": 185
+            },
+            "start_page": 72,
+            "end_page": 74,
+            "verse_count": 15,
+            "segments_total": 24
+        },
+        {
+            "id": 30,
+            "juz": 4,
+            "hizb": 8,
+            "start": {
+                "surah": 3,
+                "ayah": 186
+            },
+            "end": {
+                "surah": 3,
+                "ayah": 200
+            },
+            "start_page": 74,
+            "end_page": 76,
+            "verse_count": 15,
+            "segments_total": 21
+        },
+        {
+            "id": 31,
+            "juz": 4,
+            "hizb": 8,
+            "start": {
+                "surah": 4,
+                "ayah": 1
+            },
+            "end": {
+                "surah": 4,
+                "ayah": 11
+            },
+            "start_page": 77,
+            "end_page": 78,
+            "verse_count": 11,
+            "segments_total": 13
+        },
+        {
+            "id": 32,
+            "juz": 4,
+            "hizb": 8,
+            "start": {
+                "surah": 4,
+                "ayah": 12
+            },
+            "end": {
+                "surah": 4,
+                "ayah": 23
+            },
+            "start_page": 79,
+            "end_page": 81,
+            "verse_count": 12,
+            "segments_total": 17
+        },
+        {
+            "id": 33,
+            "juz": 5,
+            "hizb": 9,
+            "start": {
+                "surah": 4,
+                "ayah": 24
+            },
+            "end": {
+                "surah": 4,
+                "ayah": 35
+            },
+            "start_page": 82,
+            "end_page": 84,
+            "verse_count": 12,
+            "segments_total": 17
+        },
+        {
+            "id": 34,
+            "juz": 5,
+            "hizb": 9,
+            "start": {
+                "surah": 4,
+                "ayah": 36
+            },
+            "end": {
+                "surah": 4,
+                "ayah": 57
+            },
+            "start_page": 84,
+            "end_page": 87,
+            "verse_count": 22,
+            "segments_total": 27
+        },
+        {
+            "id": 35,
+            "juz": 5,
+            "hizb": 9,
+            "start": {
+                "surah": 4,
+                "ayah": 58
+            },
+            "end": {
+                "surah": 4,
+                "ayah": 73
+            },
+            "start_page": 87,
+            "end_page": 89,
+            "verse_count": 16,
+            "segments_total": 17
+        },
+        {
+            "id": 36,
+            "juz": 5,
+            "hizb": 9,
+            "start": {
+                "surah": 4,
+                "ayah": 74
+            },
+            "end": {
+                "surah": 4,
+                "ayah": 87
+            },
+            "start_page": 89,
+            "end_page": 92,
+            "verse_count": 14,
+            "segments_total": 20
+        },
+        {
+            "id": 37,
+            "juz": 5,
+            "hizb": 9,
+            "start": {
+                "surah": 4,
+                "ayah": 88
+            },
+            "end": {
+                "surah": 4,
+                "ayah": 99
+            },
+            "start_page": 92,
+            "end_page": 94,
+            "verse_count": 12,
+            "segments_total": 13
+        },
+        {
+            "id": 38,
+            "juz": 5,
+            "hizb": 10,
+            "start": {
+                "surah": 4,
+                "ayah": 100
+            },
+            "end": {
+                "surah": 4,
+                "ayah": 113
+            },
+            "start_page": 94,
+            "end_page": 96,
+            "verse_count": 14,
+            "segments_total": 18
+        },
+        {
+            "id": 39,
+            "juz": 5,
+            "hizb": 10,
+            "start": {
+                "surah": 4,
+                "ayah": 114
+            },
+            "end": {
+                "surah": 4,
+                "ayah": 134
+            },
+            "start_page": 97,
+            "end_page": 99,
+            "verse_count": 21,
+            "segments_total": 26
+        },
+        {
+            "id": 40,
+            "juz": 5,
+            "hizb": 10,
+            "start": {
+                "surah": 4,
+                "ayah": 135
+            },
+            "end": {
+                "surah": 4,
+                "ayah": 147
+            },
+            "start_page": 100,
+            "end_page": 101,
+            "verse_count": 13,
+            "segments_total": 15
+        },
+        {
+            "id": 41,
+            "juz": 6,
+            "hizb": 11,
+            "start": {
+                "surah": 4,
+                "ayah": 148
+            },
+            "end": {
+                "surah": 4,
+                "ayah": 162
+            },
+            "start_page": 102,
+            "end_page": 103,
+            "verse_count": 15,
+            "segments_total": 16
+        },
+        {
+            "id": 42,
+            "juz": 6,
+            "hizb": 11,
+            "start": {
+                "surah": 4,
+                "ayah": 163
+            },
+            "end": {
+                "surah": 4,
+                "ayah": 176
+            },
+            "start_page": 104,
+            "end_page": 106,
+            "verse_count": 14,
+            "segments_total": 18
+        },
+        {
+            "id": 43,
+            "juz": 6,
+            "hizb": 11,
+            "start": {
+                "surah": 5,
+                "ayah": 1
+            },
+            "end": {
+                "surah": 5,
+                "ayah": 11
+            },
+            "start_page": 106,
+            "end_page": 109,
+            "verse_count": 11,
+            "segments_total": 15
+        },
+        {
+            "id": 44,
+            "juz": 6,
+            "hizb": 11,
+            "start": {
+                "surah": 5,
+                "ayah": 12
+            },
+            "end": {
+                "surah": 5,
+                "ayah": 26
+            },
+            "start_page": 109,
+            "end_page": 112,
+            "verse_count": 15,
+            "segments_total": 18
+        },
+        {
+            "id": 45,
+            "juz": 6,
+            "hizb": 11,
+            "start": {
+                "surah": 5,
+                "ayah": 27
+            },
+            "end": {
+                "surah": 5,
+                "ayah": 40
+            },
+            "start_page": 112,
+            "end_page": 114,
+            "verse_count": 14,
+            "segments_total": 17
+        },
+        {
+            "id": 46,
+            "juz": 6,
+            "hizb": 12,
+            "start": {
+                "surah": 5,
+                "ayah": 41
+            },
+            "end": {
+                "surah": 5,
+                "ayah": 50
+            },
+            "start_page": 114,
+            "end_page": 116,
+            "verse_count": 10,
+            "segments_total": 12
+        },
+        {
+            "id": 47,
+            "juz": 6,
+            "hizb": 12,
+            "start": {
+                "surah": 5,
+                "ayah": 51
+            },
+            "end": {
+                "surah": 5,
+                "ayah": 66
+            },
+            "start_page": 117,
+            "end_page": 119,
+            "verse_count": 16,
+            "segments_total": 19
+        },
+        {
+            "id": 48,
+            "juz": 6,
+            "hizb": 12,
+            "start": {
+                "surah": 5,
+                "ayah": 67
+            },
+            "end": {
+                "surah": 5,
+                "ayah": 81
+            },
+            "start_page": 119,
+            "end_page": 121,
+            "verse_count": 15,
+            "segments_total": 19
+        },
+        {
+            "id": 49,
+            "juz": 6,
+            "hizb": 12,
+            "start": {
+                "surah": 5,
+                "ayah": 82
+            },
+            "end": {
+                "surah": 5,
+                "ayah": 96
+            },
+            "start_page": 121,
+            "end_page": 124,
+            "verse_count": 15,
+            "segments_total": 19
+        },
+        {
+            "id": 50,
+            "juz": 7,
+            "hizb": 13,
+            "start": {
+                "surah": 5,
+                "ayah": 97
+            },
+            "end": {
+                "surah": 5,
+                "ayah": 108
+            },
+            "start_page": 124,
+            "end_page": 125,
+            "verse_count": 12,
+            "segments_total": 16
+        },
+        {
+            "id": 51,
+            "juz": 7,
+            "hizb": 13,
+            "start": {
+                "surah": 5,
+                "ayah": 109
+            },
+            "end": {
+                "surah": 6,
+                "ayah": 12
+            },
+            "start_page": 126,
+            "end_page": 129,
+            "verse_count": 24,
+            "segments_total": 24
+        },
+        {
+            "id": 52,
+            "juz": 7,
+            "hizb": 13,
+            "start": {
+                "surah": 6,
+                "ayah": 13
+            },
+            "end": {
+                "surah": 6,
+                "ayah": 35
+            },
+            "start_page": 129,
+            "end_page": 131,
+            "verse_count": 23,
+            "segments_total": 27
+        },
+        {
+            "id": 53,
+            "juz": 7,
+            "hizb": 14,
+            "start": {
+                "surah": 6,
+                "ayah": 36
+            },
+            "end": {
+                "surah": 6,
+                "ayah": 58
+            },
+            "start_page": 132,
+            "end_page": 134,
+            "verse_count": 23,
+            "segments_total": 28
+        },
+        {
+            "id": 54,
+            "juz": 7,
+            "hizb": 14,
+            "start": {
+                "surah": 6,
+                "ayah": 59
+            },
+            "end": {
+                "surah": 6,
+                "ayah": 73
+            },
+            "start_page": 134,
+            "end_page": 136,
+            "verse_count": 15,
+            "segments_total": 18
+        },
+        {
+            "id": 55,
+            "juz": 7,
+            "hizb": 14,
+            "start": {
+                "surah": 6,
+                "ayah": 74
+            },
+            "end": {
+                "surah": 6,
+                "ayah": 94
+            },
+            "start_page": 137,
+            "end_page": 139,
+            "verse_count": 21,
+            "segments_total": 27
+        },
+        {
+            "id": 56,
+            "juz": 7,
+            "hizb": 14,
+            "start": {
+                "surah": 6,
+                "ayah": 95
+            },
+            "end": {
+                "surah": 6,
+                "ayah": 110
+            },
+            "start_page": 140,
+            "end_page": 141,
+            "verse_count": 16,
+            "segments_total": 21
+        },
+        {
+            "id": 57,
+            "juz": 8,
+            "hizb": 15,
+            "start": {
+                "surah": 6,
+                "ayah": 111
+            },
+            "end": {
+                "surah": 6,
+                "ayah": 126
+            },
+            "start_page": 142,
+            "end_page": 144,
+            "verse_count": 16,
+            "segments_total": 22
+        },
+        {
+            "id": 58,
+            "juz": 8,
+            "hizb": 15,
+            "start": {
+                "surah": 6,
+                "ayah": 127
+            },
+            "end": {
+                "surah": 6,
+                "ayah": 140
+            },
+            "start_page": 144,
+            "end_page": 146,
+            "verse_count": 14,
+            "segments_total": 17
+        },
+        {
+            "id": 59,
+            "juz": 8,
+            "hizb": 15,
+            "start": {
+                "surah": 6,
+                "ayah": 141
+            },
+            "end": {
+                "surah": 6,
+                "ayah": 150
+            },
+            "start_page": 146,
+            "end_page": 148,
+            "verse_count": 10,
+            "segments_total": 14
+        },
+        {
+            "id": 60,
+            "juz": 8,
+            "hizb": 15,
+            "start": {
+                "surah": 6,
+                "ayah": 151
+            },
+            "end": {
+                "surah": 6,
+                "ayah": 165
+            },
+            "start_page": 148,
+            "end_page": 150,
+            "verse_count": 15,
+            "segments_total": 19
+        },
+        {
+            "id": 61,
+            "juz": 8,
+            "hizb": 16,
+            "start": {
+                "surah": 7,
+                "ayah": 1
+            },
+            "end": {
+                "surah": 7,
+                "ayah": 30
+            },
+            "start_page": 151,
+            "end_page": 153,
+            "verse_count": 30,
+            "segments_total": 36
+        },
+        {
+            "id": 62,
+            "juz": 8,
+            "hizb": 16,
+            "start": {
+                "surah": 7,
+                "ayah": 31
+            },
+            "end": {
+                "surah": 7,
+                "ayah": 46
+            },
+            "start_page": 154,
+            "end_page": 156,
+            "verse_count": 16,
+            "segments_total": 17
+        },
+        {
+            "id": 63,
+            "juz": 8,
+            "hizb": 16,
+            "start": {
+                "surah": 7,
+                "ayah": 47
+            },
+            "end": {
+                "surah": 7,
+                "ayah": 64
+            },
+            "start_page": 156,
+            "end_page": 158,
+            "verse_count": 18,
+            "segments_total": 20
+        },
+        {
+            "id": 64,
+            "juz": 8,
+            "hizb": 16,
+            "start": {
+                "surah": 7,
+                "ayah": 65
+            },
+            "end": {
+                "surah": 7,
+                "ayah": 87
+            },
+            "start_page": 158,
+            "end_page": 161,
+            "verse_count": 23,
+            "segments_total": 27
+        },
+        {
+            "id": 65,
+            "juz": 9,
+            "hizb": 17,
+            "start": {
+                "surah": 7,
+                "ayah": 88
+            },
+            "end": {
+                "surah": 7,
+                "ayah": 116
+            },
+            "start_page": 162,
+            "end_page": 164,
+            "verse_count": 29,
+            "segments_total": 29
+        },
+        {
+            "id": 66,
+            "juz": 9,
+            "hizb": 17,
+            "start": {
+                "surah": 7,
+                "ayah": 117
+            },
+            "end": {
+                "surah": 7,
+                "ayah": 141
+            },
+            "start_page": 164,
+            "end_page": 167,
+            "verse_count": 25,
+            "segments_total": 26
+        },
+        {
+            "id": 67,
+            "juz": 9,
+            "hizb": 17,
+            "start": {
+                "surah": 7,
+                "ayah": 142
+            },
+            "end": {
+                "surah": 7,
+                "ayah": 155
+            },
+            "start_page": 167,
+            "end_page": 169,
+            "verse_count": 14,
+            "segments_total": 15
+        },
+        {
+            "id": 68,
+            "juz": 9,
+            "hizb": 17,
+            "start": {
+                "surah": 7,
+                "ayah": 156
+            },
+            "end": {
+                "surah": 7,
+                "ayah": 170
+            },
+            "start_page": 170,
+            "end_page": 172,
+            "verse_count": 15,
+            "segments_total": 18
+        },
+        {
+            "id": 69,
+            "juz": 9,
+            "hizb": 18,
+            "start": {
+                "surah": 7,
+                "ayah": 171
+            },
+            "end": {
+                "surah": 7,
+                "ayah": 188
+            },
+            "start_page": 173,
+            "end_page": 175,
+            "verse_count": 18,
+            "segments_total": 21
+        },
+        {
+            "id": 70,
+            "juz": 9,
+            "hizb": 18,
+            "start": {
+                "surah": 7,
+                "ayah": 189
+            },
+            "end": {
+                "surah": 7,
+                "ayah": 206
+            },
+            "start_page": 175,
+            "end_page": 176,
+            "verse_count": 18,
+            "segments_total": 19
+        },
+        {
+            "id": 71,
+            "juz": 9,
+            "hizb": 18,
+            "start": {
+                "surah": 8,
+                "ayah": 1
+            },
+            "end": {
+                "surah": 8,
+                "ayah": 21
+            },
+            "start_page": 177,
+            "end_page": 179,
+            "verse_count": 21,
+            "segments_total": 21
+        },
+        {
+            "id": 72,
+            "juz": 9,
+            "hizb": 18,
+            "start": {
+                "surah": 8,
+                "ayah": 22
+            },
+            "end": {
+                "surah": 8,
+                "ayah": 40
+            },
+            "start_page": 179,
+            "end_page": 181,
+            "verse_count": 19,
+            "segments_total": 21
+        },
+        {
+            "id": 73,
+            "juz": 10,
+            "hizb": 19,
+            "start": {
+                "surah": 8,
+                "ayah": 41
+            },
+            "end": {
+                "surah": 8,
+                "ayah": 60
+            },
+            "start_page": 182,
+            "end_page": 184,
+            "verse_count": 20,
+            "segments_total": 26
+        },
+        {
+            "id": 74,
+            "juz": 10,
+            "hizb": 19,
+            "start": {
+                "surah": 8,
+                "ayah": 61
+            },
+            "end": {
+                "surah": 8,
+                "ayah": 75
+            },
+            "start_page": 184,
+            "end_page": 186,
+            "verse_count": 15,
+            "segments_total": 21
+        },
+        {
+            "id": 75,
+            "juz": 10,
+            "hizb": 19,
+            "start": {
+                "surah": 9,
+                "ayah": 1
+            },
+            "end": {
+                "surah": 9,
+                "ayah": 18
+            },
+            "start_page": 187,
+            "end_page": 189,
+            "verse_count": 18,
+            "segments_total": 22
+        },
+        {
+            "id": 76,
+            "juz": 10,
+            "hizb": 19,
+            "start": {
+                "surah": 9,
+                "ayah": 19
+            },
+            "end": {
+                "surah": 9,
+                "ayah": 33
+            },
+            "start_page": 189,
+            "end_page": 192,
+            "verse_count": 15,
+            "segments_total": 18
+        },
+        {
+            "id": 77,
+            "juz": 10,
+            "hizb": 19,
+            "start": {
+                "surah": 9,
+                "ayah": 34
+            },
+            "end": {
+                "surah": 9,
+                "ayah": 45
+            },
+            "start_page": 192,
+            "end_page": 194,
+            "verse_count": 12,
+            "segments_total": 18
+        },
+        {
+            "id": 78,
+            "juz": 10,
+            "hizb": 20,
+            "start": {
+                "surah": 9,
+                "ayah": 46
+            },
+            "end": {
+                "surah": 9,
+                "ayah": 59
+            },
+            "start_page": 194,
+            "end_page": 196,
+            "verse_count": 14,
+            "segments_total": 16
+        },
+        {
+            "id": 79,
+            "juz": 10,
+            "hizb": 20,
+            "start": {
+                "surah": 9,
+                "ayah": 60
+            },
+            "end": {
+                "surah": 9,
+                "ayah": 74
+            },
+            "start_page": 196,
+            "end_page": 199,
+            "verse_count": 15,
+            "segments_total": 18
+        },
+        {
+            "id": 80,
+            "juz": 10,
+            "hizb": 20,
+            "start": {
+                "surah": 9,
+                "ayah": 75
+            },
+            "end": {
+                "surah": 9,
+                "ayah": 92
+            },
+            "start_page": 199,
+            "end_page": 201,
+            "verse_count": 18,
+            "segments_total": 20
+        },
+        {
+            "id": 81,
+            "juz": 10,
+            "hizb": 20,
+            "start": {
+                "surah": 9,
+                "ayah": 93
+            },
+            "end": {
+                "surah": 9,
+                "ayah": 110
+            },
+            "start_page": 201,
+            "end_page": 204,
+            "verse_count": 18,
+            "segments_total": 25
+        },
+        {
+            "id": 82,
+            "juz": 11,
+            "hizb": 21,
+            "start": {
+                "surah": 9,
+                "ayah": 111
+            },
+            "end": {
+                "surah": 9,
+                "ayah": 121
+            },
+            "start_page": 204,
+            "end_page": 206,
+            "verse_count": 11,
+            "segments_total": 12
+        },
+        {
+            "id": 83,
+            "juz": 11,
+            "hizb": 21,
+            "start": {
+                "surah": 9,
+                "ayah": 122
+            },
+            "end": {
+                "surah": 10,
+                "ayah": 10
+            },
+            "start_page": 206,
+            "end_page": 209,
+            "verse_count": 18,
+            "segments_total": 19
+        },
+        {
+            "id": 84,
+            "juz": 11,
+            "hizb": 21,
+            "start": {
+                "surah": 10,
+                "ayah": 11
+            },
+            "end": {
+                "surah": 10,
+                "ayah": 25
+            },
+            "start_page": 209,
+            "end_page": 211,
+            "verse_count": 15,
+            "segments_total": 16
+        },
+        {
+            "id": 85,
+            "juz": 11,
+            "hizb": 22,
+            "start": {
+                "surah": 10,
+                "ayah": 26
+            },
+            "end": {
+                "surah": 10,
+                "ayah": 52
+            },
+            "start_page": 212,
+            "end_page": 214,
+            "verse_count": 27,
+            "segments_total": 29
+        },
+        {
+            "id": 86,
+            "juz": 11,
+            "hizb": 22,
+            "start": {
+                "surah": 10,
+                "ayah": 53
+            },
+            "end": {
+                "surah": 10,
+                "ayah": 70
+            },
+            "start_page": 214,
+            "end_page": 216,
+            "verse_count": 18,
+            "segments_total": 24
+        },
+        {
+            "id": 87,
+            "juz": 11,
+            "hizb": 22,
+            "start": {
+                "surah": 10,
+                "ayah": 71
+            },
+            "end": {
+                "surah": 10,
+                "ayah": 89
+            },
+            "start_page": 217,
+            "end_page": 219,
+            "verse_count": 19,
+            "segments_total": 20
+        },
+        {
+            "id": 88,
+            "juz": 11,
+            "hizb": 22,
+            "start": {
+                "surah": 10,
+                "ayah": 90
+            },
+            "end": {
+                "surah": 11,
+                "ayah": 5
+            },
+            "start_page": 219,
+            "end_page": 221,
+            "verse_count": 25,
+            "segments_total": 25
+        },
+        {
+            "id": 89,
+            "juz": 12,
+            "hizb": 23,
+            "start": {
+                "surah": 11,
+                "ayah": 6
+            },
+            "end": {
+                "surah": 11,
+                "ayah": 23
+            },
+            "start_page": 222,
+            "end_page": 224,
+            "verse_count": 18,
+            "segments_total": 21
+        },
+        {
+            "id": 90,
+            "juz": 12,
+            "hizb": 23,
+            "start": {
+                "surah": 11,
+                "ayah": 24
+            },
+            "end": {
+                "surah": 11,
+                "ayah": 40
+            },
+            "start_page": 224,
+            "end_page": 226,
+            "verse_count": 17,
+            "segments_total": 17
+        },
+        {
+            "id": 91,
+            "juz": 12,
+            "hizb": 23,
+            "start": {
+                "surah": 11,
+                "ayah": 41
+            },
+            "end": {
+                "surah": 11,
+                "ayah": 60
+            },
+            "start_page": 226,
+            "end_page": 228,
+            "verse_count": 20,
+            "segments_total": 23
+        },
+        {
+            "id": 92,
+            "juz": 12,
+            "hizb": 23,
+            "start": {
+                "surah": 11,
+                "ayah": 61
+            },
+            "end": {
+                "surah": 11,
+                "ayah": 83
+            },
+            "start_page": 228,
+            "end_page": 231,
+            "verse_count": 23,
+            "segments_total": 26
+        },
+        {
+            "id": 93,
+            "juz": 12,
+            "hizb": 23,
+            "start": {
+                "surah": 11,
+                "ayah": 84
+            },
+            "end": {
+                "surah": 11,
+                "ayah": 107
+            },
+            "start_page": 231,
+            "end_page": 233,
+            "verse_count": 24,
+            "segments_total": 25
+        },
+        {
+            "id": 94,
+            "juz": 12,
+            "hizb": 24,
+            "start": {
+                "surah": 11,
+                "ayah": 108
+            },
+            "end": {
+                "surah": 12,
+                "ayah": 6
+            },
+            "start_page": 233,
+            "end_page": 236,
+            "verse_count": 22,
+            "segments_total": 24
+        },
+        {
+            "id": 95,
+            "juz": 12,
+            "hizb": 24,
+            "start": {
+                "surah": 12,
+                "ayah": 7
+            },
+            "end": {
+                "surah": 12,
+                "ayah": 29
+            },
+            "start_page": 236,
+            "end_page": 238,
+            "verse_count": 23,
+            "segments_total": 23
+        },
+        {
+            "id": 96,
+            "juz": 12,
+            "hizb": 24,
+            "start": {
+                "surah": 12,
+                "ayah": 30
+            },
+            "end": {
+                "surah": 12,
+                "ayah": 52
+            },
+            "start_page": 238,
+            "end_page": 241,
+            "verse_count": 23,
+            "segments_total": 23
+        },
+        {
+            "id": 97,
+            "juz": 13,
+            "hizb": 25,
+            "start": {
+                "surah": 12,
+                "ayah": 53
+            },
+            "end": {
+                "surah": 12,
+                "ayah": 76
+            },
+            "start_page": 242,
+            "end_page": 244,
+            "verse_count": 24,
+            "segments_total": 25
+        },
+        {
+            "id": 98,
+            "juz": 13,
+            "hizb": 25,
+            "start": {
+                "surah": 12,
+                "ayah": 77
+            },
+            "end": {
+                "surah": 12,
+                "ayah": 100
+            },
+            "start_page": 244,
+            "end_page": 247,
+            "verse_count": 24,
+            "segments_total": 24
+        },
+        {
+            "id": 99,
+            "juz": 13,
+            "hizb": 25,
+            "start": {
+                "surah": 12,
+                "ayah": 101
+            },
+            "end": {
+                "surah": 13,
+                "ayah": 4
+            },
+            "start_page": 247,
+            "end_page": 249,
+            "verse_count": 15,
+            "segments_total": 20
+        },
+        {
+            "id": 100,
+            "juz": 13,
+            "hizb": 25,
+            "start": {
+                "surah": 13,
+                "ayah": 5
+            },
+            "end": {
+                "surah": 13,
+                "ayah": 18
+            },
+            "start_page": 249,
+            "end_page": 251,
+            "verse_count": 14,
+            "segments_total": 20
+        },
+        {
+            "id": 101,
+            "juz": 13,
+            "hizb": 26,
+            "start": {
+                "surah": 13,
+                "ayah": 19
+            },
+            "end": {
+                "surah": 13,
+                "ayah": 34
+            },
+            "start_page": 252,
+            "end_page": 253,
+            "verse_count": 16,
+            "segments_total": 24
+        },
+        {
+            "id": 102,
+            "juz": 13,
+            "hizb": 26,
+            "start": {
+                "surah": 13,
+                "ayah": 35
+            },
+            "end": {
+                "surah": 14,
+                "ayah": 9
+            },
+            "start_page": 254,
+            "end_page": 256,
+            "verse_count": 18,
+            "segments_total": 22
+        },
+        {
+            "id": 103,
+            "juz": 13,
+            "hizb": 26,
+            "start": {
+                "surah": 14,
+                "ayah": 10
+            },
+            "end": {
+                "surah": 14,
+                "ayah": 27
+            },
+            "start_page": 256,
+            "end_page": 259,
+            "verse_count": 18,
+            "segments_total": 20
+        },
+        {
+            "id": 104,
+            "juz": 13,
+            "hizb": 26,
+            "start": {
+                "surah": 14,
+                "ayah": 28
+            },
+            "end": {
+                "surah": 14,
+                "ayah": 52
+            },
+            "start_page": 259,
+            "end_page": 261,
+            "verse_count": 25,
+            "segments_total": 30
+        },
+        {
+            "id": 105,
+            "juz": 14,
+            "hizb": 27,
+            "start": {
+                "surah": 15,
+                "ayah": 1
+            },
+            "end": {
+                "surah": 15,
+                "ayah": 48
+            },
+            "start_page": 262,
+            "end_page": 264,
+            "verse_count": 48,
+            "segments_total": 48
+        },
+        {
+            "id": 106,
+            "juz": 14,
+            "hizb": 27,
+            "start": {
+                "surah": 15,
+                "ayah": 49
+            },
+            "end": {
+                "surah": 15,
+                "ayah": 99
+            },
+            "start_page": 264,
+            "end_page": 267,
+            "verse_count": 51,
+            "segments_total": 52
+        },
+        {
+            "id": 107,
+            "juz": 14,
+            "hizb": 27,
+            "start": {
+                "surah": 16,
+                "ayah": 1
+            },
+            "end": {
+                "surah": 16,
+                "ayah": 29
+            },
+            "start_page": 267,
+            "end_page": 270,
+            "verse_count": 29,
+            "segments_total": 36
+        },
+        {
+            "id": 108,
+            "juz": 14,
+            "hizb": 27,
+            "start": {
+                "surah": 16,
+                "ayah": 30
+            },
+            "end": {
+                "surah": 16,
+                "ayah": 50
+            },
+            "start_page": 270,
+            "end_page": 272,
+            "verse_count": 21,
+            "segments_total": 23
+        },
+        {
+            "id": 109,
+            "juz": 14,
+            "hizb": 27,
+            "start": {
+                "surah": 16,
+                "ayah": 51
+            },
+            "end": {
+                "surah": 16,
+                "ayah": 74
+            },
+            "start_page": 272,
+            "end_page": 275,
+            "verse_count": 24,
+            "segments_total": 28
+        },
+        {
+            "id": 110,
+            "juz": 14,
+            "hizb": 28,
+            "start": {
+                "surah": 16,
+                "ayah": 75
+            },
+            "end": {
+                "surah": 16,
+                "ayah": 89
+            },
+            "start_page": 275,
+            "end_page": 277,
+            "verse_count": 15,
+            "segments_total": 16
+        },
+        {
+            "id": 111,
+            "juz": 14,
+            "hizb": 28,
+            "start": {
+                "surah": 16,
+                "ayah": 90
+            },
+            "end": {
+                "surah": 16,
+                "ayah": 110
+            },
+            "start_page": 277,
+            "end_page": 279,
+            "verse_count": 21,
+            "segments_total": 23
+        },
+        {
+            "id": 112,
+            "juz": 14,
+            "hizb": 28,
+            "start": {
+                "surah": 16,
+                "ayah": 111
+            },
+            "end": {
+                "surah": 16,
+                "ayah": 128
+            },
+            "start_page": 280,
+            "end_page": 281,
+            "verse_count": 18,
+            "segments_total": 18
+        },
+        {
+            "id": 113,
+            "juz": 15,
+            "hizb": 29,
+            "start": {
+                "surah": 17,
+                "ayah": 1
+            },
+            "end": {
+                "surah": 17,
+                "ayah": 22
+            },
+            "start_page": 282,
+            "end_page": 284,
+            "verse_count": 22,
+            "segments_total": 25
+        },
+        {
+            "id": 114,
+            "juz": 15,
+            "hizb": 29,
+            "start": {
+                "surah": 17,
+                "ayah": 23
+            },
+            "end": {
+                "surah": 17,
+                "ayah": 49
+            },
+            "start_page": 284,
+            "end_page": 286,
+            "verse_count": 27,
+            "segments_total": 30
+        },
+        {
+            "id": 115,
+            "juz": 15,
+            "hizb": 29,
+            "start": {
+                "surah": 17,
+                "ayah": 50
+            },
+            "end": {
+                "surah": 17,
+                "ayah": 69
+            },
+            "start_page": 287,
+            "end_page": 289,
+            "verse_count": 20,
+            "segments_total": 21
+        },
+        {
+            "id": 116,
+            "juz": 15,
+            "hizb": 29,
+            "start": {
+                "surah": 17,
+                "ayah": 70
+            },
+            "end": {
+                "surah": 17,
+                "ayah": 98
+            },
+            "start_page": 289,
+            "end_page": 292,
+            "verse_count": 29,
+            "segments_total": 30
+        },
+        {
+            "id": 117,
+            "juz": 15,
+            "hizb": 29,
+            "start": {
+                "surah": 17,
+                "ayah": 99
+            },
+            "end": {
+                "surah": 18,
+                "ayah": 16
+            },
+            "start_page": 292,
+            "end_page": 295,
+            "verse_count": 29,
+            "segments_total": 30
+        },
+        {
+            "id": 118,
+            "juz": 15,
+            "hizb": 30,
+            "start": {
+                "surah": 18,
+                "ayah": 17
+            },
+            "end": {
+                "surah": 18,
+                "ayah": 31
+            },
+            "start_page": 295,
+            "end_page": 297,
+            "verse_count": 15,
+            "segments_total": 17
+        },
+        {
+            "id": 119,
+            "juz": 15,
+            "hizb": 30,
+            "start": {
+                "surah": 18,
+                "ayah": 32
+            },
+            "end": {
+                "surah": 18,
+                "ayah": 50
+            },
+            "start_page": 297,
+            "end_page": 299,
+            "verse_count": 19,
+            "segments_total": 22
+        },
+        {
+            "id": 120,
+            "juz": 15,
+            "hizb": 30,
+            "start": {
+                "surah": 18,
+                "ayah": 51
+            },
+            "end": {
+                "surah": 18,
+                "ayah": 74
+            },
+            "start_page": 299,
+            "end_page": 301,
+            "verse_count": 24,
+            "segments_total": 24
+        },
+        {
+            "id": 121,
+            "juz": 16,
+            "hizb": 31,
+            "start": {
+                "surah": 18,
+                "ayah": 75
+            },
+            "end": {
+                "surah": 18,
+                "ayah": 98
+            },
+            "start_page": 302,
+            "end_page": 304,
+            "verse_count": 24,
+            "segments_total": 25
+        },
+        {
+            "id": 122,
+            "juz": 16,
+            "hizb": 31,
+            "start": {
+                "surah": 18,
+                "ayah": 99
+            },
+            "end": {
+                "surah": 19,
+                "ayah": 21
+            },
+            "start_page": 304,
+            "end_page": 306,
+            "verse_count": 33,
+            "segments_total": 33
+        },
+        {
+            "id": 123,
+            "juz": 16,
+            "hizb": 31,
+            "start": {
+                "surah": 19,
+                "ayah": 22
+            },
+            "end": {
+                "surah": 19,
+                "ayah": 58
+            },
+            "start_page": 306,
+            "end_page": 309,
+            "verse_count": 37,
+            "segments_total": 37
+        },
+        {
+            "id": 124,
+            "juz": 16,
+            "hizb": 31,
+            "start": {
+                "surah": 19,
+                "ayah": 59
+            },
+            "end": {
+                "surah": 19,
+                "ayah": 98
+            },
+            "start_page": 309,
+            "end_page": 312,
+            "verse_count": 40,
+            "segments_total": 41
+        },
+        {
+            "id": 125,
+            "juz": 16,
+            "hizb": 31,
+            "start": {
+                "surah": 20,
+                "ayah": 1
+            },
+            "end": {
+                "surah": 20,
+                "ayah": 54
+            },
+            "start_page": 312,
+            "end_page": 315,
+            "verse_count": 54,
+            "segments_total": 55
+        },
+        {
+            "id": 126,
+            "juz": 16,
+            "hizb": 32,
+            "start": {
+                "surah": 20,
+                "ayah": 55
+            },
+            "end": {
+                "surah": 20,
+                "ayah": 82
+            },
+            "start_page": 315,
+            "end_page": 317,
+            "verse_count": 28,
+            "segments_total": 29
+        },
+        {
+            "id": 127,
+            "juz": 16,
+            "hizb": 32,
+            "start": {
+                "surah": 20,
+                "ayah": 83
+            },
+            "end": {
+                "surah": 20,
+                "ayah": 110
+            },
+            "start_page": 317,
+            "end_page": 319,
+            "verse_count": 28,
+            "segments_total": 28
+        },
+        {
+            "id": 128,
+            "juz": 16,
+            "hizb": 32,
+            "start": {
+                "surah": 20,
+                "ayah": 111
+            },
+            "end": {
+                "surah": 20,
+                "ayah": 135
+            },
+            "start_page": 319,
+            "end_page": 321,
+            "verse_count": 25,
+            "segments_total": 28
+        },
+        {
+            "id": 129,
+            "juz": 17,
+            "hizb": 33,
+            "start": {
+                "surah": 21,
+                "ayah": 1
+            },
+            "end": {
+                "surah": 21,
+                "ayah": 28
+            },
+            "start_page": 322,
+            "end_page": 324,
+            "verse_count": 28,
+            "segments_total": 31
+        },
+        {
+            "id": 130,
+            "juz": 17,
+            "hizb": 33,
+            "start": {
+                "surah": 21,
+                "ayah": 29
+            },
+            "end": {
+                "surah": 21,
+                "ayah": 50
+            },
+            "start_page": 324,
+            "end_page": 326,
+            "verse_count": 22,
+            "segments_total": 26
+        },
+        {
+            "id": 131,
+            "juz": 17,
+            "hizb": 33,
+            "start": {
+                "surah": 21,
+                "ayah": 51
+            },
+            "end": {
+                "surah": 21,
+                "ayah": 82
+            },
+            "start_page": 326,
+            "end_page": 329,
+            "verse_count": 32,
+            "segments_total": 33
+        },
+        {
+            "id": 132,
+            "juz": 17,
+            "hizb": 33,
+            "start": {
+                "surah": 21,
+                "ayah": 83
+            },
+            "end": {
+                "surah": 21,
+                "ayah": 112
+            },
+            "start_page": 329,
+            "end_page": 331,
+            "verse_count": 30,
+            "segments_total": 31
+        },
+        {
+            "id": 133,
+            "juz": 17,
+            "hizb": 34,
+            "start": {
+                "surah": 22,
+                "ayah": 1
+            },
+            "end": {
+                "surah": 22,
+                "ayah": 18
+            },
+            "start_page": 332,
+            "end_page": 334,
+            "verse_count": 18,
+            "segments_total": 19
+        },
+        {
+            "id": 134,
+            "juz": 17,
+            "hizb": 34,
+            "start": {
+                "surah": 22,
+                "ayah": 19
+            },
+            "end": {
+                "surah": 22,
+                "ayah": 37
+            },
+            "start_page": 334,
+            "end_page": 336,
+            "verse_count": 19,
+            "segments_total": 23
+        },
+        {
+            "id": 135,
+            "juz": 17,
+            "hizb": 34,
+            "start": {
+                "surah": 22,
+                "ayah": 38
+            },
+            "end": {
+                "surah": 22,
+                "ayah": 59
+            },
+            "start_page": 336,
+            "end_page": 339,
+            "verse_count": 22,
+            "segments_total": 31
+        },
+        {
+            "id": 136,
+            "juz": 17,
+            "hizb": 34,
+            "start": {
+                "surah": 22,
+                "ayah": 60
+            },
+            "end": {
+                "surah": 22,
+                "ayah": 78
+            },
+            "start_page": 339,
+            "end_page": 341,
+            "verse_count": 19,
+            "segments_total": 30
+        },
+        {
+            "id": 137,
+            "juz": 18,
+            "hizb": 35,
+            "start": {
+                "surah": 23,
+                "ayah": 1
+            },
+            "end": {
+                "surah": 23,
+                "ayah": 35
+            },
+            "start_page": 342,
+            "end_page": 344,
+            "verse_count": 35,
+            "segments_total": 35
+        },
+        {
+            "id": 138,
+            "juz": 18,
+            "hizb": 35,
+            "start": {
+                "surah": 23,
+                "ayah": 36
+            },
+            "end": {
+                "surah": 23,
+                "ayah": 74
+            },
+            "start_page": 344,
+            "end_page": 346,
+            "verse_count": 39,
+            "segments_total": 39
+        },
+        {
+            "id": 139,
+            "juz": 18,
+            "hizb": 35,
+            "start": {
+                "surah": 23,
+                "ayah": 75
+            },
+            "end": {
+                "surah": 23,
+                "ayah": 118
+            },
+            "start_page": 347,
+            "end_page": 349,
+            "verse_count": 44,
+            "segments_total": 44
+        },
+        {
+            "id": 140,
+            "juz": 18,
+            "hizb": 35,
+            "start": {
+                "surah": 24,
+                "ayah": 1
+            },
+            "end": {
+                "surah": 24,
+                "ayah": 20
+            },
+            "start_page": 350,
+            "end_page": 351,
+            "verse_count": 20,
+            "segments_total": 20
+        },
+        {
+            "id": 141,
+            "juz": 18,
+            "hizb": 36,
+            "start": {
+                "surah": 24,
+                "ayah": 21
+            },
+            "end": {
+                "surah": 24,
+                "ayah": 34
+            },
+            "start_page": 352,
+            "end_page": 354,
+            "verse_count": 14,
+            "segments_total": 20
+        },
+        {
+            "id": 142,
+            "juz": 18,
+            "hizb": 36,
+            "start": {
+                "surah": 24,
+                "ayah": 35
+            },
+            "end": {
+                "surah": 24,
+                "ayah": 52
+            },
+            "start_page": 354,
+            "end_page": 356,
+            "verse_count": 18,
+            "segments_total": 24
+        },
+        {
+            "id": 143,
+            "juz": 18,
+            "hizb": 36,
+            "start": {
+                "surah": 24,
+                "ayah": 53
+            },
+            "end": {
+                "surah": 24,
+                "ayah": 64
+            },
+            "start_page": 356,
+            "end_page": 359,
+            "verse_count": 12,
+            "segments_total": 16
+        },
+        {
+            "id": 144,
+            "juz": 18,
+            "hizb": 36,
+            "start": {
+                "surah": 25,
+                "ayah": 1
+            },
+            "end": {
+                "surah": 25,
+                "ayah": 20
+            },
+            "start_page": 359,
+            "end_page": 361,
+            "verse_count": 20,
+            "segments_total": 22
+        },
+        {
+            "id": 145,
+            "juz": 19,
+            "hizb": 37,
+            "start": {
+                "surah": 25,
+                "ayah": 21
+            },
+            "end": {
+                "surah": 25,
+                "ayah": 52
+            },
+            "start_page": 362,
+            "end_page": 364,
+            "verse_count": 32,
+            "segments_total": 35
+        },
+        {
+            "id": 146,
+            "juz": 19,
+            "hizb": 37,
+            "start": {
+                "surah": 25,
+                "ayah": 53
+            },
+            "end": {
+                "surah": 25,
+                "ayah": 77
+            },
+            "start_page": 364,
+            "end_page": 366,
+            "verse_count": 25,
+            "segments_total": 28
+        },
+        {
+            "id": 147,
+            "juz": 19,
+            "hizb": 37,
+            "start": {
+                "surah": 26,
+                "ayah": 1
+            },
+            "end": {
+                "surah": 26,
+                "ayah": 51
+            },
+            "start_page": 367,
+            "end_page": 369,
+            "verse_count": 51,
+            "segments_total": 51
+        },
+        {
+            "id": 148,
+            "juz": 19,
+            "hizb": 37,
+            "start": {
+                "surah": 26,
+                "ayah": 52
+            },
+            "end": {
+                "surah": 26,
+                "ayah": 110
+            },
+            "start_page": 369,
+            "end_page": 371,
+            "verse_count": 59,
+            "segments_total": 59
+        },
+        {
+            "id": 149,
+            "juz": 19,
+            "hizb": 37,
+            "start": {
+                "surah": 26,
+                "ayah": 111
+            },
+            "end": {
+                "surah": 26,
+                "ayah": 180
+            },
+            "start_page": 371,
+            "end_page": 374,
+            "verse_count": 70,
+            "segments_total": 72
+        },
+        {
+            "id": 150,
+            "juz": 19,
+            "hizb": 38,
+            "start": {
+                "surah": 26,
+                "ayah": 181
+            },
+            "end": {
+                "surah": 26,
+                "ayah": 227
+            },
+            "start_page": 374,
+            "end_page": 376,
+            "verse_count": 47,
+            "segments_total": 48
+        },
+        {
+            "id": 151,
+            "juz": 19,
+            "hizb": 38,
+            "start": {
+                "surah": 27,
+                "ayah": 1
+            },
+            "end": {
+                "surah": 27,
+                "ayah": 26
+            },
+            "start_page": 377,
+            "end_page": 379,
+            "verse_count": 26,
+            "segments_total": 26
+        },
+        {
+            "id": 152,
+            "juz": 19,
+            "hizb": 38,
+            "start": {
+                "surah": 27,
+                "ayah": 27
+            },
+            "end": {
+                "surah": 27,
+                "ayah": 55
+            },
+            "start_page": 379,
+            "end_page": 381,
+            "verse_count": 29,
+            "segments_total": 31
+        },
+        {
+            "id": 153,
+            "juz": 20,
+            "hizb": 39,
+            "start": {
+                "surah": 27,
+                "ayah": 56
+            },
+            "end": {
+                "surah": 27,
+                "ayah": 81
+            },
+            "start_page": 382,
+            "end_page": 384,
+            "verse_count": 26,
+            "segments_total": 32
+        },
+        {
+            "id": 154,
+            "juz": 20,
+            "hizb": 39,
+            "start": {
+                "surah": 27,
+                "ayah": 82
+            },
+            "end": {
+                "surah": 28,
+                "ayah": 11
+            },
+            "start_page": 384,
+            "end_page": 386,
+            "verse_count": 23,
+            "segments_total": 24
+        },
+        {
+            "id": 155,
+            "juz": 20,
+            "hizb": 39,
+            "start": {
+                "surah": 28,
+                "ayah": 12
+            },
+            "end": {
+                "surah": 28,
+                "ayah": 28
+            },
+            "start_page": 386,
+            "end_page": 388,
+            "verse_count": 17,
+            "segments_total": 17
+        },
+        {
+            "id": 156,
+            "juz": 20,
+            "hizb": 39,
+            "start": {
+                "surah": 28,
+                "ayah": 29
+            },
+            "end": {
+                "surah": 28,
+                "ayah": 50
+            },
+            "start_page": 389,
+            "end_page": 391,
+            "verse_count": 22,
+            "segments_total": 22
+        },
+        {
+            "id": 157,
+            "juz": 20,
+            "hizb": 40,
+            "start": {
+                "surah": 28,
+                "ayah": 51
+            },
+            "end": {
+                "surah": 28,
+                "ayah": 75
+            },
+            "start_page": 392,
+            "end_page": 394,
+            "verse_count": 25,
+            "segments_total": 26
+        },
+        {
+            "id": 158,
+            "juz": 20,
+            "hizb": 40,
+            "start": {
+                "surah": 28,
+                "ayah": 76
+            },
+            "end": {
+                "surah": 28,
+                "ayah": 88
+            },
+            "start_page": 394,
+            "end_page": 396,
+            "verse_count": 13,
+            "segments_total": 14
+        },
+        {
+            "id": 159,
+            "juz": 20,
+            "hizb": 40,
+            "start": {
+                "surah": 29,
+                "ayah": 1
+            },
+            "end": {
+                "surah": 29,
+                "ayah": 25
+            },
+            "start_page": 396,
+            "end_page": 399,
+            "verse_count": 25,
+            "segments_total": 25
+        },
+        {
+            "id": 160,
+            "juz": 20,
+            "hizb": 40,
+            "start": {
+                "surah": 29,
+                "ayah": 26
+            },
+            "end": {
+                "surah": 29,
+                "ayah": 45
+            },
+            "start_page": 399,
+            "end_page": 401,
+            "verse_count": 20,
+            "segments_total": 23
+        },
+        {
+            "id": 161,
+            "juz": 21,
+            "hizb": 41,
+            "start": {
+                "surah": 29,
+                "ayah": 46
+            },
+            "end": {
+                "surah": 29,
+                "ayah": 69
+            },
+            "start_page": 402,
+            "end_page": 404,
+            "verse_count": 24,
+            "segments_total": 25
+        },
+        {
+            "id": 162,
+            "juz": 21,
+            "hizb": 41,
+            "start": {
+                "surah": 30,
+                "ayah": 1
+            },
+            "end": {
+                "surah": 30,
+                "ayah": 30
+            },
+            "start_page": 404,
+            "end_page": 407,
+            "verse_count": 30,
+            "segments_total": 33
+        },
+        {
+            "id": 163,
+            "juz": 21,
+            "hizb": 41,
+            "start": {
+                "surah": 30,
+                "ayah": 31
+            },
+            "end": {
+                "surah": 30,
+                "ayah": 53
+            },
+            "start_page": 407,
+            "end_page": 410,
+            "verse_count": 23,
+            "segments_total": 23
+        },
+        {
+            "id": 164,
+            "juz": 21,
+            "hizb": 41,
+            "start": {
+                "surah": 30,
+                "ayah": 54
+            },
+            "end": {
+                "surah": 31,
+                "ayah": 21
+            },
+            "start_page": 410,
+            "end_page": 413,
+            "verse_count": 28,
+            "segments_total": 29
+        },
+        {
+            "id": 165,
+            "juz": 21,
+            "hizb": 41,
+            "start": {
+                "surah": 31,
+                "ayah": 22
+            },
+            "end": {
+                "surah": 32,
+                "ayah": 10
+            },
+            "start_page": 413,
+            "end_page": 415,
+            "verse_count": 23,
+            "segments_total": 26
+        },
+        {
+            "id": 166,
+            "juz": 21,
+            "hizb": 42,
+            "start": {
+                "surah": 32,
+                "ayah": 11
+            },
+            "end": {
+                "surah": 32,
+                "ayah": 30
+            },
+            "start_page": 415,
+            "end_page": 417,
+            "verse_count": 20,
+            "segments_total": 20
+        },
+        {
+            "id": 167,
+            "juz": 21,
+            "hizb": 42,
+            "start": {
+                "surah": 33,
+                "ayah": 1
+            },
+            "end": {
+                "surah": 33,
+                "ayah": 17
+            },
+            "start_page": 418,
+            "end_page": 420,
+            "verse_count": 17,
+            "segments_total": 19
+        },
+        {
+            "id": 168,
+            "juz": 21,
+            "hizb": 42,
+            "start": {
+                "surah": 33,
+                "ayah": 18
+            },
+            "end": {
+                "surah": 33,
+                "ayah": 30
+            },
+            "start_page": 420,
+            "end_page": 421,
+            "verse_count": 13,
+            "segments_total": 13
+        },
+        {
+            "id": 169,
+            "juz": 22,
+            "hizb": 43,
+            "start": {
+                "surah": 33,
+                "ayah": 31
+            },
+            "end": {
+                "surah": 33,
+                "ayah": 50
+            },
+            "start_page": 422,
+            "end_page": 424,
+            "verse_count": 20,
+            "segments_total": 25
+        },
+        {
+            "id": 170,
+            "juz": 22,
+            "hizb": 43,
+            "start": {
+                "surah": 33,
+                "ayah": 51
+            },
+            "end": {
+                "surah": 33,
+                "ayah": 59
+            },
+            "start_page": 425,
+            "end_page": 426,
+            "verse_count": 9,
+            "segments_total": 12
+        },
+        {
+            "id": 171,
+            "juz": 22,
+            "hizb": 43,
+            "start": {
+                "surah": 33,
+                "ayah": 60
+            },
+            "end": {
+                "surah": 34,
+                "ayah": 9
+            },
+            "start_page": 426,
+            "end_page": 429,
+            "verse_count": 23,
+            "segments_total": 26
+        },
+        {
+            "id": 172,
+            "juz": 22,
+            "hizb": 43,
+            "start": {
+                "surah": 34,
+                "ayah": 10
+            },
+            "end": {
+                "surah": 34,
+                "ayah": 23
+            },
+            "start_page": 429,
+            "end_page": 431,
+            "verse_count": 14,
+            "segments_total": 15
+        },
+        {
+            "id": 173,
+            "juz": 22,
+            "hizb": 43,
+            "start": {
+                "surah": 34,
+                "ayah": 24
+            },
+            "end": {
+                "surah": 34,
+                "ayah": 45
+            },
+            "start_page": 431,
+            "end_page": 433,
+            "verse_count": 22,
+            "segments_total": 23
+        },
+        {
+            "id": 174,
+            "juz": 22,
+            "hizb": 44,
+            "start": {
+                "surah": 34,
+                "ayah": 46
+            },
+            "end": {
+                "surah": 35,
+                "ayah": 14
+            },
+            "start_page": 433,
+            "end_page": 436,
+            "verse_count": 23,
+            "segments_total": 23
+        },
+        {
+            "id": 175,
+            "juz": 22,
+            "hizb": 44,
+            "start": {
+                "surah": 35,
+                "ayah": 15
+            },
+            "end": {
+                "surah": 35,
+                "ayah": 40
+            },
+            "start_page": 436,
+            "end_page": 439,
+            "verse_count": 26,
+            "segments_total": 30
+        },
+        {
+            "id": 176,
+            "juz": 22,
+            "hizb": 44,
+            "start": {
+                "surah": 35,
+                "ayah": 41
+            },
+            "end": {
+                "surah": 36,
+                "ayah": 27
+            },
+            "start_page": 439,
+            "end_page": 441,
+            "verse_count": 32,
+            "segments_total": 32
+        },
+        {
+            "id": 177,
+            "juz": 23,
+            "hizb": 45,
+            "start": {
+                "surah": 36,
+                "ayah": 28
+            },
+            "end": {
+                "surah": 36,
+                "ayah": 59
+            },
+            "start_page": 442,
+            "end_page": 444,
+            "verse_count": 32,
+            "segments_total": 34
+        },
+        {
+            "id": 178,
+            "juz": 23,
+            "hizb": 45,
+            "start": {
+                "surah": 36,
+                "ayah": 60
+            },
+            "end": {
+                "surah": 37,
+                "ayah": 21
+            },
+            "start_page": 444,
+            "end_page": 446,
+            "verse_count": 45,
+            "segments_total": 46
+        },
+        {
+            "id": 179,
+            "juz": 23,
+            "hizb": 45,
+            "start": {
+                "surah": 37,
+                "ayah": 22
+            },
+            "end": {
+                "surah": 37,
+                "ayah": 82
+            },
+            "start_page": 446,
+            "end_page": 449,
+            "verse_count": 61,
+            "segments_total": 61
+        },
+        {
+            "id": 180,
+            "juz": 23,
+            "hizb": 45,
+            "start": {
+                "surah": 37,
+                "ayah": 83
+            },
+            "end": {
+                "surah": 37,
+                "ayah": 144
+            },
+            "start_page": 449,
+            "end_page": 451,
+            "verse_count": 62,
+            "segments_total": 63
+        },
+        {
+            "id": 181,
+            "juz": 23,
+            "hizb": 45,
+            "start": {
+                "surah": 37,
+                "ayah": 145
+            },
+            "end": {
+                "surah": 38,
+                "ayah": 20
+            },
+            "start_page": 451,
+            "end_page": 454,
+            "verse_count": 58,
+            "segments_total": 58
+        },
+        {
+            "id": 182,
+            "juz": 23,
+            "hizb": 46,
+            "start": {
+                "surah": 38,
+                "ayah": 21
+            },
+            "end": {
+                "surah": 38,
+                "ayah": 51
+            },
+            "start_page": 454,
+            "end_page": 456,
+            "verse_count": 31,
+            "segments_total": 33
+        },
+        {
+            "id": 183,
+            "juz": 23,
+            "hizb": 46,
+            "start": {
+                "surah": 38,
+                "ayah": 52
+            },
+            "end": {
+                "surah": 39,
+                "ayah": 7
+            },
+            "start_page": 456,
+            "end_page": 459,
+            "verse_count": 44,
+            "segments_total": 48
+        },
+        {
+            "id": 184,
+            "juz": 23,
+            "hizb": 46,
+            "start": {
+                "surah": 39,
+                "ayah": 8
+            },
+            "end": {
+                "surah": 39,
+                "ayah": 31
+            },
+            "start_page": 459,
+            "end_page": 461,
+            "verse_count": 24,
+            "segments_total": 30
+        },
+        {
+            "id": 185,
+            "juz": 24,
+            "hizb": 47,
+            "start": {
+                "surah": 39,
+                "ayah": 32
+            },
+            "end": {
+                "surah": 39,
+                "ayah": 52
+            },
+            "start_page": 462,
+            "end_page": 464,
+            "verse_count": 21,
+            "segments_total": 22
+        },
+        {
+            "id": 186,
+            "juz": 24,
+            "hizb": 47,
+            "start": {
+                "surah": 39,
+                "ayah": 53
+            },
+            "end": {
+                "surah": 39,
+                "ayah": 75
+            },
+            "start_page": 464,
+            "end_page": 467,
+            "verse_count": 23,
+            "segments_total": 24
+        },
+        {
+            "id": 187,
+            "juz": 24,
+            "hizb": 47,
+            "start": {
+                "surah": 40,
+                "ayah": 1
+            },
+            "end": {
+                "surah": 40,
+                "ayah": 20
+            },
+            "start_page": 467,
+            "end_page": 469,
+            "verse_count": 20,
+            "segments_total": 21
+        },
+        {
+            "id": 188,
+            "juz": 24,
+            "hizb": 47,
+            "start": {
+                "surah": 40,
+                "ayah": 21
+            },
+            "end": {
+                "surah": 40,
+                "ayah": 40
+            },
+            "start_page": 469,
+            "end_page": 471,
+            "verse_count": 20,
+            "segments_total": 21
+        },
+        {
+            "id": 189,
+            "juz": 24,
+            "hizb": 48,
+            "start": {
+                "surah": 40,
+                "ayah": 41
+            },
+            "end": {
+                "surah": 40,
+                "ayah": 65
+            },
+            "start_page": 472,
+            "end_page": 474,
+            "verse_count": 25,
+            "segments_total": 27
+        },
+        {
+            "id": 190,
+            "juz": 24,
+            "hizb": 48,
+            "start": {
+                "surah": 40,
+                "ayah": 66
+            },
+            "end": {
+                "surah": 41,
+                "ayah": 8
+            },
+            "start_page": 474,
+            "end_page": 477,
+            "verse_count": 28,
+            "segments_total": 30
+        },
+        {
+            "id": 191,
+            "juz": 24,
+            "hizb": 48,
+            "start": {
+                "surah": 41,
+                "ayah": 9
+            },
+            "end": {
+                "surah": 41,
+                "ayah": 24
+            },
+            "start_page": 477,
+            "end_page": 479,
+            "verse_count": 16,
+            "segments_total": 16
+        },
+        {
+            "id": 192,
+            "juz": 24,
+            "hizb": 48,
+            "start": {
+                "surah": 41,
+                "ayah": 25
+            },
+            "end": {
+                "surah": 41,
+                "ayah": 46
+            },
+            "start_page": 479,
+            "end_page": 481,
+            "verse_count": 22,
+            "segments_total": 26
+        },
+        {
+            "id": 193,
+            "juz": 25,
+            "hizb": 49,
+            "start": {
+                "surah": 41,
+                "ayah": 47
+            },
+            "end": {
+                "surah": 42,
+                "ayah": 12
+            },
+            "start_page": 482,
+            "end_page": 484,
+            "verse_count": 20,
+            "segments_total": 23
+        },
+        {
+            "id": 194,
+            "juz": 25,
+            "hizb": 49,
+            "start": {
+                "surah": 42,
+                "ayah": 13
+            },
+            "end": {
+                "surah": 42,
+                "ayah": 26
+            },
+            "start_page": 484,
+            "end_page": 486,
+            "verse_count": 14,
+            "segments_total": 21
+        },
+        {
+            "id": 195,
+            "juz": 25,
+            "hizb": 49,
+            "start": {
+                "surah": 42,
+                "ayah": 27
+            },
+            "end": {
+                "surah": 42,
+                "ayah": 50
+            },
+            "start_page": 486,
+            "end_page": 488,
+            "verse_count": 24,
+            "segments_total": 29
+        },
+        {
+            "id": 196,
+            "juz": 25,
+            "hizb": 49,
+            "start": {
+                "surah": 42,
+                "ayah": 51
+            },
+            "end": {
+                "surah": 43,
+                "ayah": 23
+            },
+            "start_page": 488,
+            "end_page": 491,
+            "verse_count": 26,
+            "segments_total": 28
+        },
+        {
+            "id": 197,
+            "juz": 25,
+            "hizb": 49,
+            "start": {
+                "surah": 43,
+                "ayah": 24
+            },
+            "end": {
+                "surah": 43,
+                "ayah": 56
+            },
+            "start_page": 491,
+            "end_page": 493,
+            "verse_count": 33,
+            "segments_total": 34
+        },
+        {
+            "id": 198,
+            "juz": 25,
+            "hizb": 50,
+            "start": {
+                "surah": 43,
+                "ayah": 57
+            },
+            "end": {
+                "surah": 44,
+                "ayah": 16
+            },
+            "start_page": 493,
+            "end_page": 496,
+            "verse_count": 49,
+            "segments_total": 49
+        },
+        {
+            "id": 199,
+            "juz": 25,
+            "hizb": 50,
+            "start": {
+                "surah": 44,
+                "ayah": 17
+            },
+            "end": {
+                "surah": 45,
+                "ayah": 11
+            },
+            "start_page": 496,
+            "end_page": 499,
+            "verse_count": 54,
+            "segments_total": 54
+        },
+        {
+            "id": 200,
+            "juz": 25,
+            "hizb": 50,
+            "start": {
+                "surah": 45,
+                "ayah": 12
+            },
+            "end": {
+                "surah": 45,
+                "ayah": 37
+            },
+            "start_page": 499,
+            "end_page": 502,
+            "verse_count": 26,
+            "segments_total": 26
+        },
+        {
+            "id": 201,
+            "juz": 25,
+            "hizb": 50,
+            "start": {
+                "surah": 46,
+                "ayah": 1
+            },
+            "end": {
+                "surah": 46,
+                "ayah": 20
+            },
+            "start_page": 502,
+            "end_page": 504,
+            "verse_count": 20,
+            "segments_total": 20
+        },
+        {
+            "id": 202,
+            "juz": 26,
+            "hizb": 51,
+            "start": {
+                "surah": 46,
+                "ayah": 21
+            },
+            "end": {
+                "surah": 47,
+                "ayah": 9
+            },
+            "start_page": 505,
+            "end_page": 507,
+            "verse_count": 24,
+            "segments_total": 25
+        },
+        {
+            "id": 203,
+            "juz": 26,
+            "hizb": 51,
+            "start": {
+                "surah": 47,
+                "ayah": 10
+            },
+            "end": {
+                "surah": 47,
+                "ayah": 32
+            },
+            "start_page": 507,
+            "end_page": 510,
+            "verse_count": 23,
+            "segments_total": 24
+        },
+        {
+            "id": 204,
+            "juz": 26,
+            "hizb": 51,
+            "start": {
+                "surah": 47,
+                "ayah": 33
+            },
+            "end": {
+                "surah": 48,
+                "ayah": 17
+            },
+            "start_page": 510,
+            "end_page": 513,
+            "verse_count": 23,
+            "segments_total": 25
+        },
+        {
+            "id": 205,
+            "juz": 26,
+            "hizb": 51,
+            "start": {
+                "surah": 48,
+                "ayah": 18
+            },
+            "end": {
+                "surah": 48,
+                "ayah": 29
+            },
+            "start_page": 513,
+            "end_page": 515,
+            "verse_count": 12,
+            "segments_total": 14
+        },
+        {
+            "id": 206,
+            "juz": 26,
+            "hizb": 52,
+            "start": {
+                "surah": 49,
+                "ayah": 1
+            },
+            "end": {
+                "surah": 49,
+                "ayah": 13
+            },
+            "start_page": 515,
+            "end_page": 517,
+            "verse_count": 13,
+            "segments_total": 13
+        },
+        {
+            "id": 207,
+            "juz": 26,
+            "hizb": 52,
+            "start": {
+                "surah": 49,
+                "ayah": 14
+            },
+            "end": {
+                "surah": 50,
+                "ayah": 26
+            },
+            "start_page": 517,
+            "end_page": 519,
+            "verse_count": 31,
+            "segments_total": 31
+        },
+        {
+            "id": 208,
+            "juz": 26,
+            "hizb": 52,
+            "start": {
+                "surah": 50,
+                "ayah": 27
+            },
+            "end": {
+                "surah": 51,
+                "ayah": 30
+            },
+            "start_page": 519,
+            "end_page": 521,
+            "verse_count": 49,
+            "segments_total": 49
+        },
+        {
+            "id": 209,
+            "juz": 27,
+            "hizb": 53,
+            "start": {
+                "surah": 51,
+                "ayah": 31
+            },
+            "end": {
+                "surah": 52,
+                "ayah": 23
+            },
+            "start_page": 522,
+            "end_page": 524,
+            "verse_count": 53,
+            "segments_total": 53
+        },
+        {
+            "id": 210,
+            "juz": 27,
+            "hizb": 53,
+            "start": {
+                "surah": 52,
+                "ayah": 24
+            },
+            "end": {
+                "surah": 53,
+                "ayah": 25
+            },
+            "start_page": 524,
+            "end_page": 526,
+            "verse_count": 51,
+            "segments_total": 51
+        },
+        {
+            "id": 211,
+            "juz": 27,
+            "hizb": 53,
+            "start": {
+                "surah": 53,
+                "ayah": 26
+            },
+            "end": {
+                "surah": 54,
+                "ayah": 8
+            },
+            "start_page": 526,
+            "end_page": 529,
+            "verse_count": 45,
+            "segments_total": 46
+        },
+        {
+            "id": 212,
+            "juz": 27,
+            "hizb": 53,
+            "start": {
+                "surah": 54,
+                "ayah": 9
+            },
+            "end": {
+                "surah": 54,
+                "ayah": 55
+            },
+            "start_page": 529,
+            "end_page": 531,
+            "verse_count": 47,
+            "segments_total": 47
+        },
+        {
+            "id": 213,
+            "juz": 27,
+            "hizb": 53,
+            "start": {
+                "surah": 55,
+                "ayah": 1
+            },
+            "end": {
+                "surah": 55,
+                "ayah": 78
+            },
+            "start_page": 531,
+            "end_page": 534,
+            "verse_count": 78,
+            "segments_total": 78
+        },
+        {
+            "id": 214,
+            "juz": 27,
+            "hizb": 54,
+            "start": {
+                "surah": 56,
+                "ayah": 1
+            },
+            "end": {
+                "surah": 56,
+                "ayah": 74
+            },
+            "start_page": 534,
+            "end_page": 536,
+            "verse_count": 74,
+            "segments_total": 74
+        },
+        {
+            "id": 215,
+            "juz": 27,
+            "hizb": 54,
+            "start": {
+                "surah": 56,
+                "ayah": 75
+            },
+            "end": {
+                "surah": 57,
+                "ayah": 15
+            },
+            "start_page": 536,
+            "end_page": 539,
+            "verse_count": 37,
+            "segments_total": 37
+        },
+        {
+            "id": 216,
+            "juz": 27,
+            "hizb": 54,
+            "start": {
+                "surah": 57,
+                "ayah": 16
+            },
+            "end": {
+                "surah": 57,
+                "ayah": 29
+            },
+            "start_page": 539,
+            "end_page": 541,
+            "verse_count": 14,
+            "segments_total": 16
+        },
+        {
+            "id": 217,
+            "juz": 28,
+            "hizb": 55,
+            "start": {
+                "surah": 58,
+                "ayah": 1
+            },
+            "end": {
+                "surah": 58,
+                "ayah": 13
+            },
+            "start_page": 542,
+            "end_page": 544,
+            "verse_count": 13,
+            "segments_total": 14
+        },
+        {
+            "id": 218,
+            "juz": 28,
+            "hizb": 55,
+            "start": {
+                "surah": 58,
+                "ayah": 14
+            },
+            "end": {
+                "surah": 59,
+                "ayah": 10
+            },
+            "start_page": 544,
+            "end_page": 547,
+            "verse_count": 19,
+            "segments_total": 19
+        },
+        {
+            "id": 219,
+            "juz": 28,
+            "hizb": 55,
+            "start": {
+                "surah": 59,
+                "ayah": 11
+            },
+            "end": {
+                "surah": 60,
+                "ayah": 6
+            },
+            "start_page": 547,
+            "end_page": 550,
+            "verse_count": 20,
+            "segments_total": 20
+        },
+        {
+            "id": 220,
+            "juz": 28,
+            "hizb": 55,
+            "start": {
+                "surah": 60,
+                "ayah": 7
+            },
+            "end": {
+                "surah": 61,
+                "ayah": 14
+            },
+            "start_page": 550,
+            "end_page": 552,
+            "verse_count": 21,
+            "segments_total": 22
+        },
+        {
+            "id": 221,
+            "juz": 28,
+            "hizb": 56,
+            "start": {
+                "surah": 62,
+                "ayah": 1
+            },
+            "end": {
+                "surah": 63,
+                "ayah": 3
+            },
+            "start_page": 553,
+            "end_page": 554,
+            "verse_count": 14,
+            "segments_total": 15
+        },
+        {
+            "id": 222,
+            "juz": 28,
+            "hizb": 56,
+            "start": {
+                "surah": 63,
+                "ayah": 4
+            },
+            "end": {
+                "surah": 64,
+                "ayah": 18
+            },
+            "start_page": 554,
+            "end_page": 557,
+            "verse_count": 26,
+            "segments_total": 30
+        },
+        {
+            "id": 223,
+            "juz": 28,
+            "hizb": 56,
+            "start": {
+                "surah": 65,
+                "ayah": 1
+            },
+            "end": {
+                "surah": 65,
+                "ayah": 12
+            },
+            "start_page": 558,
+            "end_page": 559,
+            "verse_count": 12,
+            "segments_total": 12
+        },
+        {
+            "id": 224,
+            "juz": 28,
+            "hizb": 56,
+            "start": {
+                "surah": 66,
+                "ayah": 1
+            },
+            "end": {
+                "surah": 66,
+                "ayah": 12
+            },
+            "start_page": 560,
+            "end_page": 561,
+            "verse_count": 12,
+            "segments_total": 12
+        },
+        {
+            "id": 225,
+            "juz": 29,
+            "hizb": 57,
+            "start": {
+                "surah": 67,
+                "ayah": 1
+            },
+            "end": {
+                "surah": 67,
+                "ayah": 30
+            },
+            "start_page": 562,
+            "end_page": 564,
+            "verse_count": 30,
+            "segments_total": 30
+        },
+        {
+            "id": 226,
+            "juz": 29,
+            "hizb": 57,
+            "start": {
+                "surah": 68,
+                "ayah": 1
+            },
+            "end": {
+                "surah": 68,
+                "ayah": 52
+            },
+            "start_page": 564,
+            "end_page": 566,
+            "verse_count": 52,
+            "segments_total": 52
+        },
+        {
+            "id": 227,
+            "juz": 29,
+            "hizb": 57,
+            "start": {
+                "surah": 69,
+                "ayah": 1
+            },
+            "end": {
+                "surah": 70,
+                "ayah": 18
+            },
+            "start_page": 566,
+            "end_page": 569,
+            "verse_count": 70,
+            "segments_total": 70
+        },
+        {
+            "id": 228,
+            "juz": 29,
+            "hizb": 57,
+            "start": {
+                "surah": 70,
+                "ayah": 19
+            },
+            "end": {
+                "surah": 71,
+                "ayah": 28
+            },
+            "start_page": 569,
+            "end_page": 571,
+            "verse_count": 54,
+            "segments_total": 54
+        },
+        {
+            "id": 229,
+            "juz": 29,
+            "hizb": 58,
+            "start": {
+                "surah": 72,
+                "ayah": 1
+            },
+            "end": {
+                "surah": 73,
+                "ayah": 19
+            },
+            "start_page": 572,
+            "end_page": 574,
+            "verse_count": 47,
+            "segments_total": 47
+        },
+        {
+            "id": 230,
+            "juz": 29,
+            "hizb": 58,
+            "start": {
+                "surah": 73,
+                "ayah": 20
+            },
+            "end": {
+                "surah": 74,
+                "ayah": 56
+            },
+            "start_page": 575,
+            "end_page": 577,
+            "verse_count": 57,
+            "segments_total": 57
+        },
+        {
+            "id": 231,
+            "juz": 29,
+            "hizb": 58,
+            "start": {
+                "surah": 75,
+                "ayah": 1
+            },
+            "end": {
+                "surah": 76,
+                "ayah": 18
+            },
+            "start_page": 577,
+            "end_page": 579,
+            "verse_count": 58,
+            "segments_total": 59
+        },
+        {
+            "id": 232,
+            "juz": 29,
+            "hizb": 58,
+            "start": {
+                "surah": 76,
+                "ayah": 19
+            },
+            "end": {
+                "surah": 77,
+                "ayah": 50
+            },
+            "start_page": 579,
+            "end_page": 581,
+            "verse_count": 63,
+            "segments_total": 63
+        },
+        {
+            "id": 233,
+            "juz": 30,
+            "hizb": 59,
+            "start": {
+                "surah": 78,
+                "ayah": 1
+            },
+            "end": {
+                "surah": 79,
+                "ayah": 46
+            },
+            "start_page": 582,
+            "end_page": 584,
+            "verse_count": 86,
+            "segments_total": 86
+        },
+        {
+            "id": 234,
+            "juz": 30,
+            "hizb": 59,
+            "start": {
+                "surah": 80,
+                "ayah": 1
+            },
+            "end": {
+                "surah": 81,
+                "ayah": 29
+            },
+            "start_page": 585,
+            "end_page": 586,
+            "verse_count": 71,
+            "segments_total": 71
+        },
+        {
+            "id": 235,
+            "juz": 30,
+            "hizb": 59,
+            "start": {
+                "surah": 82,
+                "ayah": 1
+            },
+            "end": {
+                "surah": 83,
+                "ayah": 36
+            },
+            "start_page": 587,
+            "end_page": 589,
+            "verse_count": 55,
+            "segments_total": 56
+        },
+        {
+            "id": 236,
+            "juz": 30,
+            "hizb": 59,
+            "start": {
+                "surah": 84,
+                "ayah": 1
+            },
+            "end": {
+                "surah": 86,
+                "ayah": 17
+            },
+            "start_page": 589,
+            "end_page": 591,
+            "verse_count": 64,
+            "segments_total": 64
+        },
+        {
+            "id": 237,
+            "juz": 30,
+            "hizb": 59,
+            "start": {
+                "surah": 87,
+                "ayah": 1
+            },
+            "end": {
+                "surah": 89,
+                "ayah": 30
+            },
+            "start_page": 591,
+            "end_page": 594,
+            "verse_count": 75,
+            "segments_total": 75
+        },
+        {
+            "id": 238,
+            "juz": 30,
+            "hizb": 60,
+            "start": {
+                "surah": 90,
+                "ayah": 1
+            },
+            "end": {
+                "surah": 93,
+                "ayah": 11
+            },
+            "start_page": 594,
+            "end_page": 596,
+            "verse_count": 67,
+            "segments_total": 67
+        },
+        {
+            "id": 239,
+            "juz": 30,
+            "hizb": 60,
+            "start": {
+                "surah": 94,
+                "ayah": 1
+            },
+            "end": {
+                "surah": 100,
+                "ayah": 8
+            },
+            "start_page": 596,
+            "end_page": 599,
+            "verse_count": 64,
+            "segments_total": 64
+        },
+        {
+            "id": 240,
+            "juz": 30,
+            "hizb": 60,
+            "start": {
+                "surah": 100,
+                "ayah": 9
+            },
+            "end": {
+                "surah": 114,
+                "ayah": 6
+            },
+            "start_page": 599,
+            "end_page": 604,
+            "verse_count": 82,
+            "segments_total": 82
+        }
+    ]
+}

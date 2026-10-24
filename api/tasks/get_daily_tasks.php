@@ -8,12 +8,14 @@ declare(strict_types=1);
  */
 
 require __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/_rub.php';
 
 const TASK_TITLES = [
     'HIFZ_JADID' => ['ar' => 'الحفظ الجديد',     'en' => 'New Memorization'],
     'TIKRAR_AMS' => ['ar' => 'تكرار حفظ الأمس',   'en' => "Yesterday's Repetition"],
     'RABT'       => ['ar' => 'الربط',            'en' => 'Rabt (Linking)'],
     'MURAJAAH'   => ['ar' => 'المراجعة',         'en' => "Muraja'ah (Review)"],
+    'RUB_TAMKIN' => ['ar' => 'تثبيت الربع',       'en' => "Rub' Consolidation"],
     'MISTAKES'   => ['ar' => 'المعالجة',         'en' => 'Remediation'],
 ];
 
@@ -30,10 +32,36 @@ try {
     $pdo->exec("ALTER TABLE `daily_task_logs` ADD COLUMN `completed_pages` TEXT NULL");
 } catch (Throwable $t) {}
 try {
-    $pdo->exec("ALTER TABLE `daily_task_logs` MODIFY COLUMN `task_type` ENUM('HIFZ_JADID', 'TIKRAR_AMS', 'RABT', 'MURAJAAH') NOT NULL");
-} catch (Throwable $t) {}
+    // Only rebuild the enum when the new value is actually missing (a MODIFY on
+    // every request would rebuild the table needlessly). If information_schema
+    // is unavailable, fall back to running the ALTER.
+    $needsEnumAlter = true;
+    $taskTypeCol = $pdo->query(
+        "SELECT `COLUMN_TYPE` FROM `information_schema`.`COLUMNS`
+         WHERE `TABLE_SCHEMA` = DATABASE()
+           AND `TABLE_NAME` = 'daily_task_logs'
+           AND `COLUMN_NAME` = 'task_type'
+         LIMIT 1"
+    )->fetchColumn();
+    if ($taskTypeCol !== false) {
+        $needsEnumAlter = strpos((string) $taskTypeCol, "'RUB_TAMKIN'") === false;
+    }
+    if ($needsEnumAlter) {
+        $pdo->exec("ALTER TABLE `daily_task_logs` MODIFY COLUMN `task_type` ENUM('HIFZ_JADID', 'TIKRAR_AMS', 'RABT', 'MURAJAAH', 'RUB_TAMKIN', 'MISTAKES') NOT NULL");
+    }
+} catch (Throwable $t) {
+    try {
+        $pdo->exec("ALTER TABLE `daily_task_logs` MODIFY COLUMN `task_type` ENUM('HIFZ_JADID', 'TIKRAR_AMS', 'RABT', 'MURAJAAH', 'RUB_TAMKIN', 'MISTAKES') NOT NULL");
+    } catch (Throwable $t2) {}
+}
 try {
     $pdo->exec("ALTER TABLE `daily_task_logs` ADD COLUMN `repetition_count` INT NOT NULL DEFAULT 0");
+} catch (Throwable $t) {}
+try {
+    $pdo->exec("ALTER TABLE `daily_task_logs` ADD COLUMN `rub_id` INT NULL");
+} catch (Throwable $t) {}
+try {
+    $pdo->exec("ALTER TABLE `daily_task_logs` ADD COLUMN `completed_stations` TEXT NULL");
 } catch (Throwable $t) {}
 try {
     $pdo->exec("ALTER TABLE `users` ADD COLUMN `murajaah_days` INT NOT NULL DEFAULT 6");
@@ -47,6 +75,7 @@ try {
 try {
     $pdo->exec("UPDATE `users` SET `last_tikrar_page` = `current_hifz_page` WHERE `last_tikrar_page` = 0 AND `current_hifz_page` > 0");
 } catch (Throwable $t) {}
+rh_ensure_history_table($pdo);
 
 /**
  * Find an existing log row for today's task:
@@ -54,7 +83,7 @@ try {
  */
 function findExistingTask(PDO $pdo, int $userId, string $type, string $today): ?array
 {
-    $base = 'SELECT `id`, `task_date`, `task_type`, `start_page`, `end_page`, `is_completed`, `completed_pages`, COALESCE(`repetition_count`, 0) AS `repetition_count`
+    $base = 'SELECT `id`, `task_date`, `task_type`, `start_page`, `end_page`, `is_completed`, `completed_pages`, COALESCE(`repetition_count`, 0) AS `repetition_count`, `rub_id`, `completed_stations`
              FROM `daily_task_logs`
              WHERE `user_id` = :u AND `task_type` = :t';
 
@@ -141,6 +170,33 @@ function insertTask(PDO $pdo, int $userId, string $type, array $bounds, string $
     ];
 }
 
+function insertRubTask(PDO $pdo, int $userId, array $rub, string $date): array
+{
+    $stmt = $pdo->prepare(
+        'INSERT INTO `daily_task_logs`
+            (`user_id`, `task_date`, `task_type`, `start_page`, `end_page`, `rub_id`, `is_completed`)
+         VALUES (:u, :d, \'RUB_TAMKIN\', :s, :e, :rub, 0)'
+    );
+    $stmt->execute([
+        ':u'   => $userId,
+        ':d'   => $date,
+        ':s'   => (int) $rub['start_page'],
+        ':e'   => (int) $rub['end_page'],
+        ':rub' => (int) $rub['id'],
+    ]);
+
+    return [
+        'id'                 => (int) $pdo->lastInsertId(),
+        'task_date'          => $date,
+        'task_type'          => 'RUB_TAMKIN',
+        'start_page'         => (int) $rub['start_page'],
+        'end_page'           => (int) $rub['end_page'],
+        'rub_id'             => (int) $rub['id'],
+        'completed_stations' => null,
+        'is_completed'       => 0,
+    ];
+}
+
 function formatTask(array $row, string $today): array
 {
     $type = (string) $row['task_type'];
@@ -165,6 +221,52 @@ function formatTask(array $row, string $today): array
 
     $totalPages = ($start !== null && $end !== null && $end >= $start) ? ($end - $start + 1) : 0;
     $completedCount = count($completedPages);
+
+    if ($type === 'RUB_TAMKIN') {
+        $rubId = isset($row['rub_id']) ? (int) $row['rub_id'] : 0;
+        $rub = $rubId > 0 ? rh_rub_by_id($rubId) : null;
+
+        $doneStations = [];
+        if (!empty($row['completed_stations'])) {
+            $decoded = json_decode((string) $row['completed_stations'], true);
+            if (is_array($decoded)) {
+                foreach ($decoded as $key) {
+                    if (is_string($key) && $key !== '') {
+                        $doneStations[] = $key;
+                    }
+                }
+            }
+        }
+
+        $segmentsTotal = $rub !== null ? (int) $rub['segments_total'] : 0;
+        $doneCount = $segmentsTotal > 0 ? min(count($doneStations), $segmentsTotal) : 0;
+        $percent = $segmentsTotal > 0 ? (int) round(($doneCount / $segmentsTotal) * 100) : 0;
+
+        return [
+            'id'                 => isset($row['id']) ? (int) $row['id'] : null,
+            'task_type'          => $type,
+            'title_ar'           => TASK_TITLES[$type]['ar'] ?? 'تثبيت الربع',
+            'title_en'           => TASK_TITLES[$type]['en'] ?? "Rub' Consolidation",
+            'start_page'         => $start,
+            'end_page'           => $end,
+            'task_date'          => (string) $row['task_date'],
+            'is_completed'       => $isCompleted,
+            'completed_pages'    => [],
+            'completed_count'    => $isCompleted ? $segmentsTotal : $doneCount,
+            'total_pages'        => $segmentsTotal,
+            'progress_percent'   => $isCompleted ? 100 : min(100, $percent),
+            'carried_over'       => (string) $row['task_date'] !== $today,
+            'rub_id'             => $rubId,
+            'rub_label_ar'       => $rubId > 0 ? rh_rub_label($rubId) : '',
+            'juz'                => $rub['juz'] ?? null,
+            'hizb'               => $rub['hizb'] ?? null,
+            'start_ref'          => $rub !== null ? $rub['start']['surah'] . ':' . $rub['start']['ayah'] : null,
+            'end_ref'            => $rub !== null ? $rub['end']['surah'] . ':' . $rub['end']['ayah'] : null,
+            'verse_count'        => $rub['verse_count'] ?? 0,
+            'segments_total'     => $segmentsTotal,
+            'completed_stations' => $doneStations,
+        ];
+    }
 
     if ($type === 'TIKRAR_AMS') {
         $targetReps = 10;
@@ -333,6 +435,10 @@ try {
 
     $rabtWindow  = 30 + $rabtExtra;
 
+    // Rub' consolidation pool frontier: pages that graduated Tikrar Ams.
+    // COMPLETE accounts (full Qur'an) use all 240 rub's.
+    $rubFrontier = ($utype === 'COMPLETE') ? 604 : $lastTikrar;
+
     // Active mistakes -> Task 5 (المعالجة), dynamic only (never persisted)
     $stmt = $pdo->prepare("SELECT COUNT(*) FROM `mistakes` WHERE `user_id` = :id AND `status` = 'ACTIVE'");
     $stmt->execute([':id' => $userId]);
@@ -428,6 +534,23 @@ try {
         }
 
         $tasks[] = formatTask($row, $today);
+    }
+
+    // Task 4b - Rub' consolidation (RUB_TAMKIN): one random rub' per day.
+    // Rollover behaves like the other tasks: an unfinished rub' keeps coming
+    // back until every station has been recited 3 times.
+    $rubEligible = ($utype === 'COMPLETE') || ($rubFrontier >= 1);
+    if ($rubEligible) {
+        $rubRow = findExistingTask($pdo, $userId, 'RUB_TAMKIN', $today);
+        if ($rubRow === null) {
+            $pickedRub = rh_pick_rub($pdo, $userId, $utype === 'COMPLETE' ? 604 : $rubFrontier, $utype, $today);
+            if ($pickedRub !== null) {
+                $rubRow = insertRubTask($pdo, $userId, $pickedRub, $today);
+            }
+        }
+        if ($rubRow !== null) {
+            $tasks[] = formatTask($rubRow, $today);
+        }
     }
 
     $pdo->commit();

@@ -61,6 +61,12 @@ try {
     $stmt = $pdo->prepare("DELETE FROM `daily_task_logs` WHERE `user_id` = :u");
     $stmt->execute([':u' => $userId]);
 
+    // 2b. Clear the rub' rotation history (table may not exist on old installs)
+    try {
+        $stmt = $pdo->prepare("DELETE FROM `rub_history` WHERE `user_id` = :u");
+        $stmt->execute([':u' => $userId]);
+    } catch (Throwable $t) {}
+
     // 3. Reset user table fields to default baseline (0 current page, NEW user, default 6 days / 100 pages target)
     $stmt = $pdo->prepare("
         UPDATE `users`
