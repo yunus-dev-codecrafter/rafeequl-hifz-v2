@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'rafeequl-hifz-v14';
+const CACHE_NAME = 'rafeequl-hifz-v15';
 const AUDIO_CACHE = 'rafeequl-hifz-audio-v1';
 
 const STATIC_ASSETS = [

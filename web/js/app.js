@@ -1484,6 +1484,198 @@ function renderPrayerPlan(taskType, task, activePage) {
     </section>`;
 }
 
+/* ---------------- 7c. Murajaah compact session-first layout ---------------- */
+
+function renderMurajaahHeader({ taskTitle, completedCount, totalPages, percent, isAllDone, fillClass }) {
+  const headMeta = window.I18N
+    ? I18N.t('murajaah_head_meta', { pages: totalPages })
+    : `${totalPages} صفحة · خطة الصلوات الخمس`;
+  const planBtn = window.I18N ? I18N.t('murajaah_plan_button') : 'الخطة';
+  const allPagesBtn = window.I18N ? I18N.t('murajaah_all_pages_button') : 'كل الصفحات';
+  const doneLabel = window.I18N ? I18N.t('murajaah_head_done') : '✓ مكتمل';
+  const status = isAllDone ? doneLabel : `${completedCount} / ${totalPages}`;
+
+  return `
+    <div class="murajaah-head">
+      <div class="murajaah-head-main">
+        <div class="murajaah-head-title">
+          <h2>${esc(taskTitle)}</h2>
+          <span class="murajaah-head-status ${isAllDone ? 'is-done' : ''}">${esc(status)}</span>
+        </div>
+        <div class="murajaah-head-meta">
+          <span>${esc(headMeta)}</span>
+          <strong>${percent}%</strong>
+        </div>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill ${fillClass}" style="width: ${percent}%;"></div>
+      </div>
+      <div class="murajaah-head-actions">
+        <button type="button" id="btn-open-plan" class="btn btn-ghost murajaah-head-btn" title="${esc(planBtn)}">${esc(planBtn)}</button>
+        <button type="button" id="btn-open-all-pages" class="btn btn-ghost murajaah-head-btn" title="${esc(allPagesBtn)}">${esc(allPagesBtn)}</button>
+      </div>
+    </div>`;
+}
+
+function renderSessionRail(activePage, sessions) {
+  if (!sessions || !sessions.length) return '';
+  const aria = window.I18N ? I18N.t('prayer_plan_aria') : 'تقسيم المراجعة على الصلوات الخمس';
+  const pills = sessions.map((session) => {
+    const isActive = !session.isEmpty && activePage >= session.start && activePage <= session.end;
+    const name = window.I18N ? I18N.t(session.labelKey) : session.nameAr;
+    const range = prayerSessionRangeLabel(session);
+    const count = session.isEmpty ? '—' : `${session.completed}/${session.total}`;
+    const status = session.isEmpty
+      ? (window.I18N ? I18N.t('prayer_session_empty') : 'لا توجد صفحات')
+      : session.done
+        ? (window.I18N ? I18N.t('prayer_session_done') : 'مكتملة')
+        : isActive
+          ? (window.I18N ? I18N.t('prayer_session_active') : 'الجلسة الحالية')
+          : (window.I18N ? I18N.t('stage_page_pending') : 'بانتظار التلاوة');
+    const pageTarget = session.firstUncompleted || session.start;
+    const classes = [
+      'session-pill',
+      isActive ? 'is-active' : '',
+      session.done ? 'is-done' : '',
+      session.isEmpty ? 'is-empty' : '',
+    ].filter(Boolean).join(' ');
+
+    return `
+      <button type="button" class="${classes}"
+        data-page="${pageTarget}"
+        data-session-done="${session.done ? '1' : '0'}"
+        ${session.isEmpty ? 'disabled' : ''}
+        ${isActive ? 'aria-current="step"' : ''}
+        aria-label="${esc(name + ' · ' + range + ' · ' + count + ' · ' + status)}">
+        <span class="session-pill-icon" aria-hidden="true">${session.icon}</span>
+        <span class="session-pill-name">${esc(name)}</span>
+        <span class="session-pill-count">${esc(count)}</span>
+      </button>`;
+  }).join('');
+
+  return `<div class="session-rail" id="session-rail" aria-label="${esc(aria)}">${pills}</div>`;
+}
+
+function renderMurajaahSessionPages(session) {
+  if (!session || session.isEmpty) {
+    return `
+      <div class="session-pages" id="session-pages">
+        <div class="page-chips page-chips-strip" id="task-page-chips"></div>
+      </div>`;
+  }
+
+  const prayerName = window.I18N ? I18N.t(session.labelKey) : session.nameAr;
+  const title = window.I18N
+    ? I18N.t('murajaah_session_pages', { prayer: prayerName })
+    : `صفحات جلسة ${prayerName}`;
+
+  return `
+    <div class="session-pages" id="session-pages">
+      <div class="session-pages-head">
+        <span class="session-pages-title">${esc(title)}</span>
+        <span class="session-pages-count">${session.completed} / ${session.total}</span>
+      </div>
+      <div class="page-chips page-chips-strip" id="task-page-chips"></div>
+    </div>`;
+}
+
+function renderMurajaahPlanSheet(prayerPlanHtml) {
+  if (!prayerPlanHtml) return '';
+  const closeLabel = window.I18N ? I18N.t('nav_close') : 'إغلاق';
+  const title = window.I18N ? I18N.t('prayer_plan_title') : 'خطة المراجعة بعد الصلوات';
+  return `
+    <div class="modal-overlay sheet-overlay hidden" id="murajaah-plan-sheet">
+      <div class="modal sheet" role="dialog" aria-modal="true" aria-label="${esc(title)}">
+        <div class="sheet-head sheet-head-close">
+          <button type="button" class="sheet-close" data-sheet-close="murajaah-plan-sheet" aria-label="${esc(closeLabel)}" title="${esc(closeLabel)}">✕</button>
+        </div>
+        <div class="sheet-body">${prayerPlanHtml}</div>
+      </div>
+    </div>`;
+}
+
+function renderMurajaahPagesSheet(chipsHint) {
+  const title = window.I18N ? I18N.t('murajaah_all_pages_button') : 'كل الصفحات';
+  const closeLabel = window.I18N ? I18N.t('nav_close') : 'إغلاق';
+  return `
+    <div class="modal-overlay sheet-overlay hidden" id="murajaah-all-pages-sheet">
+      <div class="modal sheet" role="dialog" aria-modal="true" aria-label="${esc(title)}">
+        <div class="sheet-head">
+          <div>
+            <h3>${esc(title)}</h3>
+            <p class="hint">${esc(chipsHint)}</p>
+          </div>
+          <button type="button" class="sheet-close" data-sheet-close="murajaah-all-pages-sheet" aria-label="${esc(closeLabel)}" title="${esc(closeLabel)}">✕</button>
+        </div>
+        <div class="page-chips" id="all-pages-grid"></div>
+      </div>
+    </div>`;
+}
+
+function openMurajaahSheet(id) {
+  const sheet = document.getElementById(id);
+  if (!sheet) return;
+  sheet.classList.remove('hidden');
+  document.body.classList.add('sheet-open');
+}
+
+function closeMurajaahSheet(id) {
+  const sheet = document.getElementById(id);
+  if (!sheet) return;
+  sheet.classList.add('hidden');
+  if (!document.querySelector('.sheet-overlay:not(.hidden)')) {
+    document.body.classList.remove('sheet-open');
+  }
+}
+
+function scrollToStage() {
+  requestAnimationFrame(() => {
+    const stage = document.getElementById('recitation-stage');
+    if (stage) stage.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+}
+
+function selectTaskPage(taskType, page, isDone, shouldScroll = true) {
+  sessionStorage.setItem('selected_page_' + taskType, page);
+  if (isDone) {
+    sessionStorage.setItem('view_completed_' + taskType, '1');
+  } else {
+    sessionStorage.removeItem('view_completed_' + taskType);
+  }
+  renderTaskPage(taskType);
+  if (shouldScroll) scrollToStage();
+}
+
+function scrollChipStripToActive(wrap) {
+  if (!wrap || !wrap.clientWidth) return;
+  const active = wrap.querySelector('.page-chip.active');
+  if (!active) return;
+  setTimeout(() => {
+    if (!wrap.isConnected || !active.isConnected) return;
+    const wrapRect = wrap.getBoundingClientRect();
+    const activeRect = active.getBoundingClientRect();
+    const target = (activeRect.left - wrapRect.left) + wrap.scrollLeft - (wrap.clientWidth - activeRect.width) / 2;
+    if (!Number.isFinite(target)) return;
+    const isRtl = getComputedStyle(wrap).direction === 'rtl';
+    wrap.scrollLeft = isRtl ? Math.min(0, target) : Math.max(0, target);
+  }, 100);
+}
+
+function scrollSessionRailToActive(rail) {
+  if (!rail || !rail.clientWidth) return;
+  const active = rail.querySelector('.session-pill.is-active');
+  if (!active) return;
+  setTimeout(() => {
+    if (!rail.isConnected || !active.isConnected) return;
+    const railRect = rail.getBoundingClientRect();
+    const activeRect = active.getBoundingClientRect();
+    const target = (activeRect.left - railRect.left) + rail.scrollLeft - (rail.clientWidth - activeRect.width) / 2;
+    if (!Number.isFinite(target)) return;
+    const isRtl = getComputedStyle(rail).direction === 'rtl';
+    rail.scrollLeft = isRtl ? Math.min(0, target) : Math.max(0, target);
+  }, 100);
+}
+
 function renderTaskPage(taskType) {
   const container = document.getElementById('task-content');
   if (!container) return;
@@ -1557,7 +1749,15 @@ function renderTaskPage(taskType) {
   const chipsHint = window.I18N ? I18N.t('chips_hint_text') : 'كل صفحة تُتلى وتُحدد تُسجل كصفحة منجزة بشكل فردي';
   const prayerPlanHtml = renderPrayerPlan(taskType, task, activePage);
 
-  const pageHtml = `
+  const isMurajaah = taskType === 'MURAJAAH';
+  const prayerSessions = isMurajaah ? buildPrayerSessions(task, completedList) : [];
+  const activeSession = isMurajaah
+    ? (prayerSessions.find((s) => !s.isEmpty && activePage >= s.start && activePage <= s.end)
+        || prayerSessions.find((s) => !s.isEmpty)
+        || null)
+    : null;
+
+  const genericHeaderHtml = `
     <div class="task-page-head">
       <div class="task-page-title-row">
         <div>
@@ -1577,46 +1777,76 @@ function renderTaskPage(taskType) {
           <div class="progress-fill ${fillClass}" style="width: ${percent}%;"></div>
         </div>
       </div>
-    </div>
+    </div>`;
 
-    ${prayerPlanHtml}
+  const headerHtml = isMurajaah
+    ? renderMurajaahHeader({ taskTitle, completedCount, totalPages, percent, isAllDone, fillClass })
+    : genericHeaderHtml;
 
-    <!-- Active Page Recitation Stage -->
-    <div class="recitation-stage" id="recitation-stage">
-      <!-- Populated by renderActivePageStage -->
-    </div>
-
-    <!-- Interactive Page Chips -->
-    <div class="chips-card">
-      <div class="chips-title">
-        <span>${chipsTitle}</span>
-        <small class="hint">${chipsHint}</small>
+  const pageHtml = isMurajaah
+    ? `
+      ${headerHtml}
+      ${renderSessionRail(activePage, prayerSessions)}
+      <div class="murajaah-plan-main">${prayerPlanHtml}</div>
+      <div class="recitation-stage is-compact" id="recitation-stage"></div>
+      ${renderMurajaahSessionPages(activeSession)}
+      ${renderMurajaahPlanSheet(prayerPlanHtml)}
+      ${renderMurajaahPagesSheet(chipsHint)}
+    `
+    : `
+      ${headerHtml}
+      ${prayerPlanHtml}
+      <div class="recitation-stage" id="recitation-stage"></div>
+      <div class="chips-card">
+        <div class="chips-title">
+          <span>${chipsTitle}</span>
+          <small class="hint">${chipsHint}</small>
+        </div>
+        <div class="page-chips" id="task-page-chips"></div>
       </div>
-      <div class="page-chips" id="task-page-chips">
-        <!-- Rendered chips -->
-      </div>
-    </div>
-  `;
+    `;
 
+  document.body.classList.remove('sheet-open');
   container.innerHTML = pageHtml;
+
   container.querySelectorAll('.prayer-card:not(:disabled)').forEach((card) => {
     card.addEventListener('click', () => {
       const page = parseInt(card.dataset.page, 10);
       if (!Number.isFinite(page)) return;
-      sessionStorage.setItem('selected_page_' + taskType, page);
-      if (card.dataset.sessionDone === '1') {
-        sessionStorage.setItem('view_completed_' + taskType, '1');
-      } else {
-        sessionStorage.removeItem('view_completed_' + taskType);
-      }
-      renderTaskPage(taskType);
-      requestAnimationFrame(() => {
-        const stage = document.getElementById('recitation-stage');
-        if (stage) stage.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      });
+      selectTaskPage(taskType, page, card.dataset.sessionDone === '1', true);
     });
   });
-  renderChipsList(taskType, task, activePage);
+
+  container.querySelectorAll('.session-pill:not(:disabled)').forEach((pill) => {
+    pill.addEventListener('click', () => {
+      const page = parseInt(pill.dataset.page, 10);
+      if (!Number.isFinite(page)) return;
+      selectTaskPage(taskType, page, pill.dataset.sessionDone === '1', true);
+    });
+  });
+
+  const openPlanBtn = document.getElementById('btn-open-plan');
+  if (openPlanBtn) {
+    openPlanBtn.addEventListener('click', () => openMurajaahSheet('murajaah-plan-sheet'));
+  }
+  const openPagesBtn = document.getElementById('btn-open-all-pages');
+  if (openPagesBtn) {
+    openPagesBtn.addEventListener('click', () => openMurajaahSheet('murajaah-all-pages-sheet'));
+  }
+  container.querySelectorAll('[data-sheet-close]').forEach((btn) => {
+    btn.addEventListener('click', () => closeMurajaahSheet(btn.dataset.sheetClose));
+  });
+  container.querySelectorAll('.sheet-overlay').forEach((overlay) => {
+    overlay.addEventListener('click', (event) => {
+      if (event.target === overlay) closeMurajaahSheet(overlay.id);
+    });
+  });
+
+  if (isMurajaah) {
+    scrollSessionRailToActive(document.getElementById('session-rail'));
+  }
+
+  renderChipsList(taskType, task, activePage, activeSession);
   renderActivePageStage(taskType, task, activePage);
   if (window.PageNotes) {
     PageNotes.prefetchRange(start, end);
@@ -1624,36 +1854,65 @@ function renderTaskPage(taskType) {
   }
 }
 
-function renderChipsList(taskType, task, activePage) {
-  const chipsWrap = document.getElementById('task-page-chips');
-  if (!chipsWrap) return;
-
+function renderChipsList(taskType, task, activePage, activeSession) {
   const completedList = task.completed_pages || [];
-  let html = '';
 
-  for (let p = task.start_page; p <= task.end_page; p++) {
+  const buildChip = (p) => {
     const isDone = completedList.includes(p);
     const isActive = p === activePage;
     const mistakeCount = sharedState.badges[p] || 0;
 
-    html += `
+    return `
       <button type="button" class="page-chip ${isActive ? 'active' : ''} ${isDone ? 'is-done' : ''}" data-page="${p}">
         ${p}
         ${mistakeCount > 0 ? `<span class="mistake-badge">${mistakeCount}</span>` : ''}
-      </button>
-    `;
+      </button>`;
+  };
+
+  const bindChips = (wrap) => {
+    if (!wrap) return;
+    wrap.querySelectorAll('.page-chip').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const pageNum = parseInt(btn.dataset.page, 10);
+        if (!Number.isFinite(pageNum)) return;
+        selectTaskPage(taskType, pageNum, btn.classList.contains('is-done'), taskType === 'MURAJAAH');
+      });
+    });
+  };
+
+  const chipsWrap = document.getElementById('task-page-chips');
+  if (chipsWrap) {
+    let html = '';
+    if (taskType === 'MURAJAAH') {
+      if (activeSession && !activeSession.isEmpty) {
+        for (let p = activeSession.start; p <= activeSession.end; p++) {
+          html += buildChip(p);
+        }
+      }
+    } else {
+      for (let p = task.start_page; p <= task.end_page; p++) {
+        html += buildChip(p);
+      }
+    }
+
+    chipsWrap.innerHTML = html;
+    bindChips(chipsWrap);
+    if (taskType === 'MURAJAAH') {
+      scrollChipStripToActive(chipsWrap);
+    }
   }
 
-  chipsWrap.innerHTML = html;
-
-  chipsWrap.querySelectorAll('.page-chip').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const pageNum = parseInt(btn.dataset.page, 10);
-      sessionStorage.setItem('selected_page_' + taskType, pageNum);
-      sessionStorage.setItem('view_completed_' + taskType, '1');
-      renderTaskPage(taskType);
-    });
-  });
+  if (taskType === 'MURAJAAH') {
+    const allWrap = document.getElementById('all-pages-grid');
+    if (allWrap) {
+      let html = '';
+      for (let p = task.start_page; p <= task.end_page; p++) {
+        html += buildChip(p);
+      }
+      allWrap.innerHTML = html;
+      bindChips(allWrap);
+    }
+  }
 }
 
 function renderTikrarStage(task) {
@@ -1930,6 +2189,66 @@ function renderActivePageStage(taskType, task, activePage) {
   const nextBtnText = window.I18N ? I18N.t('btn_next_page', { page: activePage + 1 }) : `التالية (${activePage + 1})`;
   const kbdHintText = window.I18N ? I18N.t('kbd_hints') : '<span>مفاتيح سريعة:</span> <kbd>→</kbd> <kbd>←</kbd> للتنقل | <kbd>Enter</kbd> للإتمام | <kbd>U</kbd> للتراجع | <kbd>M</kbd> لتسجيل خطأ';
 
+  const isMurajaah = taskType === 'MURAJAAH';
+  const focusLabel = window.I18N ? I18N.t('focus_mode') : 'وضع التركيز';
+  const focusExitLabel = window.I18N ? I18N.t('focus_exit') : 'إنهاء وضع التركيز';
+  const focusTitle = window.I18N ? I18N.t('focus_mode_title') : 'إخفاء العناصر الجانبية والتركيز على التلاوة';
+  const mushafLabel = window.I18N ? I18N.t('murajaah_mushaf_label') : 'تصفح المصحف';
+  const mistakeLabel = window.I18N ? I18N.t('murajaah_mistake_label') : 'سجل خطأ';
+
+  const completeActionHtml = !isPageDone
+    ? `<button type="button" id="btn-complete-page" class="btn btn-success">${completeBtnText}</button>`
+    : `<button type="button" id="btn-undo-page" class="btn btn-warning-outline" title="${undoBtnTitle}">${undoBtnText}</button>
+       <button type="button" id="btn-complete-page" class="btn btn-ghost" style="font-size:0.85rem;" title="${completeBtnText}">${completeBtnText}</button>`;
+
+  const fullActionsHtml = `
+    <div class="stage-actions is-sticky">
+      ${completeActionHtml}
+
+      <button type="button" id="btn-focus" class="btn btn-ghost btn-focus-toggle" title="${focusTitle}">
+        <span class="focus-enter-label">🎯 ${focusLabel}</span>
+        <span class="focus-exit-label">✅ ${focusExitLabel}</span>
+      </button>
+
+      <button type="button" id="btn-view-mushaf" class="btn-mushaf-view" title="${mushafBtnText}">
+        ${mushafBtnText}
+      </button>
+
+      <button type="button" id="btn-open-mistake" class="btn btn-danger">
+        ${mistakeBtnText}
+      </button>
+
+      <div class="stage-nav-group" style="margin-right:auto; display:flex; gap:0.5rem">
+        ${activePage > task.start_page ? `<button type="button" id="btn-prev-page" class="btn btn-ghost">${prevBtnText}</button>` : ''}
+        ${activePage < task.end_page ? `<button type="button" id="btn-next-page" class="btn btn-ghost">${nextBtnText}</button>` : ''}
+      </div>
+    </div>`;
+
+  const compactActionsHtml = `
+    <div class="stage-actions stage-actions-compact">
+      <div class="stage-primary-actions">
+        ${completeActionHtml}
+      </div>
+      <div class="stage-secondary-actions">
+        <button type="button" id="btn-focus" class="btn btn-ghost btn-focus-toggle stage-icon-btn" title="${focusTitle}" aria-label="${focusTitle}">
+          <span class="focus-enter-label">🎯<span class="stage-btn-label"> ${focusLabel}</span></span>
+          <span class="focus-exit-label">✅<span class="stage-btn-label"> ${focusExitLabel}</span></span>
+        </button>
+        <button type="button" id="btn-view-mushaf" class="btn-mushaf-view stage-icon-btn" title="${mushafBtnText}" aria-label="${mushafBtnText}">
+          <span class="stage-btn-icon" aria-hidden="true">📖</span><span class="stage-btn-label"> ${mushafLabel}</span>
+        </button>
+        <button type="button" id="btn-open-mistake" class="btn btn-danger stage-icon-btn" title="${mistakeBtnText}" aria-label="${mistakeBtnText}">
+          <span class="stage-btn-icon" aria-hidden="true">🔴</span><span class="stage-btn-label"> ${mistakeLabel}</span>
+        </button>
+      </div>
+      <div class="stage-nav-row">
+        ${activePage > task.start_page ? `<button type="button" id="btn-prev-page" class="btn btn-ghost stage-nav-btn" aria-label="${prevBtnText}">‹ ${activePage - 1}</button>` : ''}
+        ${activePage < task.end_page ? `<button type="button" id="btn-next-page" class="btn btn-ghost stage-nav-btn" aria-label="${nextBtnText}">${activePage + 1} ›</button>` : ''}
+      </div>
+    </div>`;
+
+  const actionsHtml = isMurajaah ? compactActionsHtml : fullActionsHtml;
+
   const verseSummary = formatPageVerseSummary(activePage, window.I18N && window.I18N.lang === 'en');
 
   stage.innerHTML = `
@@ -1950,38 +2269,7 @@ function renderActivePageStage(taskType, task, activePage) {
       </div>
     ` : ''}
 
-    <div class="stage-actions is-sticky">
-      ${!isPageDone ? `
-        <button type="button" id="btn-complete-page" class="btn btn-success">
-          ${completeBtnText}
-        </button>
-      ` : `
-        <button type="button" id="btn-undo-page" class="btn btn-warning-outline" title="${undoBtnTitle}">
-          ${undoBtnText}
-        </button>
-        <button type="button" id="btn-complete-page" class="btn btn-ghost" style="font-size:0.85rem;" title="${completeBtnText}">
-          ${completeBtnText}
-        </button>
-      `}
-
-      <button type="button" id="btn-focus" class="btn btn-ghost btn-focus-toggle" title="${window.I18N ? I18N.t('focus_mode_title') : 'إخفاء العناصر الجانبية والتركيز على التلاوة'}">
-        <span class="focus-enter-label">🎯 ${window.I18N ? I18N.t('focus_mode') : 'وضع التركيز'}</span>
-        <span class="focus-exit-label">✅ ${window.I18N ? I18N.t('focus_exit') : 'إنهاء وضع التركيز'}</span>
-      </button>
-
-      <button type="button" id="btn-view-mushaf" class="btn-mushaf-view" title="${mushafBtnText}">
-        ${mushafBtnText}
-      </button>
-
-      <button type="button" id="btn-open-mistake" class="btn btn-danger">
-        ${mistakeBtnText}
-      </button>
-
-      <div class="stage-nav-group" style="margin-right:auto; display:flex; gap:0.5rem">
-        ${activePage > task.start_page ? `<button type="button" id="btn-prev-page" class="btn btn-ghost">${prevBtnText}</button>` : ''}
-        ${activePage < task.end_page ? `<button type="button" id="btn-next-page" class="btn btn-ghost">${nextBtnText}</button>` : ''}
-      </div>
-    </div>
+    ${actionsHtml}
     <div class="kbd-hint">
       ${kbdHintText}
     </div>
@@ -2111,6 +2399,25 @@ function renderActivePageStage(taskType, task, activePage) {
   }
 
   if (window.PageNotes) PageNotes.mount(activePage, taskType);
+
+  // On phones/tablets, keep the recall board collapsed until the user opens it.
+  // An explicit saved preference always wins.
+  if (taskType === 'MURAJAAH' && window.matchMedia && window.matchMedia('(max-width: 820px)').matches) {
+    let hasPreference = true;
+    try {
+      hasPreference = localStorage.getItem('rh_page_notes_collapsed') !== null;
+    } catch (e) {
+      hasPreference = true;
+    }
+    if (!hasPreference) {
+      const pnCard = document.getElementById('pn-card');
+      const pnToggle = document.getElementById('pn-toggle');
+      if (pnCard && !pnCard.classList.contains('is-collapsed')) {
+        pnCard.classList.add('is-collapsed');
+        if (pnToggle) pnToggle.setAttribute('aria-expanded', 'false');
+      }
+    }
+  }
 }
 
 /* ---------------- 8. Mistake Logging Modal (Shared) ---------------- */
