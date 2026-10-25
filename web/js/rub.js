@@ -161,6 +161,7 @@ const RubPage = {
   applyData(data) {
     this.taskId = data.task ? data.task.id : 0;
     this.taskDate = data.task ? data.task.task_date : (data.today || '');
+    this.task = data.task || null;
     this.rub = data.rub;
     this.verses = data.verses || [];
 
@@ -287,8 +288,7 @@ const RubPage = {
       versesChip.textContent = this.rub.verse_count + ' ' + this.t('rub_verses_unit', 'آية');
     }
 
-    const carry = document.getElementById('rub-chip-carry');
-    if (carry) carry.classList.toggle('hidden', !this.isCarriedOver());
+    this.updateCarryChip();
 
     this.renderVerses();
     this.updateProgress();
@@ -299,7 +299,23 @@ const RubPage = {
     if (dock) dock.classList.remove('hidden');
   },
 
+  updateCarryChip() {
+    if (!this.rub) return;
+    const carry = document.getElementById('rub-chip-carry');
+    if (!carry) return;
+    const rolloverCount = Number(this.task && this.task.rollover_count ? this.task.rollover_count : 0);
+    const carried = rolloverCount > 0 || this.isCarriedOver();
+    carry.classList.toggle('hidden', !carried);
+    if (!carried) return;
+    carry.textContent = rolloverCount > 0
+      ? (window.I18N ? I18N.t('task_flag_carried_count', { count: rolloverCount }) : `مُرجَّلة ×${rolloverCount}`)
+      : this.t('task_flag_carried', 'محولة من أمس');
+  },
+
   isCarriedOver() {
+    if (this.task && typeof this.task.carried_over === 'boolean') {
+      return this.task.carried_over;
+    }
     const today = new Date();
     const y = today.getFullYear();
     const m = String(today.getMonth() + 1).padStart(2, '0');

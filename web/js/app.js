@@ -26,18 +26,49 @@ const API = {
       opts.body = JSON.stringify(body);
     }
 
-    let res;
-    try {
-      res = await fetch('../api/' + path, opts);
-    } catch (e) {
-      throw new Error('تعذر الاتصال بالخادم. يرجى التحقق من الاتصال.');
+    // Only safe (GET) requests are retried. A POST may have already changed
+    // data even if the gateway timed out.
+    const maxAttempts = method === 'GET' ? 2 : 1;
+    let res = null;
+    let lastNetworkError = null;
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      try {
+        res = await fetch('../api/' + path, { ...opts, signal: controller.signal });
+      } catch (e) {
+        lastNetworkError = e;
+        if (attempt + 1 < maxAttempts) {
+          await new Promise((resolve) => setTimeout(resolve, 700));
+          continue;
+        }
+        throw new Error(e && e.name === 'AbortError'
+          ? 'انتهت مهلة الاتصال بالخادم. يرجى المحاولة مرة أخرى.'
+          : 'تعذر الاتصال بالخادم. يرجى التحقق من الاتصال.');
+      } finally {
+        clearTimeout(timeoutId);
+      }
+
+      if ([502, 503, 504].includes(res.status) && attempt + 1 < maxAttempts) {
+        await new Promise((resolve) => setTimeout(resolve, 700));
+        continue;
+      }
+      break;
+    }
+
+    if (!res) {
+      throw new Error(lastNetworkError ? 'تعذر الاتصال بالخادم. يرجى التحقق من الاتصال.' : 'تعذر الاتصال بالخادم.');
     }
 
     let data = null;
-    try {
-      data = await res.json();
-    } catch (e) {
-      data = null;
+    const contentType = (res.headers.get('content-type') || '').toLowerCase();
+    if (contentType.includes('application/json')) {
+      try {
+        data = await res.json();
+      } catch (e) {
+        data = null;
+      }
     }
 
     if (res.status === 401 && redirectOn401) {
@@ -48,11 +79,22 @@ const API = {
     }
 
     if (!res.ok) {
-      const err = new Error(apiMessage(data));
+      let message = apiMessage(data);
+      if (!data && [502, 503, 504].includes(res.status)) {
+        message = 'الخادم مشغول مؤقتاً. يرجى المحاولة مرة أخرى بعد لحظات.';
+      }
+      const err = new Error(message);
       err.status = res.status;
       err.data = data;
       throw err;
     }
+
+    if (data === null) {
+      const err = new Error('تعذر قراءة استجابة الخادم. يرجى إعادة تحميل الصفحة.');
+      err.status = res.status;
+      throw err;
+    }
+
     return data;
   },
 };
@@ -346,7 +388,8 @@ function markAppInstalled() {
 }
 
 function isIOS() {
-  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  return /iPad|iPhone|iPod/.test(navigator.userAgent)
+    || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
 }
 
 function isAndroid() {
@@ -387,6 +430,15 @@ function registerServiceWorker(attempt = 0) {
 async function initPWAEngine() {
   // 1. Register Service Worker if in secure context (https:// or localhost)
   registerServiceWorker();
+
+  // Warm the 1.3 MB Qur'an text bundle after the app shell is ready. It is no
+  // longer part of the blocking install precache, but this keeps flashcards
+  // readable offline after the first visit without slowing installation.
+  setTimeout(() => {
+    if (navigator.onLine) {
+      fetch('data/quran-uthmani.json').catch(() => {});
+    }
+  }, 6000);
 
   const headerInstallBtn = document.getElementById('btn-install-app');
   const banner = document.getElementById('pwa-install-banner');
@@ -735,30 +787,42 @@ const sharedState = {
   surahs: null,
 };
 
+let sharedDataPromise = null;
+
 async function loadSharedData() {
-  const [tasksRes, historyRes] = await Promise.all([
-    API.call('tasks/get_daily_tasks.php', { redirectOn401: true }),
-    API.call('mistakes/get_history.php', { redirectOn401: true }),
-  ]);
+  if (sharedDataPromise) return sharedDataPromise;
 
-  sharedState.tasks = tasksRes.tasks || [];
-  sharedState.user = tasksRes.user || null;
-  sharedState.date = tasksRes.date || '';
+  sharedDataPromise = (async () => {
+    const [tasksRes, historyRes] = await Promise.all([
+      API.call('tasks/get_daily_tasks.php', { redirectOn401: true }),
+      API.call('mistakes/get_history.php', { redirectOn401: true }),
+    ]);
 
-  // A forced first-login password change takes priority over everything else.
-  if (sharedState.user && sharedState.user.must_change_password) {
-    location.replace('change-password.html');
-    return { tasks: [], user: sharedState.user, history: [] };
+    sharedState.tasks = tasksRes.tasks || [];
+    sharedState.user = tasksRes.user || null;
+    sharedState.date = tasksRes.date || '';
+
+    // A forced first-login password change takes priority over everything else.
+    if (sharedState.user && sharedState.user.must_change_password) {
+      location.replace('change-password.html');
+      return { tasks: [], user: sharedState.user, history: [] };
+    }
+
+    sharedState.history = historyRes.history || [];
+    sharedState.analytics = historyRes.analytics || null;
+    sharedState.badges = {};
+    sharedState.history.forEach((m) => {
+      sharedState.badges[m.page_number] = (sharedState.badges[m.page_number] || 0) + 1;
+    });
+
+    return { tasks: sharedState.tasks, user: sharedState.user, history: sharedState.history };
+  })();
+
+  try {
+    return await sharedDataPromise;
+  } finally {
+    sharedDataPromise = null;
   }
-
-  sharedState.history = historyRes.history || [];
-  sharedState.analytics = historyRes.analytics || null;
-  sharedState.badges = {};
-  sharedState.history.forEach((m) => {
-    sharedState.badges[m.page_number] = (sharedState.badges[m.page_number] || 0) + 1;
-  });
-
-  return { tasks: sharedState.tasks, user: sharedState.user, history: sharedState.history };
 }
 
 /* ---------------- 5. Auth Controller (index.html) ---------------- */
@@ -1289,8 +1353,12 @@ function renderDashboardUI() {
           </div>`;
       }
 
-      if (task.carried_over) {
-        carriedFlag = `<span class="task-flag">${window.I18N ? I18N.t('task_flag_carried') : 'محولة من أمس'}</span>`;
+      if (task.carried_over || Number(task.rollover_count || 0) > 0) {
+        const rolloverCount = Number(task.rollover_count || 0);
+        const carriedText = rolloverCount > 0
+          ? (window.I18N ? I18N.t('task_flag_carried_count', { count: rolloverCount }) : `مُرجَّلة ×${rolloverCount}`)
+          : (window.I18N ? I18N.t('task_flag_carried') : 'محولة من أمس');
+        carriedFlag = `<span class="task-flag">${carriedText}</span>`;
       }
     } else {
       rangeHtml = type === 'RUB_TAMKIN'
@@ -1676,6 +1744,15 @@ function scrollSessionRailToActive(rail) {
   }, 100);
 }
 
+function rolloverNoticeHtml(task) {
+  const count = Number(task && task.rollover_count ? task.rollover_count : 0);
+  if (!count || (task && task.is_completed)) return '';
+  const text = window.I18N
+    ? I18N.t('task_rollover_notice', { count })
+    : `هذه المهمة غير مكتملة وتُرحَّل يومياً حتى إتمامها. مرّ عليها <strong>${count}</strong> يوم ترحيل.`;
+  return `<div class="rollover-notice" role="status">${text}</div>`;
+}
+
 function renderTaskPage(taskType) {
   const container = document.getElementById('task-content');
   if (!container) return;
@@ -1783,8 +1860,11 @@ function renderTaskPage(taskType) {
     ? renderMurajaahHeader({ taskTitle, completedCount, totalPages, percent, isAllDone, fillClass })
     : genericHeaderHtml;
 
+  const rolloverNotice = rolloverNoticeHtml(task);
+
   const pageHtml = isMurajaah
     ? `
+      ${rolloverNotice}
       ${headerHtml}
       ${renderSessionRail(activePage, prayerSessions)}
       <div class="murajaah-plan-main">${prayerPlanHtml}</div>
@@ -1794,6 +1874,7 @@ function renderTaskPage(taskType) {
       ${renderMurajaahPagesSheet(chipsHint)}
     `
     : `
+      ${rolloverNotice}
       ${headerHtml}
       ${prayerPlanHtml}
       <div class="recitation-stage" id="recitation-stage"></div>
@@ -1956,6 +2037,7 @@ function renderTikrarStage(task) {
   const verseSummary = formatPageVerseSummary(activePage, window.I18N && window.I18N.lang === 'en');
 
   const html = `
+    ${rolloverNoticeHtml(task)}
     <div class="task-page-head">
       <div class="task-page-title-row">
         <div>

@@ -1,11 +1,11 @@
 -- Rafeequl Hifz (رفيق الحفظ) - Database Schema
--- MySQL Database: rafeequl_hifz
-
-CREATE DATABASE IF NOT EXISTS `rafeequl_hifz`
-    CHARACTER SET utf8mb4
-    COLLATE utf8mb4_unicode_ci;
-
-USE `rafeequl_hifz`;
+--
+-- Import this file into the database you created in your hosting panel.
+-- It intentionally does not contain CREATE DATABASE / USE, because shared
+-- hosts pre-create the database and usually forbid CREATE DATABASE.
+--
+-- Fresh installs: create the database, select it in phpMyAdmin, then import
+-- this file. Upgrades: run config/migrate_v7.php (CLI) or use setup.php.
 
 -- 1. users table
 CREATE TABLE IF NOT EXISTS `users` (
@@ -59,8 +59,12 @@ CREATE TABLE IF NOT EXISTS `daily_task_logs` (
     `rub_id` INT NULL,
     `completed_stations` TEXT NULL,
     `is_completed` BOOLEAN NOT NULL DEFAULT 0,
+    `rollover_count` INT NOT NULL DEFAULT 0,
+    `last_rollover_date` DATE NULL,
     PRIMARY KEY (`id`),
     KEY `idx_daily_task_logs_user_date` (`user_id`, `task_date`),
+    KEY `idx_daily_task_logs_user_type_pending` (`user_id`, `task_type`, `is_completed`, `task_date`),
+    KEY `idx_daily_task_logs_user_type_date` (`user_id`, `task_type`, `task_date`),
     CONSTRAINT `fk_daily_task_logs_user`
         FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
         ON DELETE CASCADE ON UPDATE CASCADE

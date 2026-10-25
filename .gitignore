@@ -1,0 +1,11 @@
+# Local secrets — never commit these
+config/database.local.php
+config/installed.lock
+config/install.enable
+
+# Local runtime / editor files
+*.log
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

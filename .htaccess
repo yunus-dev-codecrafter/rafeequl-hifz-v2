@@ -17,8 +17,17 @@
 # ---------------------------------------------------------------------
 <IfModule mod_rewrite.c>
   RewriteEngine On
+  # Never serve Git metadata if a deployment accidentally uploads .git/.
+  RewriteRule ^\.git(/|$) - [F,L]
+  # Belt-and-suspenders: subdirectory .htaccess files also deny these, but
+  # this rule protects them even if a dotfile is missed during upload.
+  RewriteRule ^(?:config|api/data)(?:/|$) - [F,L]
   RewriteCond %{HTTPS} !=on
   RewriteCond %{HTTP:X-Forwarded-Proto} !https
+  # Local development over http://localhost must keep working (no TLS cert).
+  RewriteCond %{HTTP_HOST} !^localhost(:[0-9]+)?$ [NC]
+  RewriteCond %{HTTP_HOST} !^127\.0\.0\.1(:[0-9]+)?$ [NC]
+  RewriteCond %{HTTP_HOST} !^\[::1\](:[0-9]+)?$ [NC]
   RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L]
 </IfModule>
 # ---------------------------------------------------------------------
@@ -46,3 +55,11 @@
 
 # 4) Default character encoding
 AddDefaultCharset UTF-8
+
+# 5) Do not expose directory listings and add basic hardening headers.
+Options -Indexes
+<IfModule mod_headers.c>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set X-Frame-Options "SAMEORIGIN"
+</IfModule>

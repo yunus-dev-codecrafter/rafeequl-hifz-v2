@@ -68,16 +68,7 @@ if ($userType === 'EXISTING') {
     $currentPage = 0;
 }
 
-// Ensure columns exist
-try {
-    $pdo->exec("ALTER TABLE `users` ADD COLUMN `murajaah_days` INT NOT NULL DEFAULT 6");
-} catch (Throwable $t) {}
-try {
-    $pdo->exec("ALTER TABLE `users` ADD COLUMN `rabt_extra_pages` INT NOT NULL DEFAULT 0");
-} catch (Throwable $t) {}
-try {
-    $pdo->exec("ALTER TABLE `users` ADD COLUMN `last_tikrar_page` INT NOT NULL DEFAULT 0");
-} catch (Throwable $t) {}
+// Schema changes are handled by config/migrate_v7.php (and setup.php).
 
 $murajaahDays = $data['murajaah_days'] ?? 6;
 if (is_string($murajaahDays) && ctype_digit($murajaahDays)) {

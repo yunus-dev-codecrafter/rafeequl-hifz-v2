@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/_rub.php';
+require_once __DIR__ . '/_rollover.php';
 
 function json_out(int $code, array $payload): void
 {
@@ -50,9 +51,9 @@ $rubId  = isset($input['rub_id']) && $input['rub_id'] !== '' ? (int) $input['rub
 
 $task = null;
 if ($taskId > 0) {
+    $select = rh_task_log_select($pdo);
     $stmt = $pdo->prepare(
-        "SELECT `id`, `user_id`, `task_date`, `task_type`, `rub_id`, `start_page`, `end_page`,
-                `is_completed`, `completed_stations`
+        'SELECT `user_id`, ' . $select . "
          FROM `daily_task_logs`
          WHERE `id` = :id AND `user_id` = :u AND `task_type` = 'RUB_TAMKIN'
          LIMIT 1"
@@ -62,6 +63,7 @@ if ($taskId > 0) {
     if (!$task) {
         json_out(404, ['success' => false, 'error' => 'Task not found.']);
     }
+    $task = rh_apply_rollover($pdo, $task, date('Y-m-d'));
     if ($rubId <= 0) {
         $rubId = (int) $task['rub_id'];
     }
@@ -117,6 +119,10 @@ json_out(200, [
         'is_completed'       => (int) $task['is_completed'] === 1,
         'rub_id'             => (int) $task['rub_id'],
         'completed_stations' => $completed,
+        'carried_over'       => (int) ($task['rollover_count'] ?? 0) > 0
+            || (string) $task['task_date'] !== $today,
+        'rollover_count'     => (int) ($task['rollover_count'] ?? 0),
+        'last_rollover_date' => $task['last_rollover_date'] ?? null,
     ],
     'rub'                => [
         'id'             => (int) $rub['id'],

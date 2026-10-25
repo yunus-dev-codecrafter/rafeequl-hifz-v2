@@ -5,38 +5,88 @@ Quran memorization daily logbook: PHP 8 + MySQL backend (`api/`), RTL web fronte
 
 ## Requirements
 
-- PHP >= 8.0 with `pdo_mysql`
-- MySQL 8 (import `config/schema.sql`, then seed meta via `api/data/seed_madinah_meta.php` or `config/seed_madinah_pages.sql`)
+- PHP >= 8.0 with `pdo_mysql`, `mbstring`, and `openssl`
+- MySQL 8 / MariaDB with InnoDB and utf8mb4
 - Any PHP-capable server (Apache/Nginx, or `php -S` for dev)
 
-> **Upgrading an existing v1 database?** Run the idempotent migration once —
-> `php config/migrate_v2.php` (CLI) or open
-> `https://your-host/config/migrate_v2.php?confirm=1` in a browser. It adds the
-> spaced-repetition columns to `mistakes` and creates `mistake_events` without
-> touching existing data. Fresh installs get everything from `config/schema.sql`.
+## Fresh install (recommended)
+
+1. Create an empty MySQL database in your hosting panel. Do **not** import
+   `config/schema.sql` with a `CREATE DATABASE` prefix — this repository no
+   longer contains one, because shared hosts pre-create the database.
+2. Upload the project (`api/`, `config/`, `web/`, `index.php`, `setup.php`,
+   `.htaccess`). Make sure dotfiles (`.htaccess`) transfer too.
+3. Create an empty file named `config/install.enable` in the File Manager.
+   This one-time marker is what allows the installer to run.
+4. Open `https://your-host/setup.php` and follow the three steps:
+   database connection → fresh install → admin account.
+5. The installer writes `config/database.local.php`, imports the schema, seeds
+   all 604 Madinah pages, applies migration v7, creates the `SUPER_ADMIN`
+   account, then writes `config/installed.lock` and removes the enable marker.
+6. **Delete `setup.php` from the server.** Check `api/health.php` returns 200,
+   then sign in at `web/index.html`.
+
+To recover a lost administrator later, re-upload `setup.php`, delete
+`config/installed.lock`, create `config/install.enable`, open the wizard, and use
+the optional admin fields in the upgrade form. Delete `setup.php` again when
+done.
+
+`config/database.local.php` and `config/installed.lock` are ignored by git.
+You can also configure the app with `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`,
+`DB_PASS`, and `APP_TIMEZONE` environment variables. The default timezone is
+`Africa/Lagos`; tasks and rollover counters use this calendar day.
+
+On Apache, `config/.htaccess` and `api/data/.htaccess` deny direct web access to
+secrets and data files. On Nginx (which ignores `.htaccess`), add the equivalent
+server block:
+
+```nginx
+location ~ ^/(config|api/data)/ { deny all; return 404; }
+```
+
+> **Security notice:** older builds committed live database credentials. If
+> your database password has ever been in git history, rotate it in the hosting
+> panel and update `config/database.local.php`. Never commit that file.
+
+## Upgrading an existing database
+
+The current release needs **migration v7**. It adds `rollover_count` /
+`last_rollover_date` to `daily_task_logs`, adds the pending-task indexes, and
+removes the runtime `ALTER TABLE` statements that caused slow requests and 502s
+on shared hosting.
+
+- CLI: `php config/migrate_v7.php`
+- Web: temporarily create `config/install.enable`, open
+  `https://your-host/setup.php`, choose **ترقية قاعدة البيانات**, then delete
+  `setup.php` and the enable marker.
+
+The migration is additive and idempotent. If you are upgrading from v1, run
+`migrate_v2.php` through `migrate_v6.php` first (CLI, or temporary web access),
+then run `setup.php` for v7. `config/` is denied over HTTP by `config/.htaccess`;
+do not leave migration scripts publicly reachable.
+
+## Rollover counting
+
+A pending task keeps its original `task_date` until it is completed. Each
+calendar day it remains unfinished increments `rollover_count` once and updates
+`last_rollover_date`; opening the app twice on the same day never double-counts.
+The dashboard badge and task pages show the number of rollover days (for
+example, `مُرجَّلة ×2`). The count uses `APP_TIMEZONE` (`Africa/Lagos` by
+default), so “today” is consistent for every request.
+
+> **Page recall notes (v3)** creates the `page_notes` table.
 >
-> **Page recall notes (v3)?** `php config/migrate_v3.php` (or open
-> `https://your-host/config/migrate_v3.php?confirm=1`) creates the `page_notes`
-> table used by the per-page recall board. The board still works if you skip it:
-> notes are then kept on the device only.
+> **Cleaning old paired verses (v5)** clears stray `confused_with_*` values from
+> tawaqquf / tashkeel / lafdh mistakes.
 >
-> **Cleaning old paired verses (v5)?** `php config/migrate_v5.php` (or open
-> `https://your-host/config/migrate_v5.php?confirm=1`) clears stray
-> `confused_with_*` values that older builds attached to tawaqquf / tashkeel /
-> lafdh mistakes. Only transition and mutashabihat cards keep a paired verse.
->
-> **Rub' consolidation (v6)?** `php config/migrate_v6.php` (or open
-> `https://your-host/config/migrate_v6.php?confirm=1`) adds the `RUB_TAMKIN`
-> task type, the rub' columns on `daily_task_logs`, and the `rub_history`
-> rotation table. The daily endpoint also adds the columns lazily, so the
-> feature keeps working if the migration is delayed. The catalog itself is
-> committed at `api/data/rub_quarters.json`; rebuild it with
-> `php config/build_rub_quarters.php` and verify it with
-> `php config/verify_rub.php`.
+> **Rub' consolidation (v6)** adds `RUB_TAMKIN`, the rub' columns, and
+> `rub_history`. Migration v7 keeps this working and creates `rub_history` if it
+> is missing.
 >
 > **Offline Quran text?** `php api/data/build_quran_text.php` downloads the
-> Uthmani text once and writes `web/data/quran-uthmani.json` (the flashcard
-> back face + service worker use it offline).
+> Uthmani text once and writes `web/data/quran-uthmani.json`. It is fetched on
+> demand and cached by the service worker; it is no longer pre-cached during
+> installation (that made PWA installs slow and fragile).
 
 ## Local dev
 
@@ -46,7 +96,10 @@ php -S localhost:8000
 # open http://localhost:8000/web/index.html
 ```
 
-DB credentials/env overrides live in `config/database.php` (`DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASS`).
+DB credentials live in `config/database.local.php` (copy it from
+`config/database.example.php`) or in `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASS`,
+and `APP_TIMEZONE` environment variables. `config/database.php` never contains
+credentials itself.
 
 ---
 
@@ -96,9 +149,10 @@ Reference: <https://forum.infinityfree.com/t/how-to-make-a-working-progressive-w
 
 ### Deploy
 
-Upload the whole project (`api/`, `config/`, `web/`, `index.php`,
+Upload the whole project (`api/`, `config/`, `web/`, `index.php`, `setup.php`,
 `.htaccess`) to `htdocs`. Make sure `.htaccess` actually transfers (dotfiles
-are hidden by default in most FTP clients). Then open
+are hidden by default in most FTP clients). Complete the setup wizard at
+`https://your-host/setup.php` first (see **Fresh install** above), then open
 `https://rafeequlhifz.infy.click/` on the phone.
 
 Chrome on Android then shows **«تثبيت التطبيق / Install app»** in the
@@ -328,9 +382,15 @@ and can activate / suspend / disable accounts.
 ### 1. Apply the schema (once)
 
 ```bash
-php config/migrate_v4.php                     # local
-# https://your-host/config/migrate_v4.php?confirm=1   (web)
+php config/migrate_v4.php
 ```
+
+`config/.htaccess` and the root `.htaccess` deny direct browser access to
+migration scripts. On a host without CLI, temporarily comment out the
+`RewriteRule ^(?:config|api/data)...` line in the root `.htaccess` **and**
+rename `config/.htaccess`, open
+`https://your-host/config/migrate_v4.php?confirm=1`, then restore both files
+immediately. Prefer `setup.php` for v7 and fresh installs.
 
 This is additive and idempotent: it adds `role`, `status`, `status_reason`,
 `suspended_at`, `last_login_at`, `last_seen_at`, `login_count` and
@@ -339,22 +399,26 @@ and `login_attempts`. Nothing is dropped or rewritten.
 
 ### 2. Create the owner
 
+The web installer is the recommended path (see **Fresh install** above). For
+CLI, an explicit email is now required; there is no hard-coded owner address:
+
 ```bash
-php config/seed_admin.php
+php config/seed_admin.php email=owner@example.com
 # or set a specific password:
-php config/seed_admin.php password=YourStrongPassword
+php config/seed_admin.php email=owner@example.com password=YourStrongPassword
 ```
 
-The default email is **`muhaffiz125@gmail.com`**. With no `password=` argument a
-strong random password is generated and printed **once** to the operator's
-console. Either way the account is flagged `must_change_password = 1`, and the
-app forces a change on the first login.
+With no `password=` argument a strong random password is generated and printed
+**once** to the operator's console. Either way the account is flagged
+`must_change_password = 1`, and the app forces a change on the first login.
 
-Re-running is safe: it only re-ensures `SUPER_ADMIN` / `ACTIVE`. It never
-silently resets an existing password — use `reset=1` for that:
+`config/seed_admin.php` is CLI-only now. It refuses browser requests so nobody
+can reset the administrator through a URL. Re-running is safe: it only
+re-ensures `SUPER_ADMIN` / `ACTIVE`. It never silently resets an existing
+password — use `reset=1` for that:
 
 ```bash
-php config/seed_admin.php reset=1
+php config/seed_admin.php email=owner@example.com reset=1
 ```
 
 ### 3. Sign in
@@ -425,11 +489,12 @@ active super admin cannot be suspended or demoted.
 
 ### Deploy order
 
-1. Upload `config/auth.php`, `config/migrate_v4.php`, `config/seed_admin.php`, `config/schema.sql`.
-2. Upload the new/changed `api/` files.
-3. Upload `web/admin.html`, `web/change-password.html`, the changed JS/CSS and `web/sw.js` (cache is now `v10`).
-4. Run `migrate_v4.php?confirm=1`, then `seed_admin.php?confirm=1` and copy the printed password.
-5. Hard-refresh once so the new service worker takes over.
+1. Upload `config/` (including `.htaccess`, `database.example.php`, `migrate_v7.php`), `setup.php`, `api/` and the changed `web/` files.
+2. Upload `config/database.local.php` separately with the current credentials if you deploy over FTP (it is intentionally ignored by git). If you deploy through git and that file is absent, the app cannot connect until you run `setup.php`; use the wizard to write it, or set `DB_*` environment variables.
+3. Create `config/install.enable`, open `https://your-host/setup.php`, choose **ترقية قاعدة البيانات** (upgrade), and optionally set a new admin password.
+4. The wizard applies migration v7, seeds page metadata, writes `config/installed.lock`, and removes the enable marker. **Delete `setup.php` from the server.**
+5. Open `api/health.php` (expect 200), hard-refresh `web/index.html`, and confirm the new service worker cache (`rafeequl-hifz-v16`) is active.
 
-> Back up the database before step 4 on a live site. Nothing destructive is
-> executed, but a backup is always the right first move.
+> Back up the database before step 3 on a live site. The migration is additive,
+> but a backup is always the right first move. If the host's PHP cannot reach
+> MySQL, use its phpMyAdmin/CLI and run `config/migrate_v7.php` there instead.

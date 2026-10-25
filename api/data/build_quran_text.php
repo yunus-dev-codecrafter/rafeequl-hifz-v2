@@ -13,6 +13,13 @@ declare(strict_types=1);
  * flashcards' "back" face works fully offline.
  */
 
+if (PHP_SAPI !== 'cli') {
+    http_response_code(403);
+    header('Content-Type: text/plain; charset=utf-8');
+    echo "This build script is CLI-only.\n";
+    exit;
+}
+
 $outFile = __DIR__ . '/../../web/data/quran-uthmani.json';
 $source  = 'https://api.alquran.cloud/v1/quran/quran-uthmani';
 

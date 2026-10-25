@@ -9,23 +9,22 @@ declare(strict_types=1);
  * used only to administer other accounts from web/admin.html.
  *
  * Security:
+ *  - This script is CLI-only. The web installer (setup.php) creates the first
+ *    administrator with an explicit form, so no public URL can reset an admin
+ *    password through query parameters.
  *  - The password is never stored in this file. By default a strong random one
  *    is generated and printed ONCE, to the operator running this script.
  *  - The account is flagged `must_change_password = 1`; the app forces a change
  *    on first login.
  *  - Idempotent: running it again only ensures the role/status, and never
- *    silently resets an existing password (use ?reset=1 for that).
+ *    silently resets an existing password (use reset=1 for that).
  *
  * Requirements: migration v4 must have been applied first.
  *
- * Run (web):  https://your-host/config/seed_admin.php?confirm=1
- *             https://your-host/config/seed_admin.php?confirm=1&password=YourStrongPass
- *             https://your-host/config/seed_admin.php?confirm=1&reset=1
- * Run (CLI):  php config/seed_admin.php
- *             php config/seed_admin.php password=YourStrongPass
- *             php config/seed_admin.php reset=1
- *
- * The web mode is guarded so it cannot run by accident.
+ * Run (CLI only):
+ *   php config/seed_admin.php email=owner@example.com
+ *   php config/seed_admin.php email=owner@example.com password=YourStrongPass
+ *   php config/seed_admin.php email=owner@example.com reset=1
  */
 
 require __DIR__ . '/database.php';
@@ -52,11 +51,9 @@ $param = static function (string $key, string $default = '') use ($cliArgs): str
 
 if (PHP_SAPI !== 'cli') {
     header('Content-Type: text/plain; charset=utf-8');
-    if ($param('confirm') !== '1') {
-        http_response_code(400);
-        echo "Refusing to run. Append ?confirm=1 to the URL to seed the administrator.\n";
-        exit;
-    }
+    http_response_code(403);
+    echo "This script is CLI-only. Use setup.php to create the first administrator.\n";
+    exit;
 }
 
 $log = static function (string $msg): void {
@@ -66,10 +63,16 @@ $log = static function (string $msg): void {
 
 $log('== Rafeequl Hifz - seed super administrator ==');
 
-$email = trim($param('email', 'muhaffiz125@gmail.com'));
+$email = trim($param('email', ''));
 $name  = trim($param('name', 'المشرف العام'));
 $reset = $param('reset') === '1';
 $explicitPassword = (string) $param('password', '');
+
+if ($email === '') {
+    http_response_code(400);
+    echo "An explicit email address is required, e.g. email=owner@example.com\n";
+    exit(1);
+}
 
 if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
     http_response_code(400);
@@ -97,7 +100,7 @@ try {
     if (!isset($cols['role'], $cols['status'], $cols['must_change_password'])) {
         http_response_code(500);
         echo "The users table is missing the v4 columns.\n";
-        echo "Run config/migrate_v4.php?confirm=1 first, then re-run this script.\n";
+        echo "Run config/migrate_v4.php from the CLI first, then re-run this script.\n";
         exit(1);
     }
 
@@ -130,7 +133,8 @@ try {
 
         $upd = $pdo->prepare(
             "UPDATE `users`
-             SET `role` = 'SUPER_ADMIN',
+             SET `user_type` = 'COMPLETE',
+                 `role` = 'SUPER_ADMIN',
                  `status` = 'ACTIVE',
                  `status_reason` = NULL,
                  `suspended_at` = NULL

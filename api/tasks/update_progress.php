@@ -10,6 +10,7 @@ declare(strict_types=1);
  */
 
 require __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/_rollover.php';
 
 function json_out(int $code, array $payload): void
 {
@@ -19,52 +20,14 @@ function json_out(int $code, array $payload): void
     exit;
 }
 
-// Ensure completed_pages, repetition_count, and revision plan columns exist
-try {
-    $pdo->exec("ALTER TABLE `daily_task_logs` ADD COLUMN `completed_pages` TEXT NULL");
-} catch (Throwable $t) {}
-try {
-    // Avoid an unnecessary table rebuild on every request. If information_schema
-    // is unavailable, fall back to running the ALTER.
-    $needsEnumAlter = true;
-    $taskTypeCol = $pdo->query(
-        "SELECT `COLUMN_TYPE` FROM `information_schema`.`COLUMNS`
-         WHERE `TABLE_SCHEMA` = DATABASE()
-           AND `TABLE_NAME` = 'daily_task_logs'
-           AND `COLUMN_NAME` = 'task_type'
-         LIMIT 1"
-    )->fetchColumn();
-    if ($taskTypeCol !== false) {
-        $needsEnumAlter = strpos((string) $taskTypeCol, "'RUB_TAMKIN'") === false;
-    }
-    if ($needsEnumAlter) {
-        $pdo->exec("ALTER TABLE `daily_task_logs` MODIFY COLUMN `task_type` ENUM('HIFZ_JADID', 'TIKRAR_AMS', 'RABT', 'MURAJAAH', 'RUB_TAMKIN', 'MISTAKES') NOT NULL");
-    }
-} catch (Throwable $t) {
-    try {
-        $pdo->exec("ALTER TABLE `daily_task_logs` MODIFY COLUMN `task_type` ENUM('HIFZ_JADID', 'TIKRAR_AMS', 'RABT', 'MURAJAAH', 'RUB_TAMKIN', 'MISTAKES') NOT NULL");
-    } catch (Throwable $t2) {}
-}
-try {
-    $pdo->exec("ALTER TABLE `daily_task_logs` ADD COLUMN `repetition_count` INT NOT NULL DEFAULT 0");
-} catch (Throwable $t) {}
-try {
-    $pdo->exec("ALTER TABLE `users` ADD COLUMN `murajaah_days` INT NOT NULL DEFAULT 6");
-} catch (Throwable $t) {}
-try {
-    $pdo->exec("ALTER TABLE `users` ADD COLUMN `rabt_extra_pages` INT NOT NULL DEFAULT 0");
-} catch (Throwable $t) {}
-try {
-    $pdo->exec("ALTER TABLE `users` ADD COLUMN `last_tikrar_page` INT NOT NULL DEFAULT 0");
-} catch (Throwable $t) {}
-try {
-    $pdo->exec("UPDATE `users` SET `last_tikrar_page` = `current_hifz_page` WHERE `last_tikrar_page` = 0 AND `current_hifz_page` > 0");
-} catch (Throwable $t) {}
+// Schema changes are handled by config/migrate_v7.php (and setup.php).
+// No DDL runs in this request path.
 
 /** Today's row for a task type, else the earliest pending (rollover) row. */
 function findLogRow(PDO $pdo, int $userId, string $type, string $today): ?array
 {
-    $base = 'SELECT `id`, `task_date`, `task_type`, `start_page`, `end_page`, `is_completed`, `completed_pages`, COALESCE(`repetition_count`, 0) AS `repetition_count`
+    $select = rh_task_log_select($pdo);
+    $base = 'SELECT ' . $select . '
              FROM `daily_task_logs`
              WHERE `user_id` = :u AND `task_type` = :t';
 
@@ -72,24 +35,28 @@ function findLogRow(PDO $pdo, int $userId, string $type, string $today): ?array
     $stmt->execute([':u' => $userId, ':t' => $type, ':d' => $today]);
     $row = $stmt->fetch();
     if ($row) {
-        return $row;
+        return rh_apply_rollover($pdo, $row, $today);
     }
 
     $stmt = $pdo->prepare($base . ' AND `task_date` <= :d AND `is_completed` = 0 ORDER BY `task_date` ASC, `id` ASC LIMIT 1');
     $stmt->execute([':u' => $userId, ':t' => $type, ':d' => $today]);
     $row = $stmt->fetch();
-    return $row ?: null;
+    return $row ? rh_apply_rollover($pdo, $row, $today) : null;
 }
 
 function insertLogRow(PDO $pdo, int $userId, string $type, int $start, int $end, string $date, bool $completed, array $completedPages = [], int $reps = 0): array
 {
     $json = !empty($completedPages) ? json_encode(array_values(array_unique(array_map('intval', $completedPages)))) : null;
+    $hasRollover = rh_task_has_rollover($pdo);
+    $extraColumns = $hasRollover ? ', `rollover_count`, `last_rollover_date`' : '';
+    $extraValues  = $hasRollover ? ', 0, :rollover_date' : '';
+
     $stmt = $pdo->prepare(
         'INSERT INTO `daily_task_logs`
-            (`user_id`, `task_date`, `task_type`, `start_page`, `end_page`, `completed_pages`, `repetition_count`, `is_completed`)
-         VALUES (:u, :d, :t, :s, :e, :p, :r, :c)'
+            (`user_id`, `task_date`, `task_type`, `start_page`, `end_page`, `completed_pages`, `repetition_count`, `is_completed`' . $extraColumns . ')
+         VALUES (:u, :d, :t, :s, :e, :p, :r, :c' . $extraValues . ')'
     );
-    $stmt->execute([
+    $params = [
         ':u' => $userId,
         ':d' => $date,
         ':t' => $type,
@@ -98,17 +65,23 @@ function insertLogRow(PDO $pdo, int $userId, string $type, int $start, int $end,
         ':p' => $json,
         ':r' => $reps,
         ':c' => $completed ? 1 : 0,
-    ]);
+    ];
+    if ($hasRollover) {
+        $params[':rollover_date'] = $date;
+    }
+    $stmt->execute($params);
 
     return [
-        'id'               => (int) $pdo->lastInsertId(),
-        'task_date'        => $date,
-        'task_type'        => $type,
-        'start_page'       => $start,
-        'end_page'         => $end,
-        'completed_pages'  => $json,
-        'repetition_count' => $reps,
-        'is_completed'     => $completed ? 1 : 0,
+        'id'                 => (int) $pdo->lastInsertId(),
+        'task_date'          => $date,
+        'task_type'          => $type,
+        'start_page'         => $start,
+        'end_page'           => $end,
+        'completed_pages'    => $json,
+        'repetition_count'   => $reps,
+        'is_completed'       => $completed ? 1 : 0,
+        'rollover_count'     => 0,
+        'last_rollover_date' => $date,
     ];
 }
 
@@ -119,6 +92,8 @@ function formatLogRow(array $row): array
     $isDone = (bool) $row['is_completed'];
     $type = (string) $row['task_type'];
     $reps = (int) ($row['repetition_count'] ?? 0);
+    $rolloverCount = (int) ($row['rollover_count'] ?? 0);
+    $carriedOver = $rolloverCount > 0;
 
     if ($type === 'TIKRAR_AMS') {
         $targetReps = 10;
@@ -137,6 +112,9 @@ function formatLogRow(array $row): array
             'repetition_count'    => $currentReps,
             'target_repetitions'  => $targetReps,
             'progress_percent'    => min(100, $percent),
+            'carried_over'        => $carriedOver,
+            'rollover_count'      => $rolloverCount,
+            'last_rollover_date'  => $row['last_rollover_date'] ?? null,
         ];
     }
 
@@ -164,6 +142,9 @@ function formatLogRow(array $row): array
         'completed_count'  => $count,
         'total_pages'      => $total,
         'progress_percent' => min(100, (int) round(($count / $total) * 100)),
+        'carried_over'     => $carriedOver,
+        'rollover_count'   => $rolloverCount,
+        'last_rollover_date' => $row['last_rollover_date'] ?? null,
     ];
 }
 

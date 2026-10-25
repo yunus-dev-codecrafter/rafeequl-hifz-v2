@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/_rub.php';
+require_once __DIR__ . '/_rollover.php';
 
 const TASK_TITLES = [
     'HIFZ_JADID' => ['ar' => 'الحفظ الجديد',     'en' => 'New Memorization'],
@@ -27,55 +28,9 @@ function json_out(int $code, array $payload): void
     exit;
 }
 
-// Ensure completed_pages, repetition_count, and revision plan columns exist
-try {
-    $pdo->exec("ALTER TABLE `daily_task_logs` ADD COLUMN `completed_pages` TEXT NULL");
-} catch (Throwable $t) {}
-try {
-    // Only rebuild the enum when the new value is actually missing (a MODIFY on
-    // every request would rebuild the table needlessly). If information_schema
-    // is unavailable, fall back to running the ALTER.
-    $needsEnumAlter = true;
-    $taskTypeCol = $pdo->query(
-        "SELECT `COLUMN_TYPE` FROM `information_schema`.`COLUMNS`
-         WHERE `TABLE_SCHEMA` = DATABASE()
-           AND `TABLE_NAME` = 'daily_task_logs'
-           AND `COLUMN_NAME` = 'task_type'
-         LIMIT 1"
-    )->fetchColumn();
-    if ($taskTypeCol !== false) {
-        $needsEnumAlter = strpos((string) $taskTypeCol, "'RUB_TAMKIN'") === false;
-    }
-    if ($needsEnumAlter) {
-        $pdo->exec("ALTER TABLE `daily_task_logs` MODIFY COLUMN `task_type` ENUM('HIFZ_JADID', 'TIKRAR_AMS', 'RABT', 'MURAJAAH', 'RUB_TAMKIN', 'MISTAKES') NOT NULL");
-    }
-} catch (Throwable $t) {
-    try {
-        $pdo->exec("ALTER TABLE `daily_task_logs` MODIFY COLUMN `task_type` ENUM('HIFZ_JADID', 'TIKRAR_AMS', 'RABT', 'MURAJAAH', 'RUB_TAMKIN', 'MISTAKES') NOT NULL");
-    } catch (Throwable $t2) {}
-}
-try {
-    $pdo->exec("ALTER TABLE `daily_task_logs` ADD COLUMN `repetition_count` INT NOT NULL DEFAULT 0");
-} catch (Throwable $t) {}
-try {
-    $pdo->exec("ALTER TABLE `daily_task_logs` ADD COLUMN `rub_id` INT NULL");
-} catch (Throwable $t) {}
-try {
-    $pdo->exec("ALTER TABLE `daily_task_logs` ADD COLUMN `completed_stations` TEXT NULL");
-} catch (Throwable $t) {}
-try {
-    $pdo->exec("ALTER TABLE `users` ADD COLUMN `murajaah_days` INT NOT NULL DEFAULT 6");
-} catch (Throwable $t) {}
-try {
-    $pdo->exec("ALTER TABLE `users` ADD COLUMN `rabt_extra_pages` INT NOT NULL DEFAULT 0");
-} catch (Throwable $t) {}
-try {
-    $pdo->exec("ALTER TABLE `users` ADD COLUMN `last_tikrar_page` INT NOT NULL DEFAULT 0");
-} catch (Throwable $t) {}
-try {
-    $pdo->exec("UPDATE `users` SET `last_tikrar_page` = `current_hifz_page` WHERE `last_tikrar_page` = 0 AND `current_hifz_page` > 0");
-} catch (Throwable $t) {}
-rh_ensure_history_table($pdo);
+// Schema changes are handled once by config/migrate_v7.php (and setup.php).
+// Keeping DDL out of the request path prevents metadata-lock storms and 502s.
+// The SELECT helper tolerates a pre-v7 database and reports zero rollovers.
 
 /**
  * Find an existing log row for today's task:
@@ -83,7 +38,8 @@ rh_ensure_history_table($pdo);
  */
 function findExistingTask(PDO $pdo, int $userId, string $type, string $today): ?array
 {
-    $base = 'SELECT `id`, `task_date`, `task_type`, `start_page`, `end_page`, `is_completed`, `completed_pages`, COALESCE(`repetition_count`, 0) AS `repetition_count`, `rub_id`, `completed_stations`
+    $select = rh_task_log_select($pdo);
+    $base = 'SELECT ' . $select . '
              FROM `daily_task_logs`
              WHERE `user_id` = :u AND `task_type` = :t';
 
@@ -91,14 +47,15 @@ function findExistingTask(PDO $pdo, int $userId, string $type, string $today): ?
     $stmt->execute([':u' => $userId, ':t' => $type, ':d' => $today]);
     $row = $stmt->fetch();
     if ($row) {
-        return $row;
+        return rh_apply_rollover($pdo, $row, $today);
     }
 
-    // Rollover rule: reuse the earliest uncompleted range instead of advancing
+    // Rollover rule: reuse the earliest uncompleted range instead of advancing.
+    // rh_apply_rollover() records each calendar day it has stayed unfinished.
     $stmt = $pdo->prepare($base . ' AND `task_date` <= :d AND `is_completed` = 0 ORDER BY `task_date` ASC, `id` ASC LIMIT 1');
     $stmt->execute([':u' => $userId, ':t' => $type, ':d' => $today]);
     $row = $stmt->fetch();
-    return $row ?: null;
+    return $row ? rh_apply_rollover($pdo, $row, $today) : null;
 }
 
 /**
@@ -145,45 +102,63 @@ function nextMurajaahChunk(PDO $pdo, int $userId, int $rangeStart, int $rangeEnd
 
 function insertTask(PDO $pdo, int $userId, string $type, array $bounds, string $date, int $reps = 0): array
 {
+    $hasRollover = rh_task_has_rollover($pdo);
+    $extraColumns = $hasRollover ? ', `rollover_count`, `last_rollover_date`' : '';
+    $extraValues  = $hasRollover ? ', 0, :rollover_date' : '';
+
     $stmt = $pdo->prepare(
         'INSERT INTO `daily_task_logs`
-            (`user_id`, `task_date`, `task_type`, `start_page`, `end_page`, `repetition_count`, `is_completed`)
-         VALUES (:u, :d, :t, :s, :e, :r, 0)'
+            (`user_id`, `task_date`, `task_type`, `start_page`, `end_page`, `repetition_count`, `is_completed`' . $extraColumns . ')
+         VALUES (:u, :d, :t, :s, :e, :r, 0' . $extraValues . ')'
     );
-    $stmt->execute([
+    $params = [
         ':u' => $userId,
         ':d' => $date,
         ':t' => $type,
         ':s' => $bounds[0],
         ':e' => $bounds[1],
         ':r' => $reps,
-    ]);
+    ];
+    if ($hasRollover) {
+        $params[':rollover_date'] = $date;
+    }
+    $stmt->execute($params);
 
     return [
-        'id'               => (int) $pdo->lastInsertId(),
-        'task_date'        => $date,
-        'task_type'        => $type,
-        'start_page'       => $bounds[0],
-        'end_page'         => $bounds[1],
-        'repetition_count' => $reps,
-        'is_completed'     => 0,
+        'id'                 => (int) $pdo->lastInsertId(),
+        'task_date'          => $date,
+        'task_type'          => $type,
+        'start_page'         => $bounds[0],
+        'end_page'           => $bounds[1],
+        'repetition_count'   => $reps,
+        'is_completed'       => 0,
+        'rollover_count'     => 0,
+        'last_rollover_date' => $date,
     ];
 }
 
 function insertRubTask(PDO $pdo, int $userId, array $rub, string $date): array
 {
+    $hasRollover = rh_task_has_rollover($pdo);
+    $extraColumns = $hasRollover ? ', `rollover_count`, `last_rollover_date`' : '';
+    $extraValues  = $hasRollover ? ', 0, :rollover_date' : '';
+
     $stmt = $pdo->prepare(
         'INSERT INTO `daily_task_logs`
-            (`user_id`, `task_date`, `task_type`, `start_page`, `end_page`, `rub_id`, `is_completed`)
-         VALUES (:u, :d, \'RUB_TAMKIN\', :s, :e, :rub, 0)'
+            (`user_id`, `task_date`, `task_type`, `start_page`, `end_page`, `rub_id`, `is_completed`' . $extraColumns . ')
+         VALUES (:u, :d, \'RUB_TAMKIN\', :s, :e, :rub, 0' . $extraValues . ')'
     );
-    $stmt->execute([
+    $params = [
         ':u'   => $userId,
         ':d'   => $date,
         ':s'   => (int) $rub['start_page'],
         ':e'   => (int) $rub['end_page'],
         ':rub' => (int) $rub['id'],
-    ]);
+    ];
+    if ($hasRollover) {
+        $params[':rollover_date'] = $date;
+    }
+    $stmt->execute($params);
 
     return [
         'id'                 => (int) $pdo->lastInsertId(),
@@ -194,6 +169,8 @@ function insertRubTask(PDO $pdo, int $userId, array $rub, string $date): array
         'rub_id'             => (int) $rub['id'],
         'completed_stations' => null,
         'is_completed'       => 0,
+        'rollover_count'     => 0,
+        'last_rollover_date' => $date,
     ];
 }
 
@@ -221,6 +198,8 @@ function formatTask(array $row, string $today): array
 
     $totalPages = ($start !== null && $end !== null && $end >= $start) ? ($end - $start + 1) : 0;
     $completedCount = count($completedPages);
+    $rolloverCount = (int) ($row['rollover_count'] ?? 0);
+    $carriedOver = $rolloverCount > 0 || ((string) $row['task_date'] !== $today);
 
     if ($type === 'RUB_TAMKIN') {
         $rubId = isset($row['rub_id']) ? (int) $row['rub_id'] : 0;
@@ -255,7 +234,9 @@ function formatTask(array $row, string $today): array
             'completed_count'    => $isCompleted ? $segmentsTotal : $doneCount,
             'total_pages'        => $segmentsTotal,
             'progress_percent'   => $isCompleted ? 100 : min(100, $percent),
-            'carried_over'       => (string) $row['task_date'] !== $today,
+            'carried_over'       => $carriedOver,
+            'rollover_count'     => $rolloverCount,
+            'last_rollover_date' => $row['last_rollover_date'] ?? null,
             'rub_id'             => $rubId,
             'rub_label_ar'       => $rubId > 0 ? rh_rub_label($rubId) : '',
             'juz'                => $rub['juz'] ?? null,
@@ -287,7 +268,9 @@ function formatTask(array $row, string $today): array
             'repetition_count'    => $currentReps,
             'target_repetitions'  => $targetReps,
             'progress_percent'    => min(100, $percent),
-            'carried_over'        => (string) $row['task_date'] !== $today,
+            'carried_over'        => $carriedOver,
+            'rollover_count'      => $rolloverCount,
+            'last_rollover_date'  => $row['last_rollover_date'] ?? null,
         ];
     }
 
@@ -306,7 +289,9 @@ function formatTask(array $row, string $today): array
         'completed_count'  => $completedCount,
         'total_pages'      => $totalPages,
         'progress_percent' => min(100, $percent),
-        'carried_over'     => (string) $row['task_date'] !== $today,
+        'carried_over'     => $carriedOver,
+        'rollover_count'   => $rolloverCount,
+        'last_rollover_date' => $row['last_rollover_date'] ?? null,
     ];
 }
 
@@ -594,6 +579,8 @@ try {
             'task_date'      => $today,
             'is_completed'   => false,
             'carried_over'   => false,
+            'rollover_count' => 0,
+            'last_rollover_date' => null,
             'active_mistakes' => $activeMistakes,
         ];
     }

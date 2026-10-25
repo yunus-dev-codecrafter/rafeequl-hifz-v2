@@ -437,51 +437,6 @@ function rh_pick_rub(PDO $pdo, int $userId, int $frontier, string $userType, str
     return $candidates[random_int(0, count($candidates) - 1)];
 }
 
-/** Create the rotation table lazily so the feature works before migration v6. */
-function rh_ensure_history_table(PDO $pdo): void
-{
-    static $done = false;
-    if ($done) {
-        return;
-    }
-    $done = true;
-
-    $exists = false;
-    try {
-        $exists = (bool) $pdo->query(
-            "SELECT 1 FROM `information_schema`.`TABLES`
-             WHERE `TABLE_SCHEMA` = DATABASE() AND `TABLE_NAME` = 'rub_history'
-             LIMIT 1"
-        )->fetchColumn();
-    } catch (Throwable $t) {
-        // If information_schema is unavailable, fall through to CREATE IF NOT EXISTS.
-        $exists = false;
-    }
-    if ($exists) {
-        return;
-    }
-
-    try {
-        $pdo->exec(
-            "CREATE TABLE IF NOT EXISTS `rub_history` (
-                `id` INT NOT NULL AUTO_INCREMENT,
-                `user_id` INT NOT NULL,
-                `rub_id` INT NOT NULL,
-                `last_done_date` DATE NULL,
-                `times_done` INT NOT NULL DEFAULT 0,
-                PRIMARY KEY (`id`),
-                UNIQUE KEY `uq_rub_history_user_rub` (`user_id`, `rub_id`),
-                KEY `idx_rub_history_user_date` (`user_id`, `last_done_date`),
-                CONSTRAINT `fk_rub_history_user`
-                    FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
-                    ON DELETE CASCADE ON UPDATE CASCADE
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
-        );
-    } catch (Throwable $t) {
-        error_log('[RubHistoryTable] ' . $t->getMessage());
-    }
-}
-
 function rh_mark_rub_done(PDO $pdo, int $userId, int $rubId, string $taskDate): void
 {
     try {

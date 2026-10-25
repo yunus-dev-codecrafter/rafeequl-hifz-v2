@@ -1,7 +1,8 @@
 'use strict';
 
-const CACHE_NAME = 'rafeequl-hifz-v15';
+const CACHE_NAME = 'rafeequl-hifz-v16';
 const AUDIO_CACHE = 'rafeequl-hifz-audio-v1';
+const PRECACHE_TIMEOUT_MS = 12000;
 
 const STATIC_ASSETS = [
   'index.html',
@@ -28,23 +29,36 @@ const STATIC_ASSETS = [
   'js/admin.js',
   'js/change-password.js',
   'js/madinah_page_verses.json',
-  'data/quran-uthmani.json',
   'icons/icon-192.png',
   'icons/icon-512.png',
   'icons/icon-maskable-192.png',
   'icons/icon-maskable-512.png'
 ];
 
+// The 1.3 MB Qur'an text file is deliberately NOT pre-cached here. It is
+// fetched on demand by the recitation screens and then cached by the
+// network-first handler below. Pre-caching it made installation slow and
+// fragile on mobile connections.
+function cacheAssetWithTimeout(cache, asset) {
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = (ok, err) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      if (!ok) console.warn('[SW] Could not pre-cache asset:', asset, err);
+      resolve(ok);
+    };
+    const timer = setTimeout(() => finish(false, 'timeout'), PRECACHE_TIMEOUT_MS);
+    cache.add(asset).then(() => finish(true)).catch((err) => finish(false, err));
+  });
+}
+
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      // Use Promise.allSettled so that if any individual asset fails, the rest are still cached
-      return Promise.allSettled(
-        STATIC_ASSETS.map((asset) => {
-          return cache.add(asset).catch((err) => {
-            console.warn('[SW] Could not pre-cache asset:', asset, err);
-          });
-        })
+      return Promise.all(
+        STATIC_ASSETS.map((asset) => cacheAssetWithTimeout(cache, asset))
       );
     }).then(() => self.skipWaiting())
   );

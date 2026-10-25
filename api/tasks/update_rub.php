@@ -15,6 +15,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/_rub.php';
+require_once __DIR__ . '/_rollover.php';
 
 function json_out(int $code, array $payload): void
 {
@@ -69,8 +70,9 @@ if ($hasCompleted) {
 }
 
 try {
+    $select = rh_task_log_select($pdo);
     $stmt = $pdo->prepare(
-        "SELECT `id`, `user_id`, `task_date`, `task_type`, `rub_id`, `is_completed`, `completed_stations`
+        'SELECT `user_id`, ' . $select . "
          FROM `daily_task_logs`
          WHERE `id` = :id AND `user_id` = :u AND `task_type` = 'RUB_TAMKIN'
          LIMIT 1"
@@ -80,6 +82,7 @@ try {
     if (!$task) {
         json_out(404, ['success' => false, 'error' => 'Task not found.']);
     }
+    $task = rh_apply_rollover($pdo, $task, date('Y-m-d'));
 
     $rubId = (int) $task['rub_id'];
     $payload = rh_rub_verses($rubId);
@@ -148,6 +151,8 @@ try {
         'progress_percent'   => $segmentsTotal > 0 ? (int) round((count($completed) / $segmentsTotal) * 100) : 0,
         'is_completed'       => $isCompleted,
         'task_date'          => (string) $task['task_date'],
+        'rollover_count'     => (int) ($task['rollover_count'] ?? 0),
+        'last_rollover_date' => $task['last_rollover_date'] ?? null,
     ]);
 } catch (PDOException $e) {
     if (isset($pdo) && $pdo->inTransaction()) {

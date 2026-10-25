@@ -198,6 +198,14 @@ function rh_touch_activity(PDO $pdo, int $userId): void
     }
 }
 
+/** Release the session file lock while the request does database work. */
+function rh_release_session_lock(): void
+{
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        session_write_close();
+    }
+}
+
 /** Require any active account. Responds (and exits) otherwise. */
 function rh_require_login(PDO $pdo): array
 {
@@ -217,6 +225,12 @@ function rh_require_login(PDO $pdo): array
     }
 
     rh_touch_activity($pdo, (int) $user['id']);
+
+    // The dashboard deliberately loads two APIs in parallel. Keeping the
+    // session file locked serializes them, so release it before the heavier
+    // task/history queries run. Logout and login manage their own sessions.
+    rh_release_session_lock();
+
     return $user;
 }
 

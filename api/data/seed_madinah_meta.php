@@ -16,6 +16,11 @@ require __DIR__ . '/../../config/database.php';
 $isCli = (PHP_SAPI === 'cli');
 if (!$isCli) {
     header('Content-Type: text/plain; charset=utf-8');
+    if (($_GET['confirm'] ?? '') !== '1') {
+        http_response_code(400);
+        echo "Refusing to run. Append ?confirm=1, or use setup.php. Prefer CLI.\n";
+        exit;
+    }
 }
 
 $jsonFile = __DIR__ . '/madinah_pages.json';
