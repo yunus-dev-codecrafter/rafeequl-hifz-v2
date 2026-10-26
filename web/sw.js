@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'rafeequl-hifz-v17';
+const CACHE_NAME = 'rafeequl-hifz-v18';
 const AUDIO_CACHE = 'rafeequl-hifz-audio-v1';
 const PRECACHE_TIMEOUT_MS = 12000;
 
@@ -20,6 +20,7 @@ const STATIC_ASSETS = [
   'css/style.css',
   'js/i18n.js',
   'js/app.js',
+  'js/hifz.js',
   'js/page-notes.js',
   'js/rub.js',
   'js/review.js',

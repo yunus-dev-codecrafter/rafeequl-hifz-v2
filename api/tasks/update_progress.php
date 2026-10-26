@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/_rollover.php';
+require_once __DIR__ . '/_hifz.php';
 
 function json_out(int $code, array $payload): void
 {
@@ -20,7 +21,7 @@ function json_out(int $code, array $payload): void
     exit;
 }
 
-// Schema changes are handled by config/migrate_v7.php (and setup.php).
+// Schema changes are handled by config/migrate_v8.php (and setup.php).
 // No DDL runs in this request path.
 
 /** Today's row for a task type, else the earliest pending (rollover) row. */
@@ -79,6 +80,7 @@ function insertLogRow(PDO $pdo, int $userId, string $type, int $start, int $end,
         'end_page'           => $end,
         'completed_pages'    => $json,
         'repetition_count'   => $reps,
+        'hifz_progress'      => null,
         'is_completed'       => $completed ? 1 : 0,
         'rollover_count'     => 0,
         'last_rollover_date' => $date,
@@ -94,6 +96,11 @@ function formatLogRow(array $row): array
     $reps = (int) ($row['repetition_count'] ?? 0);
     $rolloverCount = (int) ($row['rollover_count'] ?? 0);
     $carriedOver = $rolloverCount > 0;
+    $hifzProgress = null;
+    if ($type === 'HIFZ_JADID') {
+        $decodedHifz = rh_hifz_decode(isset($row['hifz_progress']) ? (string) $row['hifz_progress'] : null);
+        $hifzProgress = rh_hifz_sanitize($decodedHifz, $start);
+    }
 
     if ($type === 'TIKRAR_AMS') {
         $targetReps = 10;
@@ -145,6 +152,8 @@ function formatLogRow(array $row): array
         'carried_over'     => $carriedOver,
         'rollover_count'   => $rolloverCount,
         'last_rollover_date' => $row['last_rollover_date'] ?? null,
+        'hifz_progress'     => $hifzProgress,
+        'hifz_target_reps'  => RH_HIFZ_TARGET_REPS,
     ];
 }
 
@@ -259,18 +268,73 @@ try {
         } else {
             $newCurrent = $completedPage;
 
+            // The new-memorization task is only complete after every verse has
+            // reached 40 repetitions and every cumulative link has been read.
+            // Accept the state from this request, or fall back to the copy that
+            // was already saved by the incremental progress endpoint (useful
+            // when a completion request is retried).
+            $incomingHifz = array_key_exists('hifz_progress', $input) ? $input['hifz_progress'] : null;
+            $hifzState = null;
+            if ($incomingHifz !== null) {
+                if (!is_array($incomingHifz)) {
+                    $pdo->rollBack();
+                    json_out(400, [
+                        'success' => false,
+                        'error'   => 'hifz_progress must be a JSON object.',
+                    ]);
+                }
+                $hifzState = rh_hifz_sanitize($incomingHifz, $newCurrent);
+                if ($hifzState === null) {
+                    $pdo->rollBack();
+                    json_out(400, [
+                        'success' => false,
+                        'error'   => 'The hifz_progress payload is invalid for this page.',
+                    ]);
+                }
+            } elseif ($row && !empty($row['hifz_progress'])) {
+                $storedHifz = rh_hifz_decode((string) $row['hifz_progress']);
+                $hifzState = rh_hifz_sanitize($storedHifz, $newCurrent);
+            }
+
+            if (!rh_hifz_is_complete($hifzState)) {
+                $pdo->rollBack();
+                json_out(409, [
+                    'success' => false,
+                    'code'    => 'HIFZ_INCOMPLETE',
+                    'error'   => 'Complete all 40 repetitions for every verse and the cumulative recitation before finishing this page.',
+                ]);
+            }
+
+            $hifzRaw = rh_hifz_json($hifzState);
+            $hasHifzColumn = rh_task_has_hifz_progress($pdo);
+
             $stmt = $pdo->prepare('UPDATE `users` SET `current_hifz_page` = :p WHERE `id` = :id');
             $stmt->execute([':p' => $newCurrent, ':id' => $userId]);
 
             if ($row) {
                 $compJson = json_encode([$newCurrent]);
-                $stmt = $pdo->prepare('UPDATE `daily_task_logs` SET `is_completed` = 1, `completed_pages` = :p WHERE `id` = :id');
-                $stmt->execute([':p' => $compJson, ':id' => $row['id']]);
+                if ($hasHifzColumn) {
+                    $stmt = $pdo->prepare(
+                        'UPDATE `daily_task_logs`
+                         SET `is_completed` = 1, `completed_pages` = :p, `hifz_progress` = :hp
+                         WHERE `id` = :id'
+                    );
+                    $stmt->execute([':p' => $compJson, ':hp' => $hifzRaw, ':id' => $row['id']]);
+                    $row['hifz_progress'] = $hifzRaw;
+                } else {
+                    $stmt = $pdo->prepare('UPDATE `daily_task_logs` SET `is_completed` = 1, `completed_pages` = :p WHERE `id` = :id');
+                    $stmt->execute([':p' => $compJson, ':id' => $row['id']]);
+                }
                 $row['is_completed'] = 1;
                 $row['completed_pages'] = $compJson;
                 $affectedTask = $row;
             } else {
                 $affectedTask = insertLogRow($pdo, $userId, 'HIFZ_JADID', $newCurrent, $newCurrent, $today, true, [$newCurrent]);
+                if ($hasHifzColumn) {
+                    $stmt = $pdo->prepare('UPDATE `daily_task_logs` SET `hifz_progress` = :hp WHERE `id` = :id');
+                    $stmt->execute([':hp' => $hifzRaw, ':id' => $affectedTask['id']]);
+                    $affectedTask['hifz_progress'] = $hifzRaw;
+                }
             }
 
             // NOTE: Per business requirement, newly memorized page does NOT join Rabt immediately!

@@ -5,7 +5,7 @@
 -- hosts pre-create the database and usually forbid CREATE DATABASE.
 --
 -- Fresh installs: create the database, select it in phpMyAdmin, then import
--- this file. Upgrades: run config/migrate_v7.php (CLI) or use setup.php.
+-- this file. Upgrades: run config/migrate_v8.php (CLI) or use setup.php.
 
 -- 1. users table
 CREATE TABLE IF NOT EXISTS `users` (
@@ -58,6 +58,7 @@ CREATE TABLE IF NOT EXISTS `daily_task_logs` (
     `repetition_count` INT NOT NULL DEFAULT 0,
     `rub_id` INT NULL,
     `completed_stations` TEXT NULL,
+    `hifz_progress` TEXT NULL,
     `is_completed` BOOLEAN NOT NULL DEFAULT 0,
     `rollover_count` INT NOT NULL DEFAULT 0,
     `last_rollover_date` DATE NULL,

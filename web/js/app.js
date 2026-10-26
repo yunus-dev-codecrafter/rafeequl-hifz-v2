@@ -1786,6 +1786,11 @@ function renderTaskPage(taskType) {
     return;
   }
 
+  if (taskType === 'HIFZ_JADID' && window.HifzPage && typeof window.HifzPage.render === 'function') {
+    window.HifzPage.render(task);
+    return;
+  }
+
   const start = task.start_page;
   const end = task.end_page;
   const completedList = task.completed_pages || [];

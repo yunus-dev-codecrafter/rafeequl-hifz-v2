@@ -37,9 +37,17 @@ if (!function_exists('rh_task_has_rollover')) {
     }
 }
 
+if (!function_exists('rh_task_has_hifz_progress')) {
+    function rh_task_has_hifz_progress(PDO $pdo): bool
+    {
+        $columns = rh_task_log_columns($pdo);
+        return isset($columns['hifz_progress']);
+    }
+}
+
 if (!function_exists('rh_task_log_select')) {
     /**
-     * SELECT list that still works on a database that has not run v7 yet.
+     * SELECT list that still works on a database that has not run v8 yet.
      * The app then simply reports zero rollovers until the migration is run.
      */
     function rh_task_log_select(PDO $pdo): string
@@ -58,6 +66,7 @@ if (!function_exists('rh_task_log_select')) {
             $has('repetition_count') ? 'COALESCE(`repetition_count`, 0) AS `repetition_count`' : '0 AS `repetition_count`',
             $has('rub_id') ? '`rub_id`' : 'NULL AS `rub_id`',
             $has('completed_stations') ? '`completed_stations`' : 'NULL AS `completed_stations`',
+            $has('hifz_progress') ? '`hifz_progress`' : 'NULL AS `hifz_progress`',
             $has('rollover_count') ? 'COALESCE(`rollover_count`, 0) AS `rollover_count`' : '0 AS `rollover_count`',
             $has('last_rollover_date') ? '`last_rollover_date`' : 'NULL AS `last_rollover_date`',
         ];

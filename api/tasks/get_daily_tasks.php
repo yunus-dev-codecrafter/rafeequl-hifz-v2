@@ -10,6 +10,7 @@ declare(strict_types=1);
 require __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/_rub.php';
 require_once __DIR__ . '/_rollover.php';
+require_once __DIR__ . '/_hifz.php';
 
 const TASK_TITLES = [
     'HIFZ_JADID' => ['ar' => 'الحفظ الجديد',     'en' => 'New Memorization'],
@@ -28,7 +29,7 @@ function json_out(int $code, array $payload): void
     exit;
 }
 
-// Schema changes are handled once by config/migrate_v7.php (and setup.php).
+// Schema changes are handled once by config/migrate_v8.php (and setup.php).
 // Keeping DDL out of the request path prevents metadata-lock storms and 502s.
 // The SELECT helper tolerates a pre-v7 database and reports zero rollovers.
 
@@ -131,6 +132,7 @@ function insertTask(PDO $pdo, int $userId, string $type, array $bounds, string $
         'start_page'         => $bounds[0],
         'end_page'           => $bounds[1],
         'repetition_count'   => $reps,
+        'hifz_progress'      => null,
         'is_completed'       => 0,
         'rollover_count'     => 0,
         'last_rollover_date' => $date,
@@ -181,6 +183,11 @@ function formatTask(array $row, string $today): array
     $end = isset($row['end_page']) ? (int) $row['end_page'] : null;
     $isCompleted = (bool) $row['is_completed'];
     $repetitionCount = isset($row['repetition_count']) ? (int) $row['repetition_count'] : 0;
+    $hifzProgress = null;
+    if ($type === 'HIFZ_JADID' && $start !== null) {
+        $decodedHifz = rh_hifz_decode(isset($row['hifz_progress']) ? (string) $row['hifz_progress'] : null);
+        $hifzProgress = rh_hifz_sanitize($decodedHifz, $start);
+    }
 
     $completedPages = [];
     if (!empty($row['completed_pages'])) {
@@ -292,6 +299,8 @@ function formatTask(array $row, string $today): array
         'carried_over'     => $carriedOver,
         'rollover_count'   => $rolloverCount,
         'last_rollover_date' => $row['last_rollover_date'] ?? null,
+        'hifz_progress'     => $hifzProgress,
+        'hifz_target_reps'  => RH_HIFZ_TARGET_REPS,
     ];
 }
 

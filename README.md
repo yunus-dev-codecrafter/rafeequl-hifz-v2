@@ -21,8 +21,9 @@ Quran memorization daily logbook: PHP 8 + MySQL backend (`api/`), RTL web fronte
 4. Open `https://your-host/setup.php` and follow the three steps:
    database connection → fresh install → admin account.
 5. The installer writes `config/database.local.php`, imports the schema, seeds
-   all 604 Madinah pages, applies migration v7, creates the `SUPER_ADMIN`
-   account, then writes `config/installed.lock` and removes the enable marker.
+   all 604 Madinah pages, applies migration v8 (which includes v7), creates the
+   `SUPER_ADMIN` account, then writes `config/installed.lock` and removes the
+   enable marker.
 6. **Delete `setup.php` from the server.** Check `api/health.php` returns 200,
    then sign in at `web/index.html`.
 
@@ -50,20 +51,23 @@ location ~ ^/(config|api/data)/ { deny all; return 404; }
 
 ## Upgrading an existing database
 
-The current release needs **migration v7**. It adds `rollover_count` /
-`last_rollover_date` to `daily_task_logs`, adds the pending-task indexes, and
-removes the runtime `ALTER TABLE` statements that caused slow requests and 502s
-on shared hosting.
+The current release needs **migration v8**. It runs v7 first (adding
+`rollover_count` / `last_rollover_date`, the pending-task indexes, and removing
+the runtime `ALTER TABLE` statements that caused slow requests and 502s), then
+adds `daily_task_logs.hifz_progress` for the verse-by-verse new-memorization
+counter.
 
-- CLI: `php config/migrate_v7.php`
+- CLI: `php config/migrate_v8.php`
 - Web: temporarily create `config/install.enable`, open
   `https://your-host/setup.php`, choose **ترقية قاعدة البيانات**, then delete
   `setup.php` and the enable marker.
 
 The migration is additive and idempotent. If you are upgrading from v1, run
 `migrate_v2.php` through `migrate_v6.php` first (CLI, or temporary web access),
-then run `setup.php` for v7. `config/` is denied over HTTP by `config/.htaccess`;
-do not leave migration scripts publicly reachable.
+then run `setup.php` for v8. `config/` is denied over HTTP by `config/.htaccess`;
+do not leave migration scripts publicly reachable. Until v8 is applied, the new
+memorization screen still works from a local device copy and shows that server
+saving is pending.
 
 ## Rollover counting
 
@@ -80,8 +84,26 @@ default), so “today” is consistent for every request.
 > tawaqquf / tashkeel / lafdh mistakes.
 >
 > **Rub' consolidation (v6)** adds `RUB_TAMKIN`, the rub' columns, and
-> `rub_history`. Migration v7 keeps this working and creates `rub_history` if it
+> `rub_history`. Migration v8 keeps this working and creates `rub_history` if it
 > is missing.
+
+## New memorization (HIFZ_JADID)
+
+The new-memorization room is a single active verse at a time:
+
+1. Recite the current verse **40 times**. The counter is mandatory; the screen
+   does not advance early.
+2. After verse 2 and every later verse, recite verses **1..N** together before
+   moving on.
+3. After the final verse, recite the **whole page** from first to last verse.
+4. Tap **Complete memorization**. The server checks that every repetition is 40
+   and every cumulative link is done before advancing `current_hifz_page`.
+
+Progress is saved locally after every tap and mirrored with a debounce to
+`api/tasks/update_hifz_progress.php`, so a reload resumes where you stopped.
+Completion still goes through `api/tasks/update_progress.php`. If v8 is not
+applied yet, local progress and task completion still work, but the screen warns
+that server-side verse progress is pending.
 >
 > **Offline Quran text?** `php api/data/build_quran_text.php` downloads the
 > Uthmani text once and writes `web/data/quran-uthmani.json`. It is fetched on
@@ -348,6 +370,9 @@ does not repeat until the eligible pool has been used once.
 | `api/tasks/_rub.php` | splitter, catalog/tafsir loaders, fair random picker, history |
 | `api/tasks/get_rub_verses.php` | verses + stations + tafsir for one task/rub' |
 | `api/tasks/update_rub.php` | idempotent station progress + completion |
+| `api/tasks/_hifz.php` | HIFZ progress validation, completion check, 40-repeat target |
+| `api/tasks/update_hifz_progress.php` | debounced per-verse progress save (never completes a page) |
+| `web/js/hifz.js` | 40× verse counter, cumulative link recitation, local resume |
 | `web/rub.html`, `web/js/rub.js` | recitation page, local state, offline queue |
 | `config/build_rub_quarters.php` | rebuilds the catalog (one-off, cached downloads) |
 | `config/build_rub_tafsir.php` | rebuilds the per-rub' tafsir bundle |
@@ -399,7 +424,7 @@ migration scripts. On a host without CLI, temporarily comment out the
 `RewriteRule ^(?:config|api/data)...` line in the root `.htaccess` **and**
 rename `config/.htaccess`, open
 `https://your-host/config/migrate_v4.php?confirm=1`, then restore both files
-immediately. Prefer `setup.php` for v7 and fresh installs.
+immediately. Prefer `setup.php` for v8 and fresh installs.
 
 This is additive and idempotent: it adds `role`, `status`, `status_reason`,
 `suspended_at`, `last_login_at`, `last_seen_at`, `login_count` and
@@ -498,12 +523,12 @@ active super admin cannot be suspended or demoted.
 
 ### Deploy order
 
-1. Upload `config/` (including `.htaccess`, `database.example.php`, `migrate_v7.php`), `setup.php`, `api/` and the changed `web/` files.
+1. Upload `config/` (including `.htaccess`, `database.example.php`, `migrate_v8.php`, and `migrate_v7.php`), `setup.php`, `api/` and the changed `web/` files.
 2. Upload `config/database.local.php` separately with the current credentials if you deploy over FTP (it is intentionally ignored by git). If you deploy through git and that file is absent, the app cannot connect until you run `setup.php`; use the wizard to write it, or set `DB_*` environment variables.
 3. Create `config/install.enable`, open `https://your-host/setup.php`, choose **ترقية قاعدة البيانات** (upgrade), and optionally set a new admin password.
-4. The wizard applies migration v7, seeds page metadata, writes `config/installed.lock`, and removes the enable marker. **Delete `setup.php` from the server.**
-5. Open `api/health.php` (expect 200 and `"tafsir_ok": true`), hard-refresh `web/index.html`, and confirm the new service worker cache (`rafeequl-hifz-v17`) is active.
+4. The wizard applies migration v8 (including v7), seeds page metadata, writes `config/installed.lock`, and removes the enable marker. **Delete `setup.php` from the server.**
+5. Open `api/health.php` (expect 200, `"schema_ok": true`, and `"tafsir_ok": true`), hard-refresh `web/index.html`, and confirm the new service worker cache (`rafeequl-hifz-v18`) is active.
 
 > Back up the database before step 3 on a live site. The migration is additive,
 > but a backup is always the right first move. If the host's PHP cannot reach
-> MySQL, use its phpMyAdmin/CLI and run `config/migrate_v7.php` there instead.
+> MySQL, use its phpMyAdmin/CLI and run `config/migrate_v8.php` there instead.

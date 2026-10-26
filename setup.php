@@ -425,17 +425,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action !== '' && $action !== 'save
                     $notices[] = 'تم تنفيذ ' . $statementCount . ' أمر إنشاء.';
                 } else {
                     // CREATE TABLE IF NOT EXISTS is safe on an existing database
-                    // and repairs a missing auxiliary table before v7 runs.
+                    // and repairs a missing auxiliary table before v8 runs.
                     $notices[] = 'التأكد من الجداول الأساسية...';
                     rh_setup_import_schema($pdo);
                 }
 
-                $notices[] = 'تطبيق ترقية قاعدة البيانات v7...';
-                require_once __DIR__ . '/config/migrate_v7.php';
-                if (!function_exists('rh_migrate_v7')) {
-                    throw new RuntimeException('تعذر تحميل ملف الترقية config/migrate_v7.php.');
+                $notices[] = 'تطبيق ترقية قاعدة البيانات v8 (تشمل v7)...';
+                require_once __DIR__ . '/config/migrate_v8.php';
+                if (!function_exists('rh_migrate_v8')) {
+                    throw new RuntimeException('تعذر تحميل ملف الترقية config/migrate_v8.php.');
                 }
-                $stats = rh_migrate_v7($pdo, $log);
+                $stats = rh_migrate_v8($pdo, $log);
                 $notices[] = sprintf(
                     'الترقية: %d عموداً، %d فهرساً، %d جدولاً.',
                     $stats['columns_added'],
@@ -654,7 +654,7 @@ if (!in_array($selectedTimezone, $timezones, true)) {
         </form>
       <?php else: ?>
         <h3>ترقية قاعدة بيانات موجودة</h3>
-        <p class="muted">تُطبّق ترقية v7 (أعمدة الترحيل والفهارس)، تُحدّث بيانات الصفحات، وتُبقي الحسابات والمهام الحالية كما هي.</p>
+        <p class="muted">تُطبّق ترقية v8 (تشمل ترقية v7: أعمدة الترحيل والفهارس، وتقدم الحفظ الجديد لكل آية)، تُحدّث بيانات الصفحات، وتُبقي الحسابات والمهام الحالية كما هي.</p>
         <form method="post" action="setup.php">
           <input type="hidden" name="csrf" value="<?= rh_h($csrf) ?>">
           <input type="hidden" name="action" value="upgrade">

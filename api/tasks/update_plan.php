@@ -41,7 +41,7 @@ require_once __DIR__ . '/../../config/auth.php';
 $authUser = rh_require_login($pdo);
 $userId   = rh_resolve_user_id($pdo, $authUser, $input['user_id'] ?? null);
 
-// Schema changes are handled by config/migrate_v7.php (and setup.php).
+// Schema changes are handled by config/migrate_v8.php (and setup.php).
 // No DDL runs in this request path.
 
 $murajaahDays = $input['murajaah_days'] ?? null;
