@@ -4735,6 +4735,83 @@ body.focus-mode .stage-actions.is-sticky { top: 0.5rem; }
   padding: 0.55rem;
 }
 
+/* Per-verse Mukhtasar tafsir */
+.rub-tafsir {
+  margin: 0 0.55rem 0.6rem;
+  border: 1px solid var(--line-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg);
+  overflow: hidden;
+}
+
+.rub-tafsir-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.65rem;
+  cursor: pointer;
+  list-style: none;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--task-teal);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.rub-tafsir-summary::-webkit-details-marker { display: none; }
+
+.rub-tafsir-book {
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+
+.rub-tafsir-title { white-space: nowrap; }
+
+.rub-tafsir-source {
+  min-width: 0;
+  margin-inline-start: auto;
+  color: var(--muted);
+  font-size: 0.64rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rub-tafsir-chevron {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  color: var(--muted);
+  transition: transform var(--duration) var(--ease);
+}
+
+.rub-tafsir[open] .rub-tafsir-chevron { transform: rotate(180deg); }
+
+.rub-tafsir-body {
+  padding: 0.6rem 0.75rem 0.7rem;
+  border-top: 1px solid var(--line-subtle);
+  color: var(--ink-secondary);
+  font-size: 0.82rem;
+  line-height: 1.85;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.rub-tafsir-body[lang="ar"] {
+  color: var(--ink);
+  font-family: 'Amiri Quran', 'Amiri', 'Traditional Arabic', serif;
+  font-size: 1.03rem;
+  line-height: 2;
+  text-align: right;
+}
+
+.rub-tafsir-body[lang="en"] {
+  font-family: inherit;
+  text-align: left;
+}
+
 .rub-station {
   border: 1px solid transparent;
   border-radius: var(--radius-md);

@@ -150,8 +150,10 @@ Reference: <https://forum.infinityfree.com/t/how-to-make-a-working-progressive-w
 ### Deploy
 
 Upload the whole project (`api/`, `config/`, `web/`, `index.php`, `setup.php`,
-`.htaccess`) to `htdocs`. Make sure `.htaccess` actually transfers (dotfiles
-are hidden by default in most FTP clients). Complete the setup wizard at
+`.htaccess`) to `htdocs`. This includes the committed `api/data/tafsir/` files;
+without them the recitation page still works, but the per-verse tafsir is
+hidden. Make sure `.htaccess` actually transfers (dotfiles are hidden by default
+in most FTP clients). Complete the setup wizard at
 `https://your-host/setup.php` first (see **Fresh install** above), then open
 `https://rafeequlhifz.infy.click/` on the phone.
 
@@ -333,16 +335,23 @@ does not repeat until the eligible pool has been used once.
 - The exact 240 boundaries come from Quran.com's `rub_el_hizb_number` field,
   cross-checked against the app's own page map. `verify_rub.php` asserts all
   6,236 verses are covered exactly once (6,872 stations in total).
+- Every verse has a collapsible tafsir from **Al-Mukhtasar fi al-Tafsir**
+  (المختصر في التفسير). Arabic is shown in the Arabic interface and English in
+  the English interface, with a graceful fallback if one language is missing.
+  The tafsir is split into 240 small per-rub' files so a recitation request
+  never has to parse a multi-megabyte Quran-wide bundle.
 
 | File | Purpose |
 | --- | --- |
 | `api/data/rub_quarters.json` | committed catalog: boundaries, pages, station counts |
-| `api/tasks/_rub.php` | splitter, catalog loaders, fair random picker, history |
-| `api/tasks/get_rub_verses.php` | verses + stations for one task/rub' |
+| `api/data/tafsir/*.json` | committed per-rub' Mukhtasar tafsir (Arabic + English) |
+| `api/tasks/_rub.php` | splitter, catalog/tafsir loaders, fair random picker, history |
+| `api/tasks/get_rub_verses.php` | verses + stations + tafsir for one task/rub' |
 | `api/tasks/update_rub.php` | idempotent station progress + completion |
 | `web/rub.html`, `web/js/rub.js` | recitation page, local state, offline queue |
 | `config/build_rub_quarters.php` | rebuilds the catalog (one-off, cached downloads) |
-| `config/verify_rub.php` | catalog + splitter regression checks |
+| `config/build_rub_tafsir.php` | rebuilds the per-rub' tafsir bundle |
+| `config/verify_rub.php` | catalog, splitter and tafsir regression checks |
 
 The mobile navigation is now five tabs — الرئيسية / الحفظ / المراجعة / البطاقات /
 المزيد — where **المزيد** opens a bottom sheet with تكرار الأمس، الربط، المراجعة،
@@ -493,7 +502,7 @@ active super admin cannot be suspended or demoted.
 2. Upload `config/database.local.php` separately with the current credentials if you deploy over FTP (it is intentionally ignored by git). If you deploy through git and that file is absent, the app cannot connect until you run `setup.php`; use the wizard to write it, or set `DB_*` environment variables.
 3. Create `config/install.enable`, open `https://your-host/setup.php`, choose **ترقية قاعدة البيانات** (upgrade), and optionally set a new admin password.
 4. The wizard applies migration v7, seeds page metadata, writes `config/installed.lock`, and removes the enable marker. **Delete `setup.php` from the server.**
-5. Open `api/health.php` (expect 200), hard-refresh `web/index.html`, and confirm the new service worker cache (`rafeequl-hifz-v16`) is active.
+5. Open `api/health.php` (expect 200 and `"tafsir_ok": true`), hard-refresh `web/index.html`, and confirm the new service worker cache (`rafeequl-hifz-v17`) is active.
 
 > Back up the database before step 3 on a live site. The migration is additive,
 > but a backup is always the right first move. If the host's PHP cannot reach

@@ -40,6 +40,7 @@ if ($quran && $pageMap) {
 }
 
 $seenVerses = [];
+$tafsirMissing = [];
 $totalStations = 0;
 $totalVerses = 0;
 
@@ -58,6 +59,7 @@ for ($id = 1; $id <= 240; $id++) {
 
     $count = count($payload['verses']);
     $stations = 0;
+    $tafsir = rh_rub_tafsir($id);
 
     foreach ($payload['verses'] as $verse) {
         $key = $verse['surah'] . ':' . $verse['ayah'];
@@ -65,6 +67,10 @@ for ($id = 1; $id <= 240; $id++) {
             $fail('verse ' . $key . ' appears in rub ' . $seenVerses[$key] . ' and ' . $id);
         }
         $seenVerses[$key] = $id;
+
+        if (($tafsir[$key]['ar'] ?? '') === '' || ($tafsir[$key]['en'] ?? '') === '') {
+            $tafsirMissing[] = $key;
+        }
 
         if ($verse['segments_total'] < 1) {
             $fail('verse ' . $key . ' has no segment');
@@ -110,6 +116,13 @@ if ($totalVerses === 6236) {
 }
 
 $ok('stop stations: ' . $totalStations . ' (avg ' . round($totalStations / 240, 1) . ' / rub)');
+
+if (!$tafsirMissing) {
+    $ok('Mukhtasar tafsir covers all 6236 verses in Arabic and English');
+} else {
+    $sample = implode(', ', array_slice($tafsirMissing, 0, 8));
+    $fail('tafsir missing for ' . count($tafsirMissing) . ' verse(s): ' . $sample);
+}
 
 // Boundary spot checks (verified against the Quran.com rub_el_hizb_number field).
 $checks = [

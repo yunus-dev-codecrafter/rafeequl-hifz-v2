@@ -10,8 +10,9 @@ declare(strict_types=1);
  *   - api/tasks/update_rub.php       (server-side validation + completion)
  *   - config/build_rub_quarters.php  (one-off catalog builder)
  *
- * The catalog (api/data/rub_quarters.json) is committed, so nothing here
- * touches the network at runtime.
+ * The catalog (api/data/rub_quarters.json) and the per-rub' tafsir bundle
+ * (api/data/tafsir/*.json) are committed, so nothing here touches the network
+ * at runtime.
  */
 
 /* -------------------------------------------------------------------------
@@ -265,6 +266,59 @@ function rh_rub_by_id(int $rubId): ?array
 {
     $catalog = rh_rub_catalog();
     return $catalog['rubs'][$rubId] ?? null;
+}
+
+/* -------------------------------------------------------------------------
+ * Mukhtasar tafsir (generated per rub' by config/build_rub_tafsir.php)
+ * ---------------------------------------------------------------------- */
+
+function rh_tafsir_path(int $rubId): string
+{
+    return __DIR__ . '/../data/tafsir/' . $rubId . '.json';
+}
+
+/**
+ * Tafsir for every verse in one rub', keyed by "surah:ayah".
+ *
+ * The files are split per rub' so a request only reads the small slice it
+ * needs. A missing/corrupt file degrades gracefully to an empty map: the
+ * recitation page must keep working even if the static bundle was not uploaded.
+ *
+ * @return array<string,array{ar:string,en:string}>
+ */
+function rh_rub_tafsir(int $rubId): array
+{
+    static $cache = [];
+    if (array_key_exists($rubId, $cache)) {
+        return $cache[$rubId];
+    }
+    $cache[$rubId] = [];
+
+    $raw = @file_get_contents(rh_tafsir_path($rubId));
+    if ($raw === false || $raw === '') {
+        return $cache[$rubId];
+    }
+
+    $decoded = json_decode($raw, true);
+    if (!is_array($decoded) || !isset($decoded['verses']) || !is_array($decoded['verses'])) {
+        return $cache[$rubId];
+    }
+
+    $verses = [];
+    foreach ($decoded['verses'] as $key => $row) {
+        if (!is_string($key) || !is_array($row)) {
+            continue;
+        }
+        $ar = trim((string) ($row['ar'] ?? ''));
+        $en = trim((string) ($row['en'] ?? ''));
+        if ($ar === '' && $en === '') {
+            continue;
+        }
+        $verses[$key] = ['ar' => $ar, 'en' => $en];
+    }
+
+    $cache[$rubId] = $verses;
+    return $cache[$rubId];
 }
 
 /* -------------------------------------------------------------------------

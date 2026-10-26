@@ -7,6 +7,10 @@ declare(strict_types=1);
  *
  * 200 = PHP + database + v7 schema ready
  * 503 = database or schema not ready
+ *
+ * The per-rub' tafsir bundle is reported separately (`tafsir_ok`); it is static
+ * content and never changes the health status, so a missing upload only hides
+ * the optional tafsir panel.
  */
 
 require __DIR__ . '/../config/database.php';
@@ -55,6 +59,12 @@ try {
 $schemaOk = count($missing) === 0;
 $ok = $dbOk && $schemaOk;
 
+$tafsirFiles = glob(__DIR__ . '/data/tafsir/*.json');
+$tafsirOk = is_array($tafsirFiles)
+    && count($tafsirFiles) === 240
+    && is_readable(__DIR__ . '/data/tafsir/1.json')
+    && is_readable(__DIR__ . '/data/tafsir/240.json');
+
 http_response_code($ok ? 200 : 503);
 echo json_encode([
     'success'     => $ok,
@@ -63,6 +73,7 @@ echo json_encode([
     'timezone'    => defined('RH_APP_TIMEZONE') ? RH_APP_TIMEZONE : date_default_timezone_get(),
     'db'          => $dbOk,
     'schema_ok'   => $schemaOk,
+    'tafsir_ok'   => $tafsirOk,
     'missing'     => $missing,
     'time'        => date('c'),
 ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);

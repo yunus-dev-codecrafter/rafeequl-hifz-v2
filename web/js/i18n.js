@@ -348,6 +348,8 @@ const I18N_DICTIONARY = {
     rub_hide_station: 'إخفاء نص الموقف',
     rub_show_all: 'إظهار الكل',
     rub_hide_all: 'إخفاء الكل',
+    rub_tafsir_title: 'تفسير الآية',
+    rub_tafsir_source: 'المختصر في التفسير',
 
     // Review hub
     review_hub_title: 'مركز المراجعة',
@@ -962,6 +964,8 @@ const I18N_DICTIONARY = {
     rub_hide_station: 'Hide station text',
     rub_show_all: 'Show all',
     rub_hide_all: 'Hide all',
+    rub_tafsir_title: 'Verse tafsir',
+    rub_tafsir_source: 'Al-Mukhtasar',
 
     // Review hub
     review_hub_title: 'Review hub',

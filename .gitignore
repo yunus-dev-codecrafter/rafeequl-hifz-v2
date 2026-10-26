@@ -3,6 +3,9 @@ config/database.local.php
 config/installed.lock
 config/install.enable
 
+# Generated build caches (the committed data lives in api/data/)
+api/data/.cache/
+
 # Local runtime / editor files
 *.log
 .DS_Store

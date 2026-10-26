@@ -7,7 +7,9 @@ declare(strict_types=1);
  * GET/POST: task_id (preferred) or rub_id.
  *
  * Returns the rub' in mushaf order, each verse split at stop-preferring waqf
- * signs into stations. Every station is repeated 3 times by the client.
+ * signs into stations. Every station is repeated 3 times by the client. Each
+ * verse also carries its Arabic and English Mukhtasar tafsir, so switching the
+ * interface language needs no second request.
  */
 
 require __DIR__ . '/../../config/database.php';
@@ -97,6 +99,8 @@ $completed = array_values(array_unique($completed));
 $rub = $payload['rub'];
 $today = date('Y-m-d');
 
+$tafsir = rh_rub_tafsir($rubId);
+
 // Add a stable station key to every segment so the client never has to build one.
 $verses = [];
 foreach ($payload['verses'] as $verse) {
@@ -106,6 +110,10 @@ foreach ($payload['verses'] as $verse) {
         $segments[] = $segment;
     }
     $verse['segments'] = $segments;
+
+    $verseKey = $verse['surah'] . ':' . $verse['ayah'];
+    $verse['tafsir_ar'] = (string) ($tafsir[$verseKey]['ar'] ?? '');
+    $verse['tafsir_en'] = (string) ($tafsir[$verseKey]['en'] ?? '');
     $verses[] = $verse;
 }
 

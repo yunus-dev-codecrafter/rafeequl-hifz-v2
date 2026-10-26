@@ -19,6 +19,7 @@ const RubPage = {
   order: [],
   stationMeta: {},
   verseByKey: {},
+  tafsirOpen: {},
   activeKey: null,
   history: [],
   saving: false,
@@ -174,6 +175,7 @@ const RubPage = {
     this.order = [];
     this.stationMeta = {};
     this.verseByKey = {};
+    this.tafsirOpen = {};
     this.history = [];
 
     this.verses.forEach((verse) => {
@@ -389,11 +391,61 @@ const RubPage = {
             <div class="rub-verse-badges">${badges.join('')}</div>
           </header>
           <div class="rub-stations">${stations}</div>
+          ${this.renderTafsir(verse)}
         </article>`;
     }).join('');
 
+    box.querySelectorAll('details.rub-tafsir').forEach((details) => {
+      details.addEventListener('toggle', () => {
+        const key = details.dataset.tafsirKey;
+        if (key) this.tafsirOpen[key] = !!details.open;
+      });
+    });
+
     this.order.forEach((key) => this.paintStation(key));
     this.updateRevealAllButton();
+  },
+
+  tafsirForVerse(verse) {
+    const ar = verse && verse.tafsir_ar ? String(verse.tafsir_ar).trim() : '';
+    const en = verse && verse.tafsir_en ? String(verse.tafsir_en).trim() : '';
+    const wantsEnglish = !!(window.I18N && I18N.lang === 'en');
+
+    if (wantsEnglish) {
+      if (en) return { text: en, lang: 'en', dir: 'ltr' };
+      if (ar) return { text: ar, lang: 'ar', dir: 'rtl' };
+    } else {
+      if (ar) return { text: ar, lang: 'ar', dir: 'rtl' };
+      if (en) return { text: en, lang: 'en', dir: 'ltr' };
+    }
+
+    return null;
+  },
+
+  renderTafsir(verse) {
+    const tafsir = this.tafsirForVerse(verse);
+    if (!tafsir) return '';
+
+    const key = verse.surah + ':' + verse.ayah;
+    const open = this.tafsirOpen[key] ? ' open' : '';
+    const title = this.t('rub_tafsir_title', 'تفسير الآية');
+    const source = this.t('rub_tafsir_source', 'المختصر في التفسير');
+
+    return `
+      <details class="rub-tafsir" data-tafsir-key="${this.esc(key)}"${open}>
+        <summary class="rub-tafsir-summary">
+          <svg class="rub-tafsir-book" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+          </svg>
+          <span class="rub-tafsir-title">${this.esc(title)}</span>
+          <span class="rub-tafsir-source">${this.esc(source)}</span>
+          <svg class="rub-tafsir-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </summary>
+        <div class="rub-tafsir-body" lang="${this.esc(tafsir.lang)}" dir="${this.esc(tafsir.dir)}">${this.esc(tafsir.text)}</div>
+      </details>`;
   },
 
   stopGlyph(stop) {
