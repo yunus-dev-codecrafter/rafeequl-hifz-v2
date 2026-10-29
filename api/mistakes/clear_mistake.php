@@ -5,17 +5,17 @@ declare(strict_types=1);
  * Rafeequl Hifz - Clear / Manage Flashcard (History actions)
  * POST JSON: mistake_id, action ('MASTERED' | 'KEEP_PRACTICING' | 'REACTIVATE' | 'DELETE')
  *
- * MASTERED        -> archives the card (graduated_at set), records MASTERED event
- * REACTIVATE      -> returns it to the active deck, due immediately
+ * MASTERED        -> archives the card, sets the counter to 40, records MASTERED
+ * REACTIVATE      -> returns it to the active deck with a fresh 40-counter
  * DELETE          -> hard-deletes the row, keeps a DELETED audit event
- * KEEP_PRACTICING -> stays active, mastery_count + 1 (legacy)
+ * KEEP_PRACTICING -> one extra correct repetition (legacy shortcut)
  *
  * Graded practice should use review_mistake.php; this endpoint powers the
  * history page's management buttons.
  */
 
 require __DIR__ . '/../../config/database.php';
-require __DIR__ . '/_srs.php';
+require __DIR__ . '/_practice.php';
 
 function json_out(int $code, array $payload): void
 {
@@ -79,7 +79,7 @@ try {
     }
 
     if ($action === 'DELETE') {
-        srs_log_event($pdo, $userId, $mistakeId, 'DELETED');
+        practice_log_event($pdo, $userId, $mistakeId, 'DELETED');
         $stmt = $pdo->prepare('DELETE FROM `mistakes` WHERE `id` = :id AND `user_id` = :u');
         $stmt->execute([':id' => $mistakeId, ':u' => $userId]);
         json_out(200, [
@@ -98,41 +98,66 @@ try {
         } else {
             $stmt = $pdo->prepare(
                 "UPDATE `mistakes`
-                 SET `status` = 'ARCHIVED', `mastery_count` = `mastery_count` + 1,
+                 SET `status` = 'ARCHIVED', `practice_count` = `practice_target`,
+                     `mastery_count` = `mastery_count` + 1,
                      `graduated_at` = NOW()
                  WHERE `id` = :id AND `user_id` = :u AND `status` = 'ACTIVE'"
             );
             $stmt->execute([':id' => $mistakeId, ':u' => $userId]);
-            srs_log_event($pdo, $userId, $mistakeId, 'MASTERED',
-                SRS_GRADES['EASY'], (int) $mistake['interval_days'], (int) $mistake['interval_days'],
-                srs_prev_state($mistake));
+            practice_log_event($pdo, $userId, $mistakeId, 'MASTERED',
+                2, (int) $mistake['practice_count'], (int) $mistake['practice_target'],
+                practice_prev_state($mistake));
             $mistake['status']        = 'ARCHIVED';
+            $mistake['practice_count'] = (int) $mistake['practice_target'];
             $mistake['mastery_count'] = (int) $mistake['mastery_count'] + 1;
         }
     } elseif ($action === 'REACTIVATE') {
         $stmt = $pdo->prepare(
             "UPDATE `mistakes`
              SET `status` = 'ACTIVE', `graduated_at` = NULL, `due_at` = NOW(),
-                 `interval_days` = 0, `streak_correct` = 0
+                 `practice_count` = 0, `interval_days` = 0, `streak_correct` = 0
              WHERE `id` = :id AND `user_id` = :u"
         );
         $stmt->execute([':id' => $mistakeId, ':u' => $userId]);
-        srs_log_event($pdo, $userId, $mistakeId, 'REACTIVATED');
-        $mistake['status']      = 'ACTIVE';
-        $mistake['due_at']      = date('Y-m-d H:i:s');
+        practice_log_event($pdo, $userId, $mistakeId, 'REACTIVATED');
+        $mistake['status']        = 'ACTIVE';
+        $mistake['practice_count'] = 0;
+        $mistake['due_at']        = date('Y-m-d H:i:s');
         $mistake['interval_days'] = 0;
-    } else { // KEEP_PRACTICING (legacy)
+    } else { // KEEP_PRACTICING (legacy shortcut: one correct repetition)
         if ($mistake['status'] === 'ARCHIVED') {
-            json_out(400, ['success' => false, 'error' => 'Mistake is already archived.']);
+            json_out(400, ['success' => false, 'error' => 'Mistake is already completed.']);
         }
+        $next = practice_apply(
+            (int) $mistake['practice_count'],
+            (int) $mistake['practice_target'],
+            'CORRECT'
+        );
+        $newStatus = $next['completed'] ? 'ARCHIVED' : 'ACTIVE';
         $stmt = $pdo->prepare(
             "UPDATE `mistakes`
-             SET `mastery_count` = `mastery_count` + 1, `due_at` = NOW()
-             WHERE `id` = :id AND `user_id` = :u AND `status` = 'ACTIVE'"
+             SET `practice_count` = :pc,
+                 `status` = :status,
+                 `graduated_at` = :grad,
+                 `mastery_count` = `mastery_count` + 1,
+                 `due_at` = NOW(),
+                 `last_reviewed_at` = NOW()
+             WHERE `id` = :id AND `user_id` = :u"
         );
-        $stmt->execute([':id' => $mistakeId, ':u' => $userId]);
-        srs_log_event($pdo, $userId, $mistakeId, 'HARD', SRS_GRADES['HARD']);
-        $mistake['mastery_count'] = (int) $mistake['mastery_count'] + 1;
+        $stmt->execute([
+            ':pc'     => $next['count'],
+            ':status' => $newStatus,
+            ':grad'   => $next['completed'] ? date('Y-m-d H:i:s') : null,
+            ':id'     => $mistakeId,
+            ':u'      => $userId,
+        ]);
+        practice_log_event($pdo, $userId, $mistakeId,
+            $next['completed'] ? 'MASTERED' : 'GOOD',
+            2, (int) $mistake['practice_count'], $next['count'],
+            practice_prev_state($mistake));
+        $mistake['practice_count'] = $next['count'];
+        $mistake['status']         = $newStatus;
+        $mistake['mastery_count']  = (int) $mistake['mastery_count'] + 1;
     }
 
     json_out(200, [
@@ -148,6 +173,8 @@ try {
             'ayah_number'   => (int) $mistake['ayah_number'],
             'mistake_type'  => $mistake['mistake_type'],
             'status'        => $mistake['status'],
+            'practice_count' => (int) $mistake['practice_count'],
+            'practice_target' => (int) $mistake['practice_target'],
             'mastery_count' => (int) $mistake['mastery_count'],
         ],
     ]);

@@ -6,20 +6,23 @@ declare(strict_types=1);
  * POST JSON: user_id, page_number, surah_number, ayah_number, mistake_type,
  *            notes, severity, confused_with_surah, confused_with_ayah, source_task
  *
- * Deduplicates by (user, page, surah, ayah, type): logging the same mistake
- * again does not create a duplicate row, it bumps `occurrence_count`, resets
- * the SRS schedule (it is a lapse) and appends a LOGGED event.
+ * Three mistake categories:
+ *   AYAH_MISTAKE        - any slip inside one verse (that verse is tagged)
+ *   TRANSITION_FAILURE  - forgot which verse comes next (pair = next verse)
+ *   MUTASHABIHAT        - confused with a similar verse (pair = twin verse)
+ *
+ * Deduplicates by (user, page, surah, ayah, type). Logging the same mistake
+ * again never creates a duplicate row: it bumps `occurrence_count`, resets the
+ * 40-practice counter to 0 and reactivates the card if it had been archived.
  */
 
 require __DIR__ . '/../../config/database.php';
-require __DIR__ . '/_srs.php';
+require __DIR__ . '/_practice.php';
 
 const MISTAKE_TYPES = [
+    'AYAH_MISTAKE',
     'TRANSITION_FAILURE',
     'MUTASHABIHAT',
-    'TAWAQQUF',
-    'TASHKEEL',
-    'LAFDH',
 ];
 const SOURCE_TASKS = ['HIFZ_JADID', 'TIKRAR_AMS', 'RABT', 'MURAJAAH', 'RUB_TAMKIN'];
 
@@ -103,6 +106,11 @@ if ($ayahNumber < 1 || $ayahNumber > 286) {
 }
 
 $mistakeType = (string) ($input['mistake_type'] ?? '');
+// Cached old clients may still send the retired sub-types.
+$legacyTypes = ['TAWAQQUF' => 'AYAH_MISTAKE', 'TASHKEEL' => 'AYAH_MISTAKE', 'LAFDH' => 'AYAH_MISTAKE'];
+if (isset($legacyTypes[$mistakeType])) {
+    $mistakeType = $legacyTypes[$mistakeType];
+}
 if (!in_array($mistakeType, MISTAKE_TYPES, true)) {
     $errors['mistake_type'] = 'mistake_type must be one of: ' . implode(', ', MISTAKE_TYPES) . '.';
 }
@@ -125,6 +133,11 @@ $confusedAyah = read_optional_int($input['confused_with_ayah'] ?? null);
 if ($confusedAyah !== null && ($confusedAyah < 1 || $confusedAyah > 286)) {
     $errors['confused_with_ayah'] = 'confused_with_ayah must be between 1 and 286.';
 }
+// A paired verse is all-or-nothing.
+if (($confusedSurah === null) !== ($confusedAyah === null)) {
+    $confusedSurah = null;
+    $confusedAyah = null;
+}
 
 $sourceTask = $input['source_task'] ?? null;
 if ($sourceTask !== null && $sourceTask !== '' && !in_array($sourceTask, SOURCE_TASKS, true)) {
@@ -143,7 +156,7 @@ if ($notes !== null && mb_strlen($notes) > 5000) {
 $notes = $notes !== null && $notes !== '' ? $notes : null;
 
 // A paired verse is only meaningful for a forgotten next verse (transition) or
-// a confusable verse (mutashabihat). Never persist it on other mistake types.
+// a confusable verse (mutashabihat). Never persist it on a single-verse slip.
 if (!in_array($mistakeType, ['TRANSITION_FAILURE', 'MUTASHABIHAT'], true)) {
     $confusedSurah = null;
     $confusedAyah = null;
@@ -154,10 +167,11 @@ if ($errors) {
 }
 
 // ---------------------------------------------------------------------------
-// Save (dedup + merge)
+// Save (dedup + restart)
 // ---------------------------------------------------------------------------
 
-$merged = false;
+$merged    = false;
+$restarted = false;
 
 try {
     $stmt = $pdo->prepare('SELECT `id` FROM `users` WHERE `id` = :id');
@@ -166,50 +180,63 @@ try {
         json_out(401, ['success' => false, 'error' => 'Authentication required.']);
     }
 
-    // Is this exact mistake already active?
+    // Is this exact mistake already logged (active OR archived)?
     $stmt = $pdo->prepare(
-        "SELECT `id`, `occurrence_count`, `severity`
+        "SELECT `id`, `status`, `occurrence_count`, `severity`
          FROM `mistakes`
-         WHERE `user_id` = :u AND `page_number` = :p AND `surah_number` = :s
-           AND `ayah_number` = :a AND `mistake_type` = :t AND `status` = 'ACTIVE'
+         WHERE `user_id` = :u AND `surah_number` = :s
+           AND `ayah_number` = :a AND `mistake_type` = :t
+         ORDER BY `id` DESC
          LIMIT 1"
     );
     $stmt->execute([
-        ':u' => $userId, ':p' => $pageNumber, ':s' => $surahNumber,
+        ':u' => $userId, ':s' => $surahNumber,
         ':a' => $ayahNumber, ':t' => $mistakeType,
     ]);
     $existing = $stmt->fetch();
 
     if ($existing) {
         $mistakeId = (int) $existing['id'];
-        $merged = true;
+        $merged    = true;
+        $restarted = ($existing['status'] === 'ARCHIVED');
+
+        // Logging the same mistake again restarts the 40-practice counter.
         $stmt = $pdo->prepare(
             "UPDATE `mistakes`
              SET `occurrence_count` = `occurrence_count` + 1,
+                 `page_number`   = :p,
                  `severity`      = GREATEST(`severity`, :sev),
                  `notes`         = COALESCE(:n, `notes`),
                  `source_task`   = COALESCE(:src, `source_task`),
                  `confused_with_surah` = COALESCE(:cs, `confused_with_surah`),
                  `confused_with_ayah`  = COALESCE(:ca, `confused_with_ayah`),
-                 `interval_days` = 0,
+                 `practice_count` = 0,
+                 `practice_target` = GREATEST(`practice_target`, 40),
+                 `status`         = 'ACTIVE',
+                 `graduated_at`   = NULL,
+                 `interval_days`  = 0,
                  `streak_correct` = 0,
-                 `lapses`        = `lapses` + 1,
-                 `due_at`        = NOW()
+                 `lapses`         = `lapses` + 1,
+                 `due_at`         = NOW()
              WHERE `id` = :id AND `user_id` = :u"
         );
         $stmt->execute([
-            ':sev' => $severity, ':n' => $notes, ':src' => $sourceTask,
+            ':p' => $pageNumber, ':sev' => $severity, ':n' => $notes, ':src' => $sourceTask,
             ':cs' => $confusedSurah, ':ca' => $confusedAyah,
             ':id' => $mistakeId, ':u' => $userId,
         ]);
-        srs_log_event($pdo, $userId, $mistakeId, 'LOGGED');
+        practice_log_event($pdo, $userId, $mistakeId, 'LOGGED');
+        if ($restarted) {
+            practice_log_event($pdo, $userId, $mistakeId, 'REACTIVATED');
+        }
     } else {
         $stmt = $pdo->prepare(
             "INSERT INTO `mistakes`
                 (`user_id`, `page_number`, `surah_number`, `ayah_number`, `mistake_type`,
                  `notes`, `severity`, `confused_with_surah`, `confused_with_ayah`, `source_task`,
-                 `status`, `occurrence_count`, `due_at`)
-             VALUES (:u, :p, :s, :a, :t, :n, :sev, :cs, :ca, :src, 'ACTIVE', 1, NOW())"
+                 `status`, `practice_count`, `practice_target`, `occurrence_count`, `due_at`)
+             VALUES (:u, :p, :s, :a, :t, :n, :sev, :cs, :ca, :src,
+                     'ACTIVE', 0, 40, 1, NOW())"
         );
         $stmt->execute([
             ':u' => $userId, ':p' => $pageNumber, ':s' => $surahNumber, ':a' => $ayahNumber,
@@ -217,14 +244,15 @@ try {
             ':cs' => $confusedSurah, ':ca' => $confusedAyah, ':src' => $sourceTask,
         ]);
         $mistakeId = (int) $pdo->lastInsertId();
-        srs_log_event($pdo, $userId, $mistakeId, 'LOGGED');
+        practice_log_event($pdo, $userId, $mistakeId, 'LOGGED');
     }
 
     $stmt = $pdo->prepare(
         'SELECT `id`, `page_number`, `surah_number`, `ayah_number`, `mistake_type`,
                 `notes`, `severity`, `confused_with_surah`, `confused_with_ayah`, `source_task`,
-                `status`, `mastery_count`, `occurrence_count`, `interval_days`, `ease`,
-                `lapses`, `streak_correct`, `due_at`, `last_reviewed_at`, `created_at`
+                `status`, `practice_count`, `practice_target`, `mastery_count`,
+                `occurrence_count`, `interval_days`, `ease`, `lapses`, `streak_correct`,
+                `due_at`, `last_reviewed_at`, `created_at`
          FROM `mistakes` WHERE `id` = :id'
     );
     $stmt->execute([':id' => $mistakeId]);
@@ -234,11 +262,17 @@ try {
     json_out(500, ['success' => false, 'error' => 'Server error. Please try again.']);
 }
 
+$practiceCount  = (int) $mistake['practice_count'];
+$practiceTarget = (int) $mistake['practice_target'];
+
 json_out(200, [
-    'success' => true,
-    'merged'  => $merged,
-    'message' => $merged
-        ? 'Mistake recurrence recorded (existing card updated).'
+    'success'   => true,
+    'merged'    => $merged,
+    'restarted' => $restarted,
+    'message'   => $merged
+        ? ($restarted
+            ? 'Mistake reactivated with a fresh 40-practice counter.'
+            : 'Mistake recurrence recorded (practice counter restarted).')
         : 'Mistake logged successfully.',
     'mistake' => [
         'id'                 => (int) $mistake['id'],
@@ -252,6 +286,9 @@ json_out(200, [
         'confused_with_ayah' => $mistake['confused_with_ayah'] !== null ? (int) $mistake['confused_with_ayah'] : null,
         'source_task'        => $mistake['source_task'],
         'status'             => $mistake['status'],
+        'practice_count'     => $practiceCount,
+        'practice_target'    => $practiceTarget,
+        'remaining'          => max(0, $practiceTarget - $practiceCount),
         'mastery_count'      => (int) $mistake['mastery_count'],
         'occurrence_count'   => (int) $mistake['occurrence_count'],
         'interval_days'      => (int) $mistake['interval_days'],

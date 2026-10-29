@@ -96,7 +96,7 @@ $select .= $hasMustChange ? ', `must_change_password`' : ', 0 AS `must_change_pa
 
 $select .= ',
     (SELECT COUNT(*) FROM `mistakes` m WHERE m.`user_id` = `users`.`id` AND m.`status` = \'ACTIVE\') AS `active_mistakes`,
-    (SELECT COUNT(*) FROM `mistakes` m WHERE m.`user_id` = `users`.`id` AND m.`status` = \'ACTIVE\' AND m.`due_at` <= NOW()) AS `due_now`,
+    (SELECT COALESCE(SUM(GREATEST(m.`practice_target` - m.`practice_count`, 0)), 0) FROM `mistakes` m WHERE m.`user_id` = `users`.`id` AND m.`status` = \'ACTIVE\') AS `due_now`,
     (SELECT COUNT(*) FROM `mistakes` m WHERE m.`user_id` = `users`.`id` AND m.`status` = \'ARCHIVED\') AS `graduated`';
 
 if (rh_table_exists($pdo, 'daily_task_logs')) {

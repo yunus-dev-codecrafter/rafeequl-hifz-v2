@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 /**
  * Rafeequl Hifz - Mistake History & Weak-Point Analytics
- * - history:      full log (ACTIVE + ARCHIVED), newest first, SRS-aware
+ * - history:      full log (ACTIVE + ARCHIVED), newest first, with the 40-practice counter
  * - weak_points:  top recurring weak Ayahs and Surahs (weighted by recurrence)
  * - analytics:    type distribution, per-juz heatmap, due summary, review streak
  */
@@ -70,7 +70,8 @@ try {
     $stmt = $pdo->prepare(
         'SELECT `id`, `page_number`, `surah_number`, `ayah_number`, `mistake_type`,
                 `notes`, `severity`, `confused_with_surah`, `confused_with_ayah`,
-                `source_task`, `status`, `mastery_count`, `occurrence_count`,
+                `source_task`, `status`, `practice_count`, `practice_target`,
+                `mastery_count`, `occurrence_count`,
                 `interval_days`, `lapses`, `streak_correct`, `due_at`,
                 `last_reviewed_at`, `graduated_at`, `created_at`
          FROM `mistakes`
@@ -83,6 +84,8 @@ try {
         $surahNum = (int) $row['surah_number'];
         $type     = (string) $row['mistake_type'];
         $cs       = $row['confused_with_surah'] !== null ? (int) $row['confused_with_surah'] : null;
+        $pCount   = (int) $row['practice_count'];
+        $pTarget  = (int) $row['practice_target'];
         $history[] = [
             'id'             => (int) $row['id'],
             'page_number'    => (int) $row['page_number'],
@@ -98,6 +101,10 @@ try {
             'confused_with_ayah'  => $row['confused_with_ayah'] !== null ? (int) $row['confused_with_ayah'] : null,
             'source_task'    => $row['source_task'],
             'status'         => $row['status'],
+            'practice_count' => $pCount,
+            'practice_target' => $pTarget,
+            'remaining'      => max(0, $pTarget - $pCount),
+            'progress_percent' => $pTarget > 0 ? (int) round(($pCount / $pTarget) * 100) : 0,
             'mastery_count'  => (int) $row['mastery_count'],
             'occurrence_count' => (int) $row['occurrence_count'],
             'interval_days'  => (int) $row['interval_days'],
@@ -188,19 +195,30 @@ try {
         $juzHeatmap[] = ['juz_number' => $j, 'count' => $freqByJuz[$j] ?? 0];
     }
 
-    // Due summary
+    // Practice summary (40-repetition model)
     $stmt = $pdo->prepare(
         "SELECT
-            SUM(CASE WHEN `due_at` IS NULL OR `due_at` <= NOW() THEN 1 ELSE 0 END) AS due_now,
-            SUM(CASE WHEN `last_reviewed_at` IS NULL THEN 1 ELSE 0 END) AS new_cards
-         FROM `mistakes` WHERE `user_id` = :u AND `status` = 'ACTIVE'"
+            SUM(CASE WHEN `status` = 'ACTIVE' THEN 1 ELSE 0 END) AS active_cards,
+            SUM(CASE WHEN `status` = 'ACTIVE' THEN GREATEST(`practice_target` - `practice_count`, 0) ELSE 0 END) AS remaining_reps,
+            SUM(CASE WHEN `status` = 'ARCHIVED' THEN 1 ELSE 0 END) AS completed_cards,
+            SUM(CASE WHEN `status` = 'ACTIVE' AND `practice_count` = 0 THEN 1 ELSE 0 END) AS new_cards
+         FROM `mistakes` WHERE `user_id` = :u"
     );
     $stmt->execute([':u' => $userId]);
-    $d = $stmt->fetch() ?: ['due_now' => 0, 'new_cards' => 0];
+    $p = $stmt->fetch() ?: [];
+    $practiceSummary = [
+        'active_cards'    => (int) ($p['active_cards'] ?? 0),
+        'remaining_reps'  => (int) ($p['remaining_reps'] ?? 0),
+        'completed_cards' => (int) ($p['completed_cards'] ?? 0),
+        'new_cards'       => (int) ($p['new_cards'] ?? 0),
+    ];
+
+    // Due summary kept for API compatibility: every active card is available.
     $dueSummary = [
-        'due_now'   => (int) ($d['due_now'] ?? 0),
-        'new_cards' => (int) ($d['new_cards'] ?? 0),
+        'due_now'   => $practiceSummary['active_cards'],
+        'new_cards' => $practiceSummary['new_cards'],
         'total'     => $active,
+        'remaining_reps' => $practiceSummary['remaining_reps'],
     ];
 
     // Review streak (consecutive days with at least one review), ending today/yesterday
@@ -252,6 +270,7 @@ json_out(200, [
         'type_distribution' => $typeDistribution,
         'juz_heatmap'       => $juzHeatmap,
         'due_summary'       => $dueSummary,
+        'practice_summary'  => $practiceSummary,
         'streak'            => $streak,
     ],
 ]);

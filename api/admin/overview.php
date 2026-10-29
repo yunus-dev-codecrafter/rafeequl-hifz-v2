@@ -60,10 +60,10 @@ try {
         'progress' => [
             'pages_memorized'  => $one($pdo, "SELECT COALESCE(SUM(`current_hifz_page`), 0) FROM `users` WHERE $learnerWhere"),
             'active_mistakes'  => $one($pdo, "SELECT COUNT(*) FROM `mistakes` WHERE `status` = 'ACTIVE'"),
-            'due_now'          => $one($pdo, "SELECT COUNT(*) FROM `mistakes` WHERE `status` = 'ACTIVE' AND `due_at` IS NOT NULL AND `due_at` <= NOW()"),
+            'due_now'          => $one($pdo, "SELECT COALESCE(SUM(GREATEST(`practice_target` - `practice_count`, 0)), 0) FROM `mistakes` WHERE `status` = 'ACTIVE'"),
             'graduated'        => $one($pdo, "SELECT COUNT(*) FROM `mistakes` WHERE `status` = 'ARCHIVED'"),
             'reviews_all_time' => rh_table_exists($pdo, 'mistake_events')
-                ? $one($pdo, "SELECT COUNT(*) FROM `mistake_events` WHERE `event_type` IN ('AGAIN','HARD','GOOD','EASY')")
+                ? $one($pdo, "SELECT COUNT(*) FROM `mistake_events` WHERE `event_type` IN ('AGAIN','HARD','GOOD','EASY','MASTERED')")
                 : 0,
             'task_logs'        => rh_table_exists($pdo, 'daily_task_logs')
                 ? $one($pdo, 'SELECT COUNT(*) FROM `daily_task_logs`')

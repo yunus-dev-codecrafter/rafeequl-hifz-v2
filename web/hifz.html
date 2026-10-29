@@ -139,12 +139,11 @@
       <div class="field">
         <span class="field-label" data-i18n="mistake_type_label">نوع الخطأ</span>
         <div class="tag-group" id="mistake-tags">
-          <button type="button" class="tag-btn active" data-type="TRANSITION_FAILURE" data-i18n="tag_transition">انقطاع / نقلة</button>
-          <button type="button" class="tag-btn" data-type="MUTASHABIHAT" data-i18n="tag_mutashabihat">متشابهات</button>
-          <button type="button" class="tag-btn" data-type="TAWAQQUF" data-i18n="tag_tawaqquf">توقف</button>
-          <button type="button" class="tag-btn" data-type="TASHKEEL" data-i18n="tag_tashkeel">تشكيل</button>
-          <button type="button" class="tag-btn" data-type="LAFDH" data-i18n="tag_lafdh">لفظ</button>
+          <button type="button" class="tag-btn active" data-type="AYAH_MISTAKE" data-i18n="tag_ayah_mistake">خطأ في آية</button>
+          <button type="button" class="tag-btn" data-type="TRANSITION_FAILURE" data-i18n="tag_transition">نسيان الآية التالية</button>
+          <button type="button" class="tag-btn" data-type="MUTASHABIHAT" data-i18n="tag_mutashabihat">آيات متشابهة</button>
         </div>
+        <p class="hint" id="mistake-type-hint" style="margin-top:0.45rem;"></p>
       </div>
 
       <div class="field">
@@ -158,10 +157,18 @@
 
       <div class="field hidden" id="mistake-confused-wrap">
         <label data-i18n="mistake_confused_label">الالتباس مع آية أخرى (للمتشابهات)</label>
+        <div id="mistake-suggest-wrap" class="hidden">
+          <div class="ayah-chips-head">
+            <span class="ayah-chips-label" data-i18n="mistake_suggest_label">آيات تشبهها (انقر للاختيار):</span>
+          </div>
+          <div id="mistake-suggest-chips" class="ayah-chips-group mistake-suggest-chips"></div>
+          <p class="hint" id="mistake-suggest-hint" style="margin:0.35rem 0;"></p>
+        </div>
         <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
           <select id="mistake-confused-surah" style="flex:1; min-width:140px;"></select>
           <select id="mistake-confused-ayah" style="flex:1; min-width:110px;"></select>
         </div>
+        <div id="mistake-pair-preview" class="mistake-pair-preview hidden"></div>
         <p class="hint" style="margin-top:0.35rem;" data-i18n="mistake_confused_hint">اختياري، ومفيد جداً لأخطاء المتشابهات</p>
       </div>
 
@@ -178,6 +185,7 @@
   </div>
 
   <script src="js/page-notes.js"></script>
+  <script src="js/mutashabihat.js"></script>
   <script src="js/app.js"></script>
   <script src="js/hifz.js"></script>
   <script src="js/nav.js"></script>

@@ -299,6 +299,21 @@ const RubPage = {
 
     const dock = document.getElementById('rub-dock');
     if (dock) dock.classList.remove('hidden');
+
+    // Optional microphone self-test. It owns its own overlay and reads the
+    // same verse payload; it never changes the 3× station progress.
+    this.mountRecitation();
+  },
+
+  mountRecitation() {
+    if (window.RubRecitation && typeof window.RubRecitation.attach === 'function') {
+      try {
+        window.RubRecitation.attach(this);
+      } catch (e) {
+        // The microphone test is optional: never break the rub' page for it.
+        if (window.console) console.warn('[RubRecitation] attach failed', e);
+      }
+    }
   },
 
   updateCarryChip() {

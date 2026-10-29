@@ -485,6 +485,9 @@ h1, h2, h3, h4 {
 .stat-content {
   display: flex;
   flex-direction: column;
+  align-items: center;
+  min-width: 0;
+  text-align: center;
 }
 
 .stat-label {
@@ -573,6 +576,12 @@ h1, h2, h3, h4 {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.task-range > span:first-child {
+  min-width: 0;
 }
 
 /* Task Card Variants */
@@ -618,12 +627,18 @@ h1, h2, h3, h4 {
 
 .task-status {
   display: inline-flex;
+  flex: none;
   align-items: center;
+  justify-content: center;
   gap: 0.35rem;
-  padding: 0.3rem 0.65rem;
+  height: 1.85rem;
+  padding: 0 0.65rem;
+  border: 1px solid transparent;
   border-radius: var(--radius-full);
   font-size: 0.75rem;
   font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
   background: var(--line-subtle);
   color: var(--muted);
 }
@@ -631,15 +646,21 @@ h1, h2, h3, h4 {
 .task-status.done {
   background: var(--task-green-bg);
   color: var(--task-green);
-  border: 1px solid var(--task-green-border);
+  border-color: var(--task-green-border);
 }
 
 .task-flag {
   display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
   padding: 0.25rem 0.6rem;
   border-radius: var(--radius-full);
   font-size: 0.72rem;
   font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
   background: var(--warning-soft);
   color: var(--warning);
   border: 1px solid var(--warning-border);
@@ -3148,6 +3169,12 @@ html[dir="ltr"] body {
 }
 
 .fc-counter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.1rem;
+  min-height: 72px;
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
@@ -3618,6 +3645,7 @@ html[dir="ltr"] body {
 .pn-cue-sev { color: #f59e0b; font-weight: 900; letter-spacing: 1px; font-size: 0.7rem; }
 .pn-cue-sev.sev-3 { color: #dc2626; }
 .pn-cue-occ { font-size: 0.68rem; font-weight: 800; color: var(--ink-secondary); }
+.pn-cue-practice { font-size: 0.68rem; font-weight: 800; color: var(--accent); font-variant-numeric: tabular-nums; }
 .pn-cue-note { margin: 0.35rem 0 0; font-size: 0.78rem; color: var(--ink-secondary); }
 .pn-cue-add {
   margin-inline-start: auto;
@@ -4260,11 +4288,15 @@ body.focus-mode .stage-actions.is-sticky { top: 0.5rem; }
 .admin-stat {
   display: flex;
   flex-direction: column;
+  align-items: center;
+  justify-content: center;
   gap: 0.1rem;
+  min-height: 64px;
   padding: 0.6rem 0.7rem;
   border-radius: var(--radius-md);
   background: var(--card);
   border: 1px solid var(--line);
+  text-align: center;
 }
 
 .admin-stat b { font-size: 1.1rem; color: var(--ink); font-variant-numeric: tabular-nums; }
@@ -5157,7 +5189,9 @@ body.focus-mode .rub-verse-head { background: transparent; }
 .rub-complete-stats div {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 0.1rem;
+  min-width: 64px;
 }
 
 .rub-complete-stats strong {
@@ -5433,7 +5467,7 @@ body.nav-sheet-open {
 }
 
 /* ==========================================================================
-   HIFZ_JADID � verse-by-verse 40� memorization sequencer
+   HIFZ_JADID � verse-by-verse 40� memorization sequencer
    ========================================================================== */
 
 .hifz-head {
@@ -5672,6 +5706,7 @@ body.nav-sheet-open {
 
 .hifz-counter-label {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
   font-size: 0.73rem;
@@ -5896,4 +5931,753 @@ body.focus-mode .hifz-link-list {
   .hifz-link-list {
     max-height: 30vh;
   }
+}
+
+/* ==========================================================================
+   Full-rub' microphone recitation (تسميع الربع كاملاً)
+   ========================================================================== */
+
+.rub-mic-card {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  margin: 1rem 0;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--card);
+  box-shadow: var(--shadow-sm);
+}
+
+.rub-mic-card-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 15px;
+  border: 1px solid var(--accent-soft-border);
+  background: var(--accent-soft);
+  font-size: 1.45rem;
+  line-height: 1;
+}
+
+.rub-mic-card-body {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.rub-mic-card-kicker {
+  margin-bottom: 0.1rem;
+  color: var(--accent);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+
+.rub-mic-card h3 {
+  margin: 0 0 0.12rem;
+  color: var(--ink);
+  font-size: 1rem;
+  line-height: 1.4;
+}
+
+.rub-mic-card p {
+  margin: 0;
+  max-width: 62ch;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.7;
+}
+
+.rub-mic-last {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  margin-top: 0.4rem;
+  padding: 0.16rem 0.55rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-full);
+  background: var(--bg);
+  color: var(--muted);
+  font-size: 0.66rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.rub-mic-last.is-clean {
+  border-color: var(--success-border);
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.rub-mic-card > .btn {
+  flex: none;
+  white-space: nowrap;
+}
+
+.rub-mic-end-cta {
+  width: 100%;
+  margin-top: 0.9rem;
+}
+
+body.rub-mic-active {
+  overflow: hidden;
+}
+
+.rub-mic-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 220;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+
+.rub-mic-overlay.hidden {
+  display: none !important;
+}
+
+.rub-mic-shell {
+  display: flex;
+  flex-direction: column;
+  width: min(920px, 100%);
+  height: 100vh;
+  height: 100dvh;
+  margin: 0 auto;
+  background: var(--bg);
+}
+
+.rub-mic-head {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: calc(0.65rem + env(safe-area-inset-top)) 1rem 0.65rem;
+  border-bottom: 1px solid var(--line);
+  background: var(--card);
+}
+
+.rub-mic-head-title {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.05rem;
+  min-width: 0;
+  text-align: center;
+}
+
+.rub-mic-head-title strong {
+  color: var(--ink);
+  font-size: 0.92rem;
+  line-height: 1.4;
+}
+
+.rub-mic-timer {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.4;
+}
+
+.rub-mic-icon-btn,
+.rub-mic-head-spacer {
+  flex: none;
+  width: 38px;
+  height: 38px;
+}
+
+.rub-mic-icon-btn {
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--card);
+  color: var(--ink-secondary);
+  font-family: inherit;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background var(--duration) var(--ease), border-color var(--duration) var(--ease);
+}
+
+.rub-mic-icon-btn:hover {
+  border-color: var(--accent-soft-border);
+  background: var(--accent-soft);
+}
+
+.rub-mic-intro {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.55rem;
+  overflow-y: auto;
+  padding: 1.5rem 1.15rem calc(1.4rem + env(safe-area-inset-bottom));
+  text-align: center;
+}
+
+.rub-mic-intro-icon {
+  display: grid;
+  place-items: center;
+  width: 76px;
+  height: 76px;
+  border: 1px solid var(--accent-soft-border);
+  border-radius: 24px;
+  background: var(--accent-soft);
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.rub-mic-intro h2 {
+  margin: 0.2rem 0 0;
+  color: var(--ink);
+  font-size: 1.28rem;
+}
+
+.rub-mic-intro-lead {
+  margin: 0;
+  max-width: 46ch;
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.85;
+}
+
+.rub-mic-tips {
+  display: flex;
+  flex-direction: column;
+  gap: 0.42rem;
+  width: 100%;
+  max-width: 470px;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  list-style: none;
+  text-align: right;
+}
+
+.rub-mic-tips li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.52rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--card);
+  color: var(--ink-secondary);
+  font-size: 0.77rem;
+  line-height: 1.65;
+}
+
+.rub-mic-tips li > span[aria-hidden] {
+  flex: none;
+  line-height: 1.5;
+}
+
+.rub-mic-note {
+  width: 100%;
+  max-width: 520px;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--warning-border);
+  border-radius: var(--radius-md);
+  background: var(--warning-soft);
+  color: var(--warning);
+  font-size: 0.77rem;
+  font-weight: 600;
+  line-height: 1.65;
+  text-align: right;
+}
+
+html[dir="ltr"] .rub-mic-tips,
+html[dir="ltr"] .rub-mic-note {
+  text-align: left;
+}
+
+.rub-mic-intro-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+.rub-mic-intro-actions .btn {
+  min-width: 132px;
+}
+
+.rub-mic-live {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-height: 0;
+  padding: 0.65rem 1rem calc(0.65rem + env(safe-area-inset-bottom));
+}
+
+.rub-mic-statusbar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 24px;
+}
+
+.rub-mic-dot {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--muted-light);
+}
+
+.rub-mic-dot.is-live {
+  background: var(--accent);
+  animation: rubMicPulse 1.6s var(--ease) infinite;
+}
+
+.rub-mic-dot.is-paused {
+  background: var(--warning);
+}
+
+.rub-mic-dot.is-error {
+  background: var(--danger);
+}
+
+@keyframes rubMicPulse {
+  0% { box-shadow: 0 0 0 0 var(--accent-glow); }
+  70% { box-shadow: 0 0 0 7px rgba(15, 118, 110, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(15, 118, 110, 0); }
+}
+
+.rub-mic-status {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--ink-secondary);
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.rub-mic-percent {
+  flex: none;
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.rub-mic-progress {
+  flex: none;
+  height: 6px;
+  overflow: hidden;
+  border-radius: var(--radius-full);
+  background: var(--line-subtle);
+}
+
+.rub-mic-progress > span {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent), var(--accent-light));
+  transition: width 0.3s var(--ease);
+}
+
+.rub-mic-stall {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.48rem 0.7rem;
+  border: 1px solid var(--warning-border);
+  border-radius: var(--radius-md);
+  background: var(--warning-soft);
+  color: var(--warning);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.rub-mic-sheet {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0.75rem 0.9rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--card);
+  scroll-behavior: smooth;
+}
+
+.rub-mic-verse {
+  padding: 0.45rem 0 0.6rem;
+  border-bottom: 1px dashed var(--line-subtle);
+}
+
+.rub-mic-verse:last-child {
+  border-bottom: 0;
+}
+
+.rub-mic-verse-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+  color: var(--muted);
+  font-size: 0.64rem;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+.rub-mic-verse-surah {
+  color: var(--accent);
+}
+
+.rub-mic-verse-ayah {
+  font-variant-numeric: tabular-nums;
+}
+
+.rub-mic-text {
+  margin: 0;
+  color: var(--ink);
+  font-family: 'Amiri Quran', 'Amiri', 'Traditional Arabic', serif;
+  font-size: 1.55rem;
+  line-height: 2.3;
+  text-align: right;
+  word-spacing: 0.06em;
+}
+
+.rub-mw {
+  padding: 0 0.02em;
+  border-radius: 0.25rem;
+  background: transparent;
+  color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+  transition: color 0.18s var(--ease), background-color 0.18s var(--ease);
+}
+
+.rub-mw.is-heard {
+  color: var(--ink);
+}
+
+.rub-mw.is-hinted {
+  color: var(--warning);
+}
+
+/* The current word marks the position with a soft block, but its text stays
+   hidden until it is actually recited. */
+.rub-mw.is-current {
+  color: transparent;
+  background: var(--accent-soft);
+  box-shadow: inset 0 -2px 0 var(--accent-soft-border);
+}
+
+.rub-mic-sheet.is-revealed .rub-mw {
+  color: var(--ink);
+}
+
+.rub-mic-sheet.is-revealed .rub-mw.is-hinted {
+  color: var(--warning);
+}
+
+.rub-mic-sheet.is-revealed .rub-mw.is-current {
+  color: var(--accent);
+}
+
+.rub-mic-controls {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem;
+  padding-top: 0.1rem;
+}
+
+.rub-mic-controls .btn {
+  flex: 1 1 calc(33.333% - 0.4rem);
+  min-width: 92px;
+  min-height: 40px;
+  padding: 0.42rem 0.5rem;
+  font-size: 0.75rem;
+  line-height: 1.3;
+}
+
+.rub-mic-debug {
+  flex: none;
+  padding: 0.5rem;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-md);
+  background: var(--bg);
+}
+
+.rub-mic-debug-tools {
+  display: flex;
+  align-items: stretch;
+  gap: 0.4rem;
+}
+
+.rub-mic-debug textarea {
+  flex: 1 1 auto;
+  min-height: 38px;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--card);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 0.72rem;
+  resize: vertical;
+}
+
+.rub-mic-debug-output {
+  max-height: 120px;
+  margin: 0.4rem 0 0;
+  overflow: auto;
+  color: var(--muted);
+  font-size: 0.66rem;
+  line-height: 1.5;
+  text-align: left;
+  direction: ltr;
+  white-space: pre-wrap;
+}
+
+.rub-mic-report {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.55rem;
+  overflow-y: auto;
+  padding: 2rem 1.2rem calc(1.4rem + env(safe-area-inset-bottom));
+  text-align: center;
+}
+
+.rub-mic-report-icon {
+  display: grid;
+  place-items: center;
+  width: 74px;
+  height: 74px;
+  border: 1px solid var(--success-border);
+  border-radius: 50%;
+  background: var(--success-soft);
+  color: var(--success);
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.rub-mic-report-icon.is-partial {
+  border-color: var(--warning-border);
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.rub-mic-report h2 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 1.24rem;
+}
+
+.rub-mic-report > p {
+  margin: 0;
+  max-width: 44ch;
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.8;
+}
+
+.rub-mic-report-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+  width: 100%;
+  max-width: 420px;
+  margin-top: 0.55rem;
+}
+
+.rub-mic-report-grid > div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.1rem;
+  padding: 0.68rem 0.4rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--card);
+}
+
+#rub-mic-report-hint-row {
+  grid-column: 1 / -1;
+}
+
+.rub-mic-report-grid strong {
+  color: var(--ink);
+  font-size: 1.15rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+.rub-mic-report-grid span {
+  color: var(--muted);
+  font-size: 0.67rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.rub-mic-report-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  margin-top: 0.75rem;
+}
+
+.rub-mic-report-actions .btn {
+  min-width: 142px;
+}
+
+@media (max-width: 620px) {
+  .rub-mic-card {
+    flex-wrap: wrap;
+    gap: 0.65rem;
+  }
+
+  .rub-mic-card-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    font-size: 1.2rem;
+  }
+
+  .rub-mic-card > .btn {
+    width: 100%;
+  }
+
+  .rub-mic-text {
+    font-size: 1.34rem;
+    line-height: 2.15;
+  }
+
+  .rub-mic-controls .btn {
+    flex-basis: calc(50% - 0.4rem);
+  }
+}
+
+@media (max-width: 380px) {
+  .rub-mic-controls .btn {
+    flex-basis: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rub-mic-dot.is-live {
+    animation: none;
+  }
+
+  .rub-mw,
+  .rub-mic-progress > span {
+    transition: none;
+  }
+}
+
+/* ---- Mistake modal: mutashabihat suggestions + paired verse preview ---- */
+#mistake-suggest-wrap {
+  margin-bottom: 0.6rem;
+}
+
+.mistake-suggest-chips {
+  max-height: 120px;
+}
+
+.mistake-suggest-chips .ayah-chip {
+  height: auto;
+  min-height: 34px;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.78rem;
+}
+
+.mistake-pair-preview {
+  margin-top: 0.5rem;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--line-subtle, rgba(0, 0, 0, 0.02));
+  font-size: 0.8rem;
+  line-height: 1.8;
+}
+
+.mistake-pair-preview-label {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.mistake-pair-preview-ref {
+  font-weight: 800;
+  color: var(--accent);
+}
+
+.mistake-pair-preview-text {
+  font-family: 'Amiri Quran', 'Cairo', serif;
+  font-size: 0.95rem;
+}
+
+/* ---- Flashcards: 40-practice counter ---- */
+.fc-practice-counter {
+  margin-top: 0.9rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--card);
+}
+
+.fc-practice-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.45rem;
+}
+
+.fc-practice-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.fc-practice-num {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.fc-practice-track {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--line-subtle, rgba(0, 0, 0, 0.06));
+  overflow: hidden;
+}
+
+.fc-practice-fill {
+  height: 100%;
+  width: 0;
+  border-radius: 999px;
+  background: var(--accent);
+  transition: width 0.25s ease;
+}
+
+.fc-practice-hint {
+  margin-top: 0.4rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-align: center;
 }

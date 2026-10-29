@@ -2,16 +2,18 @@
 declare(strict_types=1);
 
 /**
- * Rafeequl Hifz - Review Mistake (Spaced Repetition)
- * POST JSON: user_id, mistake_id, grade ('AGAIN'|'HARD'|'GOOD'|'EASY')
- *            (legacy) action ('MASTERED' -> EASY, 'KEEP_PRACTICING' -> HARD)
+ * Rafeequl Hifz - Practice a Mistake (40-repetition model)
+ * POST JSON: user_id, mistake_id, result ('CORRECT'|'SLIP')
+ *            (legacy) grade ('AGAIN'|'HARD'|'GOOD'|'EASY')
+ *            (legacy) action ('MASTERED' -> CORRECT, 'KEEP_PRACTICING' -> SLIP)
  *
- * Applies the SRS transition, records an audit event, and reports whether the
- * card graduated (archived) or when it is next due.
+ * CORRECT adds one repetition; when the counter reaches `practice_target` (40)
+ * the card is archived automatically and leaves the practice deck.
+ * SLIP records the stumble but does not add a repetition.
  */
 
 require __DIR__ . '/../../config/database.php';
-require __DIR__ . '/_srs.php';
+require __DIR__ . '/_practice.php';
 
 function json_out(int $code, array $payload): void
 {
@@ -52,15 +54,24 @@ if (!is_int($mistakeId) || $mistakeId < 1) {
     json_out(400, ['success' => false, 'errors' => ['mistake_id' => 'mistake_id must be a positive integer.']]);
 }
 
-// Grade (with legacy action fallback).
-$grade = strtoupper((string) ($input['grade'] ?? ''));
-if ($grade === '') {
-    $action = strtoupper((string) ($input['action'] ?? ''));
-    if ($action === 'MASTERED')      { $grade = 'EASY'; }
-    elseif ($action === 'KEEP_PRACTICING') { $grade = 'HARD'; }
+// Result (with legacy grade/action fallback so a cached client keeps working).
+$result = strtoupper((string) ($input['result'] ?? ''));
+if ($result === '') {
+    $grade = strtoupper((string) ($input['grade'] ?? ''));
+    if ($grade === 'GOOD' || $grade === 'EASY')      { $result = 'CORRECT'; }
+    elseif ($grade === 'AGAIN' || $grade === 'HARD') { $result = 'SLIP'; }
+
+    if ($result === '') {
+        $action = strtoupper((string) ($input['action'] ?? ''));
+        if ($action === 'MASTERED')             { $result = 'CORRECT'; }
+        elseif ($action === 'KEEP_PRACTICING')  { $result = 'SLIP'; }
+    }
 }
-if (!array_key_exists($grade, SRS_GRADES)) {
-    json_out(400, ['success' => false, 'errors' => ['grade' => "grade must be one of: AGAIN, HARD, GOOD, EASY."]]);
+if (!in_array($result, ['CORRECT', 'SLIP'], true)) {
+    json_out(400, [
+        'success' => false,
+        'errors'  => ['result' => "result must be 'CORRECT' or 'SLIP'."],
+    ]);
 }
 
 try {
@@ -71,78 +82,72 @@ try {
         json_out(400, ['success' => false, 'error' => 'Mistake not found.']);
     }
 
-    $wasArchived = ($m['status'] === 'ARCHIVED');
-
-    $prev        = srs_prev_state($m);
-    $interval    = (int) $m['interval_days'];
-    $ease        = (float) $m['ease'];
-    $streak      = (int) $m['streak_correct'];
-    $mastery     = (int) $m['mastery_count'];
-    $lapses      = (int) $m['lapses'];
-
-    $next = srs_next_schedule($interval, $ease, $grade, $streak);
-
-    $newInterval = $next['interval'];
-    $newEase     = $next['ease'];
-    $newStreak   = $next['streak'];
-    if ($next['lapse']) {
-        $lapses++;
-    }
-    if ($grade === 'GOOD' || $grade === 'EASY') {
-        $mastery++;
+    if ($m['status'] === 'ARCHIVED') {
+        json_out(400, [
+            'success' => false,
+            'error'   => 'Mistake is already completed. Log it again to restart practice.',
+        ]);
     }
 
-    $graduate = (
-        ($grade === 'GOOD' || $grade === 'EASY')
-        && $newStreak >= SRS_GRADUATE_STREAK
-        && $newInterval >= SRS_GRADUATE_MIN_INTERVAL
-    );
+    $prev     = practice_prev_state($m);
+    $count    = (int) $m['practice_count'];
+    $target   = (int) $m['practice_target'];
+    $next     = practice_apply($count, $target, $result);
 
-    $dueAt       = srs_due_datetime($newInterval);
-    $newStatus   = $graduate ? 'ARCHIVED' : 'ACTIVE';
-    $graduatedAt = $graduate ? date('Y-m-d H:i:s') : $m['graduated_at'];
+    $newStatus   = $next['completed'] ? 'ARCHIVED' : 'ACTIVE';
+    $graduatedAt = $next['completed'] ? date('Y-m-d H:i:s') : $m['graduated_at'];
+    $mastery     = (int) $m['mastery_count'] + ($result === 'CORRECT' ? 1 : 0);
+    $lapses      = (int) $m['lapses'] + ($result === 'SLIP' ? 1 : 0);
 
     $stmt = $pdo->prepare(
         "UPDATE `mistakes`
-         SET `interval_days`    = :iv,
-             `ease`             = :ez,
-             `lapses`           = :lp,
-             `streak_correct`   = :st,
-             `mastery_count`    = :mc,
-             `due_at`           = :due,
-             `last_reviewed_at` = NOW(),
+         SET `practice_count`   = :pc,
+             `practice_target`  = :pt,
              `status`           = :status,
-             `graduated_at`     = :grad
+             `graduated_at`     = :grad,
+             `mastery_count`    = :mc,
+             `lapses`           = :lp,
+             `last_reviewed_at` = NOW(),
+             `due_at`           = NOW()
          WHERE `id` = :id AND `user_id` = :u"
     );
     $stmt->execute([
-        ':iv' => $newInterval, ':ez' => $newEase, ':lp' => $lapses, ':st' => $newStreak,
-        ':mc' => $mastery, ':due' => $dueAt, ':status' => $newStatus, ':grad' => $graduatedAt,
-        ':id' => $mistakeId, ':u' => $userId,
+        ':pc'     => $next['count'],
+        ':pt'     => $next['target'],
+        ':status' => $newStatus,
+        ':grad'   => $graduatedAt,
+        ':mc'     => $mastery,
+        ':lp'     => $lapses,
+        ':id'     => $mistakeId,
+        ':u'      => $userId,
     ]);
 
-    srs_log_event(
-        $pdo, $userId, $mistakeId,
-        $graduate ? 'MASTERED' : $grade,
-        SRS_GRADES[$grade],
-        $interval, $newInterval,
-        $prev
+    // Reuse the existing audit enum: GOOD = correct repetition, AGAIN = slip,
+    // MASTERED = the repetition that completed the card.
+    $eventType = $next['completed'] ? 'MASTERED' : ($result === 'CORRECT' ? 'GOOD' : 'AGAIN');
+    $grade     = $result === 'CORRECT' ? 2 : 0;
+    practice_log_event(
+        $pdo, $userId, $mistakeId, $eventType,
+        $grade, $count, $next['count'], $prev
     );
 
     json_out(200, [
-        'success'     => true,
-        'graduated'   => $graduate,
-        'grade'       => $grade,
-        'mastery_count' => $mastery,
-        'mistake'     => [
-            'id'             => $mistakeId,
-            'status'         => $newStatus,
-            'interval_days'  => $newInterval,
-            'ease'           => $newEase,
-            'lapses'         => $lapses,
-            'streak_correct' => $newStreak,
-            'mastery_count'  => $mastery,
-            'due_at'         => $dueAt,
+        'success'        => true,
+        'result'         => $result,
+        'completed'      => $next['completed'],
+        'practice_count' => $next['count'],
+        'practice_target' => $next['target'],
+        'remaining'      => $next['remaining'],
+        'status'         => $newStatus,
+        'mistake'        => [
+            'id'              => $mistakeId,
+            'status'          => $newStatus,
+            'practice_count'  => $next['count'],
+            'practice_target' => $next['target'],
+            'remaining'       => $next['remaining'],
+            'mastery_count'   => $mastery,
+            'lapses'          => $lapses,
+            'graduated_at'    => $graduatedAt,
         ],
     ], JSON_UNESCAPED_UNICODE);
 } catch (PDOException $e) {

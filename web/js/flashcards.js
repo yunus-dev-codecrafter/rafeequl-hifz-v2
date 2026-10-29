@@ -1,11 +1,12 @@
 'use strict';
 
 /* ==========================================================================
-   Rafeequl Hifz (رفيق الحفظ) — Spaced-Repetition Flashcard Engine
-   - Due-first deck with counter badges (due / new / active)
-   - 4-way grading (AGAIN / HARD / GOOD / EASY) driven by review_mistake.php
+   Rafeequl Hifz (رفيق الحفظ) — 40-Repetition Mistake Practice Engine
+   - Every ACTIVE mistake is in the deck (no due-date scheduling)
+   - CORRECT adds +1 to practice_count; SLIP adds nothing
+   - At practice_target (40) the card is archived automatically
    - Ayah text on the card back (offline bundle) + recitation audio
-   - Swipe / tap to flip, keys 1-4 to grade, undo, session summary
+   - Swipe / tap to flip, undo, session summary
    ========================================================================== */
 
 const FC = {
@@ -13,11 +14,10 @@ const FC = {
   pos: 0,
   busy: false,
   flipped: false,
-  mode: 'due',
   shuffle: false,
   filters: { mistake_type: '', surah_number: '', juz_number: '' },
-  counts: { due: 0, new: 0, total: 0 },
-  stats: { again: 0, hard: 0, good: 0, easy: 0, graduated: 0 },
+  counts: { remainingReps: 0, active: 0, completed: 0 },
+  stats: { correct: 0, slips: 0, completed: 0 },
   initialTotal: 0,
   answered: 0,
   lastAction: null,
@@ -93,7 +93,7 @@ function normalizeCard(raw) {
       surah_name: front.surah_name || '',
       page_number: parseInt(front.page_number, 10) || 1,
       ayah_number: parseInt(front.ayah_number, 10) || 1,
-      mistake_type: front.mistake_type || 'MUTASHABIHAT',
+      mistake_type: front.mistake_type || 'AYAH_MISTAKE',
       mistake_label: front.mistake_label || front.mistake_type || '',
       severity: parseInt(front.severity, 10) || 1,
       juz_number: front.juz_number || null,
@@ -106,6 +106,10 @@ function normalizeCard(raw) {
     },
     back: {
       notes: back.notes || '',
+      practice_count: parseInt(back.practice_count ?? 0, 10) || 0,
+      practice_target: parseInt(back.practice_target ?? 40, 10) || 40,
+      remaining: parseInt(back.remaining ?? 40, 10),
+      progress_percent: parseInt(back.progress_percent ?? 0, 10) || 0,
       mastery_count: parseInt(back.mastery_count ?? 0, 10),
       occurrence_count: parseInt(back.occurrence_count ?? 1, 10),
       interval_days: parseInt(back.interval_days ?? 0, 10),
@@ -123,9 +127,28 @@ function fcCard() {
   return FC.deck[FC.pos] || null;
 }
 
-function fcIntervalLabel(card) {
-  if (card.back.is_new || card.back.interval_days <= 0) return fcT('fc_interval_today');
-  return fcT('fc_interval_days', { days: card.back.interval_days });
+function fcPracticePercent(count, target) {
+  const t = Math.max(1, target || 40);
+  return Math.max(0, Math.min(100, Math.round((count / t) * 100)));
+}
+
+function fcUpdatePracticeUI(card) {
+  if (!card) return;
+  const b = card.back;
+  const count = Math.max(0, parseInt(b.practice_count, 10) || 0);
+  const target = Math.max(1, parseInt(b.practice_target, 10) || 40);
+  const pct = fcPracticePercent(count, target);
+
+  if (fcEl('fc-practice-count')) fcEl('fc-practice-count').textContent = count;
+  if (fcEl('fc-practice-target')) fcEl('fc-practice-target').textContent = target;
+  if (fcEl('fc-practice-fill')) fcEl('fc-practice-fill').style.width = pct + '%';
+
+  const hint = fcEl('fc-practice-hint');
+  if (hint) {
+    hint.textContent = count >= target
+      ? fcT('fc_practice_done_toast')
+      : fcT('fc_practice_remaining', { count: target - count });
+  }
 }
 
 function fcUpdateProgress() {
@@ -140,9 +163,9 @@ function fcUpdateProgress() {
 }
 
 function fcUpdateCounters() {
-  if (fcEl('fc-due-count')) fcEl('fc-due-count').textContent = FC.counts.due;
-  if (fcEl('fc-new-count')) fcEl('fc-new-count').textContent = FC.counts.new;
-  if (fcEl('fc-total-count')) fcEl('fc-total-count').textContent = FC.counts.total;
+  if (fcEl('fc-remaining-reps')) fcEl('fc-remaining-reps').textContent = FC.counts.remainingReps;
+  if (fcEl('fc-active-cards')) fcEl('fc-active-cards').textContent = FC.counts.active;
+  if (fcEl('fc-completed-cards')) fcEl('fc-completed-cards').textContent = FC.counts.completed;
 }
 
 function fcRender() {
@@ -182,11 +205,11 @@ function fcRender() {
   }
   if (fcEl('fc-flags')) fcEl('fc-flags').innerHTML = flags.join('');
 
-  // Record line (mastery + next interval)
+  // Record line (practice counter + recurrence)
   if (fcEl('fc-record')) {
     const rec = [];
-    rec.push(fcT('fc_card_record') + ': ' + b.mastery_count);
-    rec.push(fcT('fc_card_interval', { label: fcIntervalLabel(card) }));
+    rec.push(fcT('fc_practice_of', { count: b.practice_count, target: b.practice_target }));
+    if (b.occurrence_count > 1) rec.push(fcT('fc_card_occurrence', { count: b.occurrence_count }));
     fcEl('fc-record').textContent = rec.join(' · ');
   }
 
@@ -200,6 +223,7 @@ function fcRender() {
   // Reset audio
   fcStopAudio();
 
+  fcUpdatePracticeUI(card);
   fcUpdateProgress();
   fcFlip(false);
 }
@@ -314,6 +338,18 @@ function fcRenderLink(card) {
   if (fcEl('fc-link-ref')) {
     fcEl('fc-link-ref').textContent = csDisplay + ' · ' + fcT('ayah_label', { num: f.confused_with_ayah });
   }
+  const linkLabel = fcEl('fc-link-label');
+  if (linkLabel) {
+    linkLabel.textContent = f.mistake_type === 'TRANSITION_FAILURE'
+      ? fcT('fc_link_label')
+      : fcT('fc_pair_label');
+  }
+  const revealLabel = fcEl('btn-reveal-link');
+  if (revealLabel) {
+    revealLabel.textContent = f.mistake_type === 'TRANSITION_FAILURE'
+      ? fcT('fc_reveal_link')
+      : fcT('fc_reveal_pair');
+  }
 
   const el = fcEl('fc-link-text');
   if (!el) return;
@@ -381,11 +417,14 @@ function fcAnimateExit(direction) {
   });
 }
 
-/* ---------------- Grading ---------------- */
+/* ---------------- Practice (40 repetitions) ---------------- */
 
-async function fcGrade(grade) {
+async function fcPractice(result) {
   const card = fcCard();
   if (!card || FC.busy) return;
+  if (result !== 'CORRECT' && result !== 'SLIP') return;
+  // Grading is only meaningful after the reciter has turned the card over.
+  if (!FC.flipped) return;
 
   const mistakeId = parseInt(card.mistake_id, 10);
   if (!mistakeId || mistakeId < 1) {
@@ -394,60 +433,96 @@ async function fcGrade(grade) {
   }
 
   FC.busy = true;
-  fcSetGradeButtons(false);
+  fcSetPracticeButtons(false);
+  const snapshot = JSON.parse(JSON.stringify(card));
 
   try {
     const res = await API.call('mistakes/review_mistake.php', {
       method: 'POST',
-      body: { mistake_id: mistakeId, grade },
+      body: { mistake_id: mistakeId, result },
       redirectOn401: true,
     });
 
-    await fcAnimateExit(grade === 'AGAIN' ? 'right' : 'left');
+    const target = Math.max(1, parseInt(res.practice_target ?? card.back.practice_target, 10) || 40);
+    const count = Math.max(0, parseInt(res.practice_count ?? card.back.practice_count, 10) || 0);
+    const completed = !!(res && res.completed);
 
-    // Local deck bookkeeping.
-    FC.deck.splice(FC.pos, 1);
-    FC.answered++;
-    const statKey = grade.toLowerCase();
-    FC.stats[statKey] = (FC.stats[statKey] || 0) + 1;
-    if (res && res.graduated) FC.stats.graduated++;
+    card.back.practice_count = count;
+    card.back.practice_target = target;
+    card.back.remaining = Math.max(0, parseInt(res.remaining ?? (target - count), 10) || 0);
+    card.back.progress_percent = fcPracticePercent(count, target);
+    card.back.mastery_count = parseInt(res.mistake?.mastery_count ?? card.back.mastery_count, 10) || 0;
+    card.back.lapses = parseInt(res.mistake?.lapses ?? card.back.lapses, 10) || 0;
+    card.back.is_new = false;
 
-    const requeue = (grade === 'AGAIN');
-    if (requeue) {
-      FC.deck.push(card);
-    }
-
-    FC.lastAction = { mistakeId, card, grade, graduated: !!(res && res.graduated) };
+    FC.lastAction = {
+      mistakeId,
+      card,
+      snapshot,
+      result,
+      completed,
+      wasCompleted: false,
+    };
     if (fcEl('btn-fc-undo')) fcEl('btn-fc-undo').disabled = false;
 
-    if (grade === 'EASY' || (res && res.graduated)) {
-      if (window.AudioEngine) AudioEngine.playCelebration();
-    } else if (grade === 'GOOD') {
-      if (window.AudioEngine) AudioEngine.playSuccess();
+    if (result === 'CORRECT') {
+      FC.stats.correct++;
+      FC.counts.remainingReps = Math.max(0, FC.counts.remainingReps - 1);
     } else {
-      if (window.AudioEngine) AudioEngine.playUndo();
+      FC.stats.slips++;
     }
+    FC.answered++;
 
-    if (requeue) {
-      showToast(fcT('fc_grade_again') + ' — ' + fcT('fc_interval_today'));
-    }
+    if (completed) {
+      FC.stats.completed++;
+      FC.counts.active = Math.max(0, FC.counts.active - 1);
+      FC.counts.completed++;
+      FC.lastAction.wasCompleted = true;
+      fcUpdateCounters();
 
-    if (!FC.deck.length) {
-      fcRenderSummary();
-    } else {
+      await fcAnimateExit('left');
+      const idx = FC.deck.indexOf(card);
+      if (idx !== -1) FC.deck.splice(idx, 1);
       if (FC.pos >= FC.deck.length) FC.pos = 0;
+
+      if (window.AudioEngine) AudioEngine.playCelebration();
+      showToast(fcT('fc_practice_done_toast'));
+
+      if (!FC.deck.length) {
+        fcRenderSummary();
+      } else {
+        fcRender();
+      }
+    } else {
+      if (result === 'CORRECT') {
+        if (window.AudioEngine) AudioEngine.playSuccess();
+        showToast(fcT('fc_practice_added_toast'));
+      } else {
+        if (window.AudioEngine) AudioEngine.playUndo();
+        showToast(fcT('fc_practice_slip_toast'));
+      }
+
+      // Stay on the back face so the reciter can repeat immediately.
+      fcUpdateCounters();
       fcRender();
+      fcFlip(true);
     }
   } catch (err) {
     showToast(err.message, true);
   } finally {
     FC.busy = false;
-    fcSetGradeButtons(true);
+    fcSetPracticeButtons(true);
   }
 }
 
-function fcSetGradeButtons(enabled) {
-  ['btn-again', 'btn-hard', 'btn-good', 'btn-easy', 'btn-delete-card'].forEach((id) => {
+function fcNextCard() {
+  if (FC.busy || !FC.deck.length) return;
+  FC.pos = (FC.pos + 1) % FC.deck.length;
+  fcRender();
+}
+
+function fcSetPracticeButtons(enabled) {
+  ['btn-correct', 'btn-slip', 'btn-next-card', 'btn-delete-card'].forEach((id) => {
     const el = fcEl(id);
     if (el) el.disabled = !enabled;
   });
@@ -467,22 +542,38 @@ async function fcUndo() {
       redirectOn401: true,
     });
 
-    // Reverse local bookkeeping.
-    const statKey = action.grade.toLowerCase();
-    FC.stats[statKey] = Math.max(0, (FC.stats[statKey] || 0) - 1);
-    if (action.graduated) FC.stats.graduated = Math.max(0, FC.stats.graduated - 1);
+    // Restore the card exactly as it was before the practice action.
+    if (action.snapshot) {
+      action.card.front = JSON.parse(JSON.stringify(action.snapshot.front));
+      action.card.back = JSON.parse(JSON.stringify(action.snapshot.back));
+    }
+
+    if (action.result === 'CORRECT') {
+      FC.stats.correct = Math.max(0, FC.stats.correct - 1);
+      FC.counts.remainingReps += 1;
+    } else {
+      FC.stats.slips = Math.max(0, FC.stats.slips - 1);
+    }
     FC.answered = Math.max(0, FC.answered - 1);
 
-    // Remove the requeued copy if present, then restore to the front.
-    const idx = FC.deck.findIndex((c) => c.mistake_id === action.mistakeId);
-    if (idx !== -1) FC.deck.splice(idx, 1);
-    FC.deck.splice(FC.pos, 0, action.card);
+    if (action.wasCompleted) {
+      FC.stats.completed = Math.max(0, FC.stats.completed - 1);
+      FC.counts.active += 1;
+      FC.counts.completed = Math.max(0, FC.counts.completed - 1);
+      const exists = FC.deck.some((c) => c.mistake_id === action.mistakeId);
+      if (!exists) FC.deck.splice(Math.min(FC.pos, FC.deck.length), 0, action.card);
+    }
+
     FC.lastAction = null;
     if (fcEl('btn-fc-undo')) fcEl('btn-fc-undo').disabled = true;
 
+    const undoneIdx = FC.deck.indexOf(action.card);
+    if (undoneIdx !== -1) FC.pos = undoneIdx;
+
+    fcUpdateCounters();
     fcShowOnly('stage');
     fcRender();
-    showToast(fcT('fc_undo_toast'));
+    showToast(fcT(action.wasCompleted ? 'fc_undo_completed_toast' : 'fc_undo_toast'));
   } catch (err) {
     showToast(err.message, true);
   } finally {
@@ -497,7 +588,7 @@ async function fcDelete() {
   if (!confirm(confirmMsg)) return;
 
   FC.busy = true;
-  fcSetGradeButtons(false);
+  fcSetPracticeButtons(false);
   try {
     await API.call('mistakes/clear_mistake.php', {
       method: 'POST',
@@ -505,10 +596,16 @@ async function fcDelete() {
       redirectOn401: true,
     });
     await fcAnimateExit('left');
+    const remaining = Math.max(0, card.back.practice_target - card.back.practice_count);
+    FC.counts.active = Math.max(0, FC.counts.active - 1);
+    FC.counts.remainingReps = Math.max(0, FC.counts.remainingReps - remaining);
     FC.deck.splice(FC.pos, 1);
+    FC.lastAction = null;
+    if (fcEl('btn-fc-undo')) fcEl('btn-fc-undo').disabled = true;
+    fcUpdateCounters();
     showToast(fcT('fc_toast_deleted'));
     if (!FC.deck.length) {
-      fcRenderSummary();
+      fcShowEmpty();
     } else {
       if (FC.pos >= FC.deck.length) FC.pos = 0;
       fcRender();
@@ -517,7 +614,7 @@ async function fcDelete() {
     showToast(err.message, true);
   } finally {
     FC.busy = false;
-    fcSetGradeButtons(true);
+    fcSetPracticeButtons(true);
   }
 }
 
@@ -526,18 +623,17 @@ async function fcDelete() {
 function fcRenderSummary() {
   const el = fcEl('deck-summary');
   if (!el) return;
-  const reviewed = FC.stats.again + FC.stats.hard + FC.stats.good + FC.stats.easy;
-  const goodish = FC.stats.good + FC.stats.easy;
-  const accuracy = reviewed > 0 ? Math.round((goodish / reviewed) * 100) : 0;
+  const attempts = FC.stats.correct + FC.stats.slips;
+  const accuracy = attempts > 0 ? Math.round((FC.stats.correct / attempts) * 100) : 0;
 
   el.innerHTML = `
     <div style="font-size:3rem; margin-bottom:0.25rem;">🌟</div>
     <h3>${fcT('fc_summary_title')}</h3>
     <p class="hint" style="margin-bottom:1.25rem;">${fcT('fc_summary_desc')}</p>
     <div class="fc-summary-grid">
-      <div class="fc-summary-item"><span class="fc-summary-value">${reviewed}</span><span class="fc-summary-label">${fcT('fc_summary_total')}</span></div>
+      <div class="fc-summary-item"><span class="fc-summary-value">${attempts}</span><span class="fc-summary-label">${fcT('fc_summary_total')}</span></div>
       <div class="fc-summary-item"><span class="fc-summary-value">${accuracy}%</span><span class="fc-summary-label">${fcT('fc_summary_accuracy')}</span></div>
-      <div class="fc-summary-item"><span class="fc-summary-value">${FC.stats.graduated}</span><span class="fc-summary-label">${fcT('fc_summary_graduated')}</span></div>
+      <div class="fc-summary-item"><span class="fc-summary-value">${FC.stats.completed}</span><span class="fc-summary-label">${fcT('fc_summary_completed')}</span></div>
     </div>
     <div style="display:flex; justify-content:center; gap:0.75rem; flex-wrap:wrap; margin-top:1.25rem;">
       <button type="button" id="btn-summary-restart" class="btn btn-primary">${fcT('fc_summary_restart')}</button>
@@ -552,20 +648,11 @@ function fcRenderSummary() {
 
 /* ---------------- Empty state ---------------- */
 
-function fcShowEmpty(modeApplied) {
+function fcShowEmpty() {
   const title = fcEl('deck-empty-title');
   const desc = fcEl('deck-empty-desc');
-  const practiceAll = fcEl('btn-practice-all');
-
-  if (modeApplied === 'due' && FC.counts.total > 0) {
-    if (title) title.textContent = fcT('fc_no_due_title');
-    if (desc) desc.textContent = fcT('fc_no_due_desc');
-    if (practiceAll) practiceAll.classList.remove('hidden');
-  } else {
-    if (title) title.textContent = fcT('fc_empty_title');
-    if (desc) desc.textContent = fcT('fc_empty_desc');
-    if (practiceAll) practiceAll.classList.add('hidden');
-  }
+  if (title) title.textContent = fcT('fc_empty_title');
+  if (desc) desc.textContent = fcT('fc_empty_desc');
   fcShowOnly('empty');
 }
 
@@ -573,7 +660,7 @@ function fcShowEmpty(modeApplied) {
 
 function fcBuildQuery() {
   const q = new URLSearchParams();
-  q.set('mode', FC.mode);
+  q.set('mode', 'all');
   if (FC.shuffle) q.set('shuffle', '1');
   if (FC.filters.mistake_type) q.set('mistake_type', FC.filters.mistake_type);
   if (FC.filters.surah_number) q.set('surah_number', FC.filters.surah_number);
@@ -586,16 +673,16 @@ async function loadFlashcardsDeck() {
   try {
     const res = await API.call('mistakes/get_flashcards.php?' + fcBuildQuery(), { redirectOn401: true });
     FC.counts = {
-      due: (res && res.due_count) || 0,
-      new: (res && res.new_count) || 0,
-      total: (res && res.total_active) || 0,
+      remainingReps: (res && res.remaining_reps) || 0,
+      active: (res && res.total_active) || 0,
+      completed: (res && res.completed_count) || 0,
     };
     fcUpdateCounters();
 
     const cards = ((res && res.cards) || []).map(normalizeCard).filter(Boolean);
     if (!cards.length) {
       FC.deck = [];
-      fcShowEmpty(FC.mode);
+      fcShowEmpty();
       return;
     }
     fcStartDeck(cards);
@@ -603,7 +690,7 @@ async function loadFlashcardsDeck() {
     QuranText.load();
   } catch (err) {
     showToast(err.message || fcT('err_unexpected'), true);
-    fcShowEmpty(FC.mode);
+    fcShowEmpty();
   }
 }
 
@@ -613,7 +700,7 @@ function fcStartDeck(cards) {
   FC.busy = false;
   FC.answered = 0;
   FC.lastAction = null;
-  FC.stats = { again: 0, hard: 0, good: 0, easy: 0, graduated: 0 };
+  FC.stats = { correct: 0, slips: 0, completed: 0 };
   FC.initialTotal = cards.length;
   if (fcEl('btn-fc-undo')) fcEl('btn-fc-undo').disabled = true;
   fcShowOnly('stage');
@@ -625,7 +712,7 @@ function fcStartDeck(cards) {
 function fcPopulateFilters() {
   const typeSel = fcEl('fc-filter-type');
   if (typeSel && typeSel.options.length <= 1) {
-    const types = ['TRANSITION_FAILURE', 'MUTASHABIHAT', 'TAWAQQUF', 'TASHKEEL', 'LAFDH'];
+    const types = ['AYAH_MISTAKE', 'TRANSITION_FAILURE', 'MUTASHABIHAT'];
     types.forEach((t) => {
       const o = document.createElement('option');
       o.value = t;
@@ -665,7 +752,7 @@ function fcRefreshFilterLabels() {
   });
   const typeSel = fcEl('fc-filter-type');
   if (typeSel) {
-    const types = ['TRANSITION_FAILURE', 'MUTASHABIHAT', 'TAWAQQUF', 'TASHKEEL', 'LAFDH'];
+    const types = ['AYAH_MISTAKE', 'TRANSITION_FAILURE', 'MUTASHABIHAT'];
     types.forEach((t) => {
       const opt = Array.from(typeSel.options).find((o) => o.value === t);
       if (opt) opt.textContent = window.I18N ? I18N.getMistakeLabel(t) : t;
@@ -678,7 +765,7 @@ function initFlashcardsPage() {
 
   cardEl.addEventListener('click', () => fcFlip());
   cardEl.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fcFlip(); }
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); fcFlip(); }
   });
 
   // Swipe to flip
@@ -699,11 +786,14 @@ function initFlashcardsPage() {
   const hintBtn = fcEl('btn-show-hint');
   if (hintBtn) hintBtn.addEventListener('click', (e) => { e.stopPropagation(); fcFlip(true); });
 
-  const gradeMap = { 'btn-again': 'AGAIN', 'btn-hard': 'HARD', 'btn-good': 'GOOD', 'btn-easy': 'EASY' };
-  Object.entries(gradeMap).forEach(([id, grade]) => {
+  const gradeMap = { 'btn-correct': 'CORRECT', 'btn-slip': 'SLIP' };
+  Object.entries(gradeMap).forEach(([id, result]) => {
     const b = fcEl(id);
-    if (b) b.addEventListener('click', (e) => { e.stopPropagation(); fcGrade(grade); });
+    if (b) b.addEventListener('click', (e) => { e.stopPropagation(); fcPractice(result); });
   });
+
+  const nextBtn = fcEl('btn-next-card');
+  if (nextBtn) nextBtn.addEventListener('click', (e) => { e.stopPropagation(); fcNextCard(); });
 
   const playBtn = fcEl('btn-play-ayah');
   if (playBtn) playBtn.addEventListener('click', (e) => { e.stopPropagation(); fcToggleAudio(); });
@@ -719,22 +809,6 @@ function initFlashcardsPage() {
 
   const undoBtn = fcEl('btn-fc-undo');
   if (undoBtn) undoBtn.addEventListener('click', fcUndo);
-
-  const practiceAll = fcEl('btn-practice-all');
-  if (practiceAll) practiceAll.addEventListener('click', () => {
-    FC.mode = 'all';
-    document.querySelectorAll('.fc-mode-btn').forEach((b) => b.classList.toggle('active', b.dataset.mode === 'all'));
-    loadFlashcardsDeck();
-  });
-
-  // Mode switch
-  document.querySelectorAll('.fc-mode-btn').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      FC.mode = btn.dataset.mode === 'all' ? 'all' : 'due';
-      document.querySelectorAll('.fc-mode-btn').forEach((b) => b.classList.toggle('active', b === btn));
-      loadFlashcardsDeck();
-    });
-  });
 
   // Shuffle
   const shuffleBtn = fcEl('btn-fc-shuffle');
@@ -768,18 +842,17 @@ function initFlashcardsPage() {
     loadFlashcardsDeck();
   });
 
-  // Keyboard grading / flip
+  // Keyboard: + / 1 = correct, - / 2 = stumble, n = next, space = flip
   document.addEventListener('keydown', (e) => {
     const tag = (document.activeElement && document.activeElement.tagName) || '';
     if (['INPUT', 'TEXTAREA', 'SELECT'].includes(tag)) return;
     if (FC.busy) return;
     const stage = fcEl('deck-stage');
     if (!stage || stage.classList.contains('hidden')) return;
-    if (e.key === '1') { e.preventDefault(); fcGrade('AGAIN'); }
-    else if (e.key === '2') { e.preventDefault(); fcGrade('HARD'); }
-    else if (e.key === '3') { e.preventDefault(); fcGrade('GOOD'); }
-    else if (e.key === '4') { e.preventDefault(); fcGrade('EASY'); }
-    else if (e.key === '+' || e.key === 'o' || e.key === 'O') { fcFlip(true); }
+    if (e.key === '1' || e.key === '+') { e.preventDefault(); fcPractice('CORRECT'); }
+    else if (e.key === '2' || e.key === '-') { e.preventDefault(); fcPractice('SLIP'); }
+    else if (e.key === 'n' || e.key === 'N') { e.preventDefault(); fcNextCard(); }
+    else if (e.key === ' ') { e.preventDefault(); fcFlip(); }
   });
 
   if (window.I18N) {

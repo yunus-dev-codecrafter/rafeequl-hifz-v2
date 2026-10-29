@@ -817,6 +817,11 @@ PageNotes.renderCues = function (page) {
       : '';
     const note = (m.notes || '').trim();
     const occ = Number(m.occurrence_count) || 1;
+    const practiceCount = Number(m.practice_count) || 0;
+    const practiceTarget = Number(m.practice_target) || 40;
+    const practiceTitle = (window.I18N && typeof I18N.t === 'function')
+      ? I18N.t('history_practice', { count: practiceCount, target: practiceTarget })
+      : ('التكرار: ' + practiceCount + ' / ' + practiceTarget);
     const linkS = Number(m.confused_with_surah) || null;
     const linkA = Number(m.confused_with_ayah) || null;
     const linkLine = (linkS && linkA)
@@ -831,6 +836,7 @@ PageNotes.renderCues = function (page) {
           <span class="pn-cue-type">${pnEsc(typeLabel)}</span>
           <span class="pn-cue-sev sev-${sev}" title="${pnEsc(sevLabel)}">${'•'.repeat(sev)}</span>
           ${occ > 1 ? `<span class="pn-cue-occ">×${occ}</span>` : ''}
+          <span class="pn-cue-practice" title="${pnEsc(practiceTitle)}">${practiceCount}/${practiceTarget}</span>
           <button type="button" class="pn-cue-add" data-surah="${surah}" data-ayah="${ayah}">＋ ${pnEsc(addLabel)}</button>
         </div>
         ${linkLine}

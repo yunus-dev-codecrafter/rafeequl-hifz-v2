@@ -15,15 +15,15 @@ Quran memorization daily logbook: PHP 8 + MySQL backend (`api/`), RTL web fronte
    `config/schema.sql` with a `CREATE DATABASE` prefix — this repository no
    longer contains one, because shared hosts pre-create the database.
 2. Upload the project (`api/`, `config/`, `web/`, `index.php`, `setup.php`,
-   `.htaccess`). Make sure dotfiles (`.htaccess`) transfer too.
+   `migrate.php`, `.htaccess`). Make sure dotfiles (`.htaccess`) transfer too.
 3. Create an empty file named `config/install.enable` in the File Manager.
    This one-time marker is what allows the installer to run.
 4. Open `https://your-host/setup.php` and follow the three steps:
    database connection → fresh install → admin account.
 5. The installer writes `config/database.local.php`, imports the schema, seeds
-   all 604 Madinah pages, applies migration v8 (which includes v7), creates the
-   `SUPER_ADMIN` account, then writes `config/installed.lock` and removes the
-   enable marker.
+   all 604 Madinah pages, applies migration v9 (which includes v7 and v8),
+   creates the `SUPER_ADMIN` account, then writes `config/installed.lock` and
+   removes the enable marker.
 6. **Delete `setup.php` from the server.** Check `api/health.php` returns 200,
    then sign in at `web/index.html`.
 
@@ -51,23 +51,35 @@ location ~ ^/(config|api/data)/ { deny all; return 404; }
 
 ## Upgrading an existing database
 
-The current release needs **migration v8**. It runs v7 first (adding
-`rollover_count` / `last_rollover_date`, the pending-task indexes, and removing
-the runtime `ALTER TABLE` statements that caused slow requests and 502s), then
-adds `daily_task_logs.hifz_progress` for the verse-by-verse new-memorization
-counter.
+The current release needs **migration v9**. It runs v7 and v8 first, then:
 
-- CLI: `php config/migrate_v8.php`
-- Web: temporarily create `config/install.enable`, open
-  `https://your-host/setup.php`, choose **ترقية قاعدة البيانات**, then delete
-  `setup.php` and the enable marker.
+- adds `practice_count` / `practice_target` (default 40) to `mistakes`;
+- narrows `mistake_type` to `AYAH_MISTAKE`, `TRANSITION_FAILURE`, and
+  `MUTASHABIHAT`, remapping the old `TAWAQQUF` / `TASHKEEL` / `LAFDH` values;
+- backfills archived rows to 40/40 and adds the practice index.
+
+`setup.php` is intentionally locked after installation. **Do not delete
+`config/installed.lock` for a normal upgrade.** Use the admin-only migration
+runner instead:
+
+1. Upload the new code, including `migrate.php`, `config/migrate_v9.php`,
+   `config/migrate_v8.php`, and `config/migrate_v7.php`.
+2. Sign in at `web/index.html` with an `ADMIN` or `SUPER_ADMIN` account.
+3. Open `https://your-host/migrate.php` and press **تشغيل ترقية v9 الآن**.
+4. Check `api/health.php` returns 200 with `"schema_ok": true`.
+
+Alternative CLI: `php config/migrate_v9.php`.
+
+The installer remains available as a fallback for a lost admin or a fresh
+install: re-upload `setup.php`, delete `config/installed.lock`, create
+`config/install.enable`, open the wizard, then delete `setup.php` again.
 
 The migration is additive and idempotent. If you are upgrading from v1, run
 `migrate_v2.php` through `migrate_v6.php` first (CLI, or temporary web access),
-then run `setup.php` for v8. `config/` is denied over HTTP by `config/.htaccess`;
-do not leave migration scripts publicly reachable. Until v8 is applied, the new
-memorization screen still works from a local device copy and shows that server
-saving is pending.
+then run v9. `config/` is denied over HTTP by `config/.htaccess`; `migrate.php`
+is the supported browser entry point and is protected by admin login and CSRF.
+Until v9 is applied, the mistake/flashcard APIs report a schema error; local
+device data is not deleted.
 
 ## Rollover counting
 
@@ -81,11 +93,16 @@ default), so “today” is consistent for every request.
 > **Page recall notes (v3)** creates the `page_notes` table.
 >
 > **Cleaning old paired verses (v5)** clears stray `confused_with_*` values from
-> tawaqquf / tashkeel / lafdh mistakes.
+> single-verse mistakes.
 >
 > **Rub' consolidation (v6)** adds `RUB_TAMKIN`, the rub' columns, and
 > `rub_history`. Migration v8 keeps this working and creates `rub_history` if it
 > is missing.
+>
+> **Practice counter (v9)** narrows `mistake_type` to the three real categories,
+> adds `practice_count` / `practice_target` (default 40), and backfills archived
+> rows to 40/40. Run `php config/migrate_v9.php`, or sign in as an admin and
+> open `migrate.php`.
 
 ## New memorization (HIFZ_JADID)
 
@@ -101,7 +118,7 @@ The new-memorization room is a single active verse at a time:
 
 Progress is saved locally after every tap and mirrored with a debounce to
 `api/tasks/update_hifz_progress.php`, so a reload resumes where you stopped.
-Completion still goes through `api/tasks/update_progress.php`. If v8 is not
+Completion still goes through `api/tasks/update_progress.php`. If v9 is not
 applied yet, local progress and task completion still work, but the screen warns
 that server-side verse progress is pending.
 >
@@ -172,7 +189,7 @@ Reference: <https://forum.infinityfree.com/t/how-to-make-a-working-progressive-w
 ### Deploy
 
 Upload the whole project (`api/`, `config/`, `web/`, `index.php`, `setup.php`,
-`.htaccess`) to `htdocs`. This includes the committed `api/data/tafsir/` files;
+`migrate.php`, `.htaccess`) to `htdocs`. This includes the committed `api/data/tafsir/` files;
 without them the recitation page still works, but the per-verse tafsir is
 hidden. Make sure `.htaccess` actually transfers (dotfiles are hidden by default
 in most FTP clients). Complete the setup wizard at
@@ -256,50 +273,77 @@ wrapper (standalone display, RTL, theme color `#0f766e`). Its icons
 (`mobile/icon-192.png`, `mobile/icon-512.png`) are placeholders — replace
 them with final artwork before shipping an APK.
 
-## Spaced repetition & the mistake model (v2)
+## Mistake practice: 3 categories × 40 repetitions (v9)
 
-The mistake log is now a small **spaced-repetition system** instead of a plain
-list:
+The mistake log is no longer a spaced-repetition scheduler. It is a **practice
+counter**: every active mistake must be recited correctly **40 times**, and at
+40 it is archived automatically.
+
+**The three categories** (`mistake_type`)
+| Key | Arabic | Meaning |
+| --- | --- | --- |
+| `AYAH_MISTAKE` | خطأ في آية | any slip inside one verse (wording, diacritics, pause) |
+| `TRANSITION_FAILURE` | نسيان الآية التالية | forgot which verse comes next; pair = next verse |
+| `MUTASHABIHAT` | آيات متشابهة | confused with a similar verse; pair = twin verse |
+
+The old `TAWAQQUF` / `TASHKEEL` / `LAFDH` values are remapped to
+`AYAH_MISTAKE` by migration v9. A paired verse (`confused_with_*`) is only kept
+for the two pair categories.
 
 **Logging**
-- Logging the *same* mistake again does **not** add a duplicate row — it bumps
-  `occurrence_count`, raises `severity` to the max, resets the schedule (a
-  lapse) and writes a `LOGGED` event.
-- Each mistake can carry `severity` (بسيط/متوسط/شديد), a `source_task`, and for
-  متشابهات a `confused_with_surah` / `confused_with_ayah` pairing.
+- Logging the *same* mistake again does **not** add a duplicate row: it bumps
+  `occurrence_count`, resets `practice_count` to 0 and reactivates the card if
+  it had been archived (keeps it alive).
+- For `MUTASHABIHAT`, the modal shows up to six **similar verses** instantly
+  from the bundled `web/data/mutashabihat.json` (offline, no API call). Tapping
+  a suggestion fills the paired verse and previews its text.
+- Each mistake can carry `severity` (بسيط/متوسط/شديد), a `source_task`, notes,
+  and for the pair categories a `confused_with_surah` / `confused_with_ayah`.
 - Mistakes can be edited from the history page (`update_mistake.php`), which
   records an `EDITED` event with the previous snapshot.
 
-**Scheduling (SM-2 lite)** — `api/mistakes/_srs.php`
-- Grades: **أخطأت / صعب / جيد / سهل** (AGAIN/HARD/GOOD/EASY).
-- Interval ladder grows 1 → 3 → 7 → … capped at 365 days; `AGAIN` resets to
-  1 day and increments `lapses`; ease starts at 2.50 (range 1.30–2.80).
-- A card graduates (ARCHIVED) after **3 consecutive GOOD/EASY** reviews that
-  reach a ≥ 30-day interval; it can be reactivated from history.
-- Every transition is recorded in `mistake_events` (append-only audit trail),
-  which also powers the review **streak** and undo.
+**The counter** — `api/mistakes/_practice.php`
+- `practice_count` / `practice_target` (default 40).
+- **Correct recitation** → `+1`. **Slip** → no increment (and a `lapses` bump).
+- Reaching the target archives the card (`status = ARCHIVED`,
+  `graduated_at = NOW()`); history keeps it and it can be reactivated with a
+  fresh counter.
+- Every action is recorded in `mistake_events` (append-only), which powers the
+  review **streak** and undo.
 
 **Endpoints**
 | File | Purpose |
 | --- | --- |
-| `record_mistake.php` | log / de-duplicate a mistake (returns `merged`) |
-| `review_mistake.php` | apply a grade and reschedule |
-| `undo_review.php` | revert the last review (within 30 min) |
-| `get_flashcards.php` | due-first deck: `mode` (`due`/`all`), filters, shuffle, counters |
+| `record_mistake.php` | log / de-duplicate a mistake, reset the counter, return practice fields |
+| `review_mistake.php` | apply `CORRECT` / `SLIP`, auto-archive at 40 |
+| `undo_review.php` | revert the last practice action (within 30 min) |
+| `get_flashcards.php` | all ACTIVE cards + remaining repetitions + completed count |
 | `update_mistake.php` | edit type / severity / notes / mutashabihat pairing |
 | `clear_mistake.php` | MASTERED / REACTIVATE / KEEP_PRACTICING / DELETE |
-| `get_history.php` | log + type distribution + per-juz heatmap + due summary + streak |
+| `get_history.php` | log + type distribution + per-juz heatmap + practice summary + streak |
 
 **Flashcards page** (`web/flashcards.html` + `web/js/flashcards.js`)
-- Due/new/active counters and a session progress bar.
-- Card **back** now shows the actual **ayah text** (offline bundle) and a
+- Every active card is in the deck; there is no due-date filter.
+- The card front shows the verse reference and a **progress bar** with
+  `count / 40`; the back shows the actual **ayah text** (offline bundle) and a
   **recitation play** button (per-ayah audio, cached by the service worker).
-- Grade with the buttons, keys **1–4**, or **ف** to reveal; swipe or tap flips.
-- **Transition cards** (mistakes whose next verse is attached) never reveal the
-  next verse on the front; the back shows it under "الآية التالية" with a
-  **▶ الآيتان معاً** button that recites the pair in order.
+- Two actions: **✓ تلوتها صحيحة (+١)** and **✗ تعثرت**, plus **التالي** to skip.
+  Keys: `+`/`1` correct, `-`/`2` slip, `n` next, space flips.
+- **Transition / mutashabihat cards** never reveal the paired verse on the
+  front; the back shows it with a **▶ الآيتان معاً** button that recites both in
+  order.
 - Filters (type / surah / juz), shuffle, and **undo**; ends with a session
-  summary (cards reviewed, recall rate, graduated).
+  summary (attempts, correct repetitions, completed cards).
+
+**Mutashabihat data**
+- `web/data/mutashabihat.json` is generated offline by
+  `php config/build_mutashabihat.php` from the CC0
+  [Waqar144/Quran_Mutashabihat_Data](https://github.com/Waqar144/Quran_Mutashabihat_Data)
+  list plus a computed wording-similarity fallback (IDF-weighted content-word
+  overlap, top 8 per verse). Attribution is in
+  `api/data/mutashabihat/NOTICE.md`.
+- Verify it with `php config/verify_mutashabihat.php`; the service worker
+  pre-caches the 55 KB file, so suggestions work offline.
 
 ## Page Recall Board (بطاقة تثبيت الصفحة)
 
@@ -363,6 +407,26 @@ does not repeat until the eligible pool has been used once.
   The tafsir is split into 240 small per-rub' files so a recitation request
   never has to parse a multi-megabyte Quran-wide bundle.
 
+### Optional full-rub' microphone self-test (v19)
+
+After (or alongside) the normal 3× station flow, the user can recite the whole
+rub' aloud and watch the Uthmani text appear word by word. The text is hidden by
+default; a word is revealed **only after the recogniser hears it**, so a mistake
+leaves the page blank at that point instead of exposing the answer. The mic test
+is optional and never changes station completion or server progress.
+
+- Browser `SpeechRecognition` / `webkitSpeechRecognition` (Chrome on Android) is
+  used directly; no audio is uploaded to our server and no schema changes are
+  needed.
+- It requires HTTPS and an internet connection. If the API is unavailable, the
+  page shows a clear note and the normal rub' page keeps working.
+- The aligner normalises the Uthmani rasm (الصلاة/الصلوة، الملائكة/الملئكة، …)
+  and tolerates a small edit distance, plus merged words such as «يا أيها».
+  A skipped word stays hidden and is counted as one stall; it is not revealed.
+- Attempt progress is saved locally per task (`hifz-rub-speech-progress-v1-*`,
+  `hifz-rub-speech-result-v1-*`) so the user can resume after closing the tab.
+  The intent is a private, client-side recall aid, not a tajweed grader.
+
 | File | Purpose |
 | --- | --- |
 | `api/data/rub_quarters.json` | committed catalog: boundaries, pages, station counts |
@@ -374,6 +438,7 @@ does not repeat until the eligible pool has been used once.
 | `api/tasks/update_hifz_progress.php` | debounced per-verse progress save (never completes a page) |
 | `web/js/hifz.js` | 40× verse counter, cumulative link recitation, local resume |
 | `web/rub.html`, `web/js/rub.js` | recitation page, local state, offline queue |
+| `web/js/rub-recitation.js` | optional mic self-test: normaliser, aligner, Web Speech, overlay UI |
 | `config/build_rub_quarters.php` | rebuilds the catalog (one-off, cached downloads) |
 | `config/build_rub_tafsir.php` | rebuilds the per-rub' tafsir bundle |
 | `config/verify_rub.php` | catalog, splitter and tafsir regression checks |
@@ -402,8 +467,8 @@ The mobile navigation is now five tabs — الرئيسية / الحفظ / ال�
 ## Gesture notes
 
 - Page cards (recitation): horizontal swipe moves between pages of the active task.
-- Flashcards: tap or swipe flips the card; grade with the four buttons or keys
-  **1 = أخطأت, 2 = صعب, 3 = جيد, 4 = سهل**. **↩ تراجع** reverts the last grade.
+- Flashcards: tap or swipe flips the card; practice with **+ / 1 = تلوتها صحيحة**,
+  **- / 2 = تعثرت**, **n = التالي**. **↩ تراجع** reverts the last action.
 - Gestures are implemented natively in `web/js/app.js` and `web/js/flashcards.js`;
   `mobile/index.html` only provides a fallback bridge for stale bundles.
 
@@ -424,7 +489,8 @@ migration scripts. On a host without CLI, temporarily comment out the
 `RewriteRule ^(?:config|api/data)...` line in the root `.htaccess` **and**
 rename `config/.htaccess`, open
 `https://your-host/config/migrate_v4.php?confirm=1`, then restore both files
-immediately. Prefer `setup.php` for v8 and fresh installs.
+immediately. Prefer `migrate.php` for v9 and later upgrades, and `setup.php`
+for fresh installs.
 
 This is additive and idempotent: it adds `role`, `status`, `status_reason`,
 `suspended_at`, `last_login_at`, `last_seen_at`, `login_count` and
@@ -464,9 +530,9 @@ you land on `web/admin.html`. The dashboard dropdown also gains a
 ### What the owner can see
 
 - Platform KPIs: learners, new signups, DAU / WAU / MAU, "online in the last
-  hour", pages memorized, active / due / graduated mistakes, lifetime reviews.
+  hour", pages memorized, active / completed mistakes, lifetime reviews.
 - A searchable, paginated learner directory (name, email, status, current page,
-  active mistakes, due now, active days in the last 30, last seen).
+  active mistakes, repetitions left, active days in the last 30, last seen).
 - A per-account drill-down: progress, usage calendar (30 days), day streak,
   login count and timestamps, mistake type distribution, weakest surahs, recent
   review events and recent task logs.
@@ -523,12 +589,12 @@ active super admin cannot be suspended or demoted.
 
 ### Deploy order
 
-1. Upload `config/` (including `.htaccess`, `database.example.php`, `migrate_v8.php`, and `migrate_v7.php`), `setup.php`, `api/` and the changed `web/` files.
+1. Upload `config/` (including `.htaccess`, `database.example.php`, `migrate_v9.php`, `migrate_v8.php`, and `migrate_v7.php`), `migrate.php`, `setup.php`, `api/` and the changed `web/` files.
 2. Upload `config/database.local.php` separately with the current credentials if you deploy over FTP (it is intentionally ignored by git). If you deploy through git and that file is absent, the app cannot connect until you run `setup.php`; use the wizard to write it, or set `DB_*` environment variables.
-3. Create `config/install.enable`, open `https://your-host/setup.php`, choose **ترقية قاعدة البيانات** (upgrade), and optionally set a new admin password.
-4. The wizard applies migration v8 (including v7), seeds page metadata, writes `config/installed.lock`, and removes the enable marker. **Delete `setup.php` from the server.**
-5. Open `api/health.php` (expect 200, `"schema_ok": true`, and `"tafsir_ok": true`), hard-refresh `web/index.html`, and confirm the new service worker cache (`rafeequl-hifz-v18`) is active.
+3. Sign in as an administrator and open `https://your-host/migrate.php`, then press **تشغيل ترقية v9 الآن**. For a fresh install, use `setup.php` instead.
+4. The migration runner applies v9 (including v7/v8) and leaves `config/installed.lock` untouched. `setup.php` remains locked.
+5. Open `api/health.php` (expect 200, `"schema_ok": true`, and `"tafsir_ok": true`), hard-refresh `web/index.html`, and confirm the new service worker cache (`rafeequl-hifz-v20`) is active.
 
 > Back up the database before step 3 on a live site. The migration is additive,
 > but a backup is always the right first move. If the host's PHP cannot reach
-> MySQL, use its phpMyAdmin/CLI and run `config/migrate_v8.php` there instead.
+> MySQL, use its phpMyAdmin/CLI and run `config/migrate_v9.php` there instead.

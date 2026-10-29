@@ -491,7 +491,11 @@
         const mistakeLabel = window.I18N ? I18N.getMistakeLabel(item.mistake_type, item.mistake_label) : item.mistake_label;
         const pageLabel = window.I18N ? (I18N.t('page_prefix') + item.page_number) : ('صفحة ' + item.page_number);
         const loggedDate = window.I18N ? I18N.t('history_logged_date', { date: dateStr }) : ('سُجل بتاريخ: ' + dateStr);
-        const masteryLabel = window.I18N ? I18N.t('fc_card_mastery', { count: item.mastery_count }) : ('مرات الإتقان: ' + item.mastery_count);
+        const practiceCount = Number(item.practice_count) || 0;
+        const practiceTarget = Number(item.practice_target) || 40;
+        const masteryLabel = window.I18N
+          ? I18N.t('history_practice', { count: practiceCount, target: practiceTarget })
+          : ('التكرار: ' + practiceCount + ' / ' + practiceTarget);
         const occurrenceLabel = item.occurrence_count > 1
           ? (window.I18N ? I18N.t('history_occurrence', { count: item.occurrence_count }) : ('تكرر ' + item.occurrence_count + ' مرة'))
           : '';
@@ -502,9 +506,6 @@
           ? (window.I18N
               ? I18N.t('history_confused_with', { surah: I18N.getSurahName(item.confused_with_surah), ayah: item.confused_with_ayah })
               : ('التبس بـ ' + (item.confused_with_surah_name || '') + ' — الآية ' + item.confused_with_ayah))
-          : '';
-        const nextReviewLabel = item.due_at
-          ? (window.I18N ? I18N.t('history_next_review', { date: String(item.due_at).slice(0, 10) }) : ('المراجعة القادمة: ' + String(item.due_at).slice(0, 10)))
           : '';
         const editText = window.I18N ? I18N.t('btn_edit_mistake') : 'تعديل ✎';
         const badgeArchived = window.I18N ? I18N.t('history_badge_mastered') : '✓ تم إتقانها';
@@ -534,7 +535,6 @@
                 <span>${esc(severityLabel)}</span>
                 ${occurrenceLabel ? `<span style="color:var(--warning); font-weight:700;">🔁 ${esc(occurrenceLabel)}</span>` : ''}
                 ${confusedLabel ? `<span style="color:var(--danger);">↔ ${esc(confusedLabel)}</span>` : ''}
-                ${nextReviewLabel ? `<span>⏱ ${esc(nextReviewLabel)}</span>` : ''}
               </div>
             </div>
 
@@ -620,7 +620,7 @@
 
     /* ---------------- Edit mistake modal ---------------- */
     let editTargetId = null;
-    const EDIT_TYPES = ['TRANSITION_FAILURE', 'MUTASHABIHAT', 'TAWAQQUF', 'TASHKEEL', 'LAFDH'];
+    const EDIT_TYPES = ['AYAH_MISTAKE', 'TRANSITION_FAILURE', 'MUTASHABIHAT'];
 
     function syncEditPairUI(type) {
       const cw = document.getElementById('edit-confused-wrap');
@@ -733,7 +733,7 @@
           method: 'POST',
           body: {
             mistake_id: editTargetId,
-            mistake_type: activeTag ? activeTag.dataset.type : 'MUTASHABIHAT',
+            mistake_type: activeTag ? activeTag.dataset.type : 'AYAH_MISTAKE',
             severity: activeSev ? parseInt(activeSev.dataset.sev, 10) : 1,
             confused_with_surah: cs && cs.value ? parseInt(cs.value, 10) : null,
             confused_with_ayah: ca && ca.value ? parseInt(ca.value, 10) : null,

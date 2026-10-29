@@ -11,9 +11,9 @@ declare(strict_types=1);
  */
 
 require __DIR__ . '/../../config/database.php';
-require __DIR__ . '/_srs.php';
+require __DIR__ . '/_practice.php';
 
-const MISTAKE_TYPES = ['TRANSITION_FAILURE', 'MUTASHABIHAT', 'TAWAQQUF', 'TASHKEEL', 'LAFDH'];
+const MISTAKE_TYPES = ['AYAH_MISTAKE', 'TRANSITION_FAILURE', 'MUTASHABIHAT'];
 
 function json_out(int $code, array $payload): void
 {
@@ -62,6 +62,10 @@ if (!is_int($mistakeId) || $mistakeId < 1) {
 $errors = [];
 
 $mistakeType = (string) ($input['mistake_type'] ?? '');
+$legacyTypes = ['TAWAQQUF' => 'AYAH_MISTAKE', 'TASHKEEL' => 'AYAH_MISTAKE', 'LAFDH' => 'AYAH_MISTAKE'];
+if (isset($legacyTypes[$mistakeType])) {
+    $mistakeType = $legacyTypes[$mistakeType];
+}
 if (!in_array($mistakeType, MISTAKE_TYPES, true)) {
     $errors['mistake_type'] = 'mistake_type must be one of: ' . implode(', ', MISTAKE_TYPES) . '.';
 }
@@ -79,6 +83,11 @@ if ($confusedSurah !== null && ($confusedSurah < 1 || $confusedSurah > 114)) {
 }
 if ($confusedAyah !== null && ($confusedAyah < 1 || $confusedAyah > 286)) {
     $errors['confused_with_ayah'] = 'confused_with_ayah must be between 1 and 286.';
+}
+// A paired verse is all-or-nothing.
+if (($confusedSurah === null) !== ($confusedAyah === null)) {
+    $confusedSurah = null;
+    $confusedAyah = null;
 }
 
 $notes = $input['notes'] ?? null;
@@ -119,7 +128,7 @@ try {
         ':id' => $mistakeId, ':u' => $userId,
     ]);
 
-    srs_log_event($pdo, $userId, $mistakeId, 'EDITED', null, null, null, srs_prev_state($m));
+    practice_log_event($pdo, $userId, $mistakeId, 'EDITED', null, null, null, practice_prev_state($m));
 
     json_out(200, [
         'success' => true,

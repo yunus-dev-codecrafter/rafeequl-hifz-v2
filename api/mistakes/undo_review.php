@@ -2,16 +2,16 @@
 declare(strict_types=1);
 
 /**
- * Rafeequl Hifz - Undo the last review action (session safety net)
+ * Rafeequl Hifz - Undo the last practice action (session safety net)
  * POST JSON: user_id, mistake_id (optional - if given, undo only if the last
- *            review event belongs to that card)
+ *            practice event belongs to that card)
  *
- * Restores the scheduling snapshot stored on the most recent review event and
- * removes that event, so the card returns to the deck with its prior state.
+ * Restores the practice snapshot stored on the most recent event and removes
+ * that event, so the card returns to the deck with its prior counter.
  */
 
 require __DIR__ . '/../../config/database.php';
-require __DIR__ . '/_srs.php';
+require __DIR__ . '/_practice.php';
 
 function json_out(int $code, array $payload): void
 {
@@ -83,6 +83,8 @@ try {
     $stmt = $pdo->prepare(
         "UPDATE `mistakes`
          SET `status`           = :status,
+             `practice_count`   = :pc,
+             `practice_target`  = :pt,
              `mastery_count`    = :mc,
              `occurrence_count` = :oc,
              `interval_days`    = :iv,
@@ -96,6 +98,8 @@ try {
     );
     $stmt->execute([
         ':status' => $prev['status'] ?? 'ACTIVE',
+        ':pc'     => $prev['practice_count'] ?? 0,
+        ':pt'     => $prev['practice_target'] ?? PRACTICE_TARGET,
         ':mc'     => $prev['mastery_count'] ?? 0,
         ':oc'     => $prev['occurrence_count'] ?? 1,
         ':iv'     => $prev['interval_days'] ?? 0,
@@ -116,11 +120,13 @@ try {
         'success'    => true,
         'mistake_id' => $mistakeId,
         'mistake'    => [
-            'id'            => $mistakeId,
-            'status'        => $prev['status'] ?? 'ACTIVE',
-            'interval_days' => $prev['interval_days'] ?? 0,
-            'mastery_count' => $prev['mastery_count'] ?? 0,
-            'due_at'        => $prev['due_at'] ?? null,
+            'id'             => $mistakeId,
+            'status'         => $prev['status'] ?? 'ACTIVE',
+            'practice_count' => $prev['practice_count'] ?? 0,
+            'practice_target' => $prev['practice_target'] ?? PRACTICE_TARGET,
+            'interval_days'  => $prev['interval_days'] ?? 0,
+            'mastery_count'  => $prev['mastery_count'] ?? 0,
+            'due_at'         => $prev['due_at'] ?? null,
         ],
     ], JSON_UNESCAPED_UNICODE);
 } catch (PDOException $e) {

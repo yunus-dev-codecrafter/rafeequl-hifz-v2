@@ -5,7 +5,7 @@ declare(strict_types=1);
  * Lightweight health check for monitoring and for distinguishing a code/API
  * problem from a host-level 502. It never exposes credentials or user data.
  *
- * 200 = PHP + database + v8 schema ready
+ * 200 = PHP + database + v9 schema ready
  * 503 = database or schema not ready
  *
  * The per-rub' tafsir bundle is reported separately (`tafsir_ok`); it is static
@@ -28,7 +28,7 @@ $required = [
         'hifz_progress', 'rollover_count', 'last_rollover_date',
     ],
     'madinah_pages_meta' => ['page_number'],
-    'mistakes' => ['id', 'status', 'due_at'],
+    'mistakes' => ['id', 'status', 'due_at', 'practice_count', 'practice_target'],
     'rub_history' => ['id', 'user_id', 'rub_id'],
 ];
 

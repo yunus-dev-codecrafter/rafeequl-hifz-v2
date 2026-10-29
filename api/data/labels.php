@@ -125,11 +125,9 @@ $labels = [
         114 => ['ar' => 'الناس',       'en' => 'An-Nas'],
     ],
     'mistake_types' => [
-        'TRANSITION_FAILURE' => ['ar' => 'انقطاع/نسيان بداية الآية', 'en' => 'Break between Ayat / forgetting the start'],
-        'MUTASHABIHAT'       => ['ar' => 'مشتبهات',                  'en' => 'Confusable similar Ayat'],
-        'TAWAQQUF'           => ['ar' => 'أحكام الوقف',              'en' => 'Pause (Waqf) rules'],
-        'TASHKEEL'           => ['ar' => 'التشكيل',                  'en' => 'Diacritics (Tashkeel)'],
-        'LAFDH'              => ['ar' => 'اللفظ',                    'en' => 'Pronunciation (Lafdh)'],
+        'AYAH_MISTAKE'       => ['ar' => 'خطأ في آية',            'en' => 'Mistake in one verse'],
+        'TRANSITION_FAILURE' => ['ar' => 'نسيان الآية التالية',   'en' => 'Forgot the next verse'],
+        'MUTASHABIHAT'       => ['ar' => 'آيات متشابهة',          'en' => 'Similar-looking verses'],
     ],
 ];
 

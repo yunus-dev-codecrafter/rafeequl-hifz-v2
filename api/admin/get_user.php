@@ -96,11 +96,11 @@ try {
 
     $counts = [
         'active_mistakes' => $count($pdo, "SELECT COUNT(*) FROM `mistakes` WHERE `user_id` = :u AND `status` = 'ACTIVE'", $p),
-        'due_now'         => $count($pdo, "SELECT COUNT(*) FROM `mistakes` WHERE `user_id` = :u AND `status` = 'ACTIVE' AND `due_at` <= NOW()", $p),
+        'due_now'         => $count($pdo, "SELECT COALESCE(SUM(GREATEST(`practice_target` - `practice_count`, 0)), 0) FROM `mistakes` WHERE `user_id` = :u AND `status` = 'ACTIVE'", $p),
         'graduated'       => $count($pdo, "SELECT COUNT(*) FROM `mistakes` WHERE `user_id` = :u AND `status` = 'ARCHIVED'", $p),
         'mistakes_total'  => $count($pdo, 'SELECT COUNT(*) FROM `mistakes` WHERE `user_id` = :u', $p),
         'reviews'         => rh_table_exists($pdo, 'mistake_events')
-            ? $count($pdo, "SELECT COUNT(*) FROM `mistake_events` WHERE `user_id` = :u AND `event_type` IN ('AGAIN','HARD','GOOD','EASY')", $p)
+            ? $count($pdo, "SELECT COUNT(*) FROM `mistake_events` WHERE `user_id` = :u AND `event_type` IN ('AGAIN','HARD','GOOD','EASY','MASTERED')", $p)
             : 0,
         'notes'           => rh_table_exists($pdo, 'page_notes')
             ? $count($pdo, 'SELECT COUNT(*) FROM `page_notes` WHERE `user_id` = :u', $p)

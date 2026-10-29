@@ -124,25 +124,21 @@
       <!-- Deck counters -->
       <div class="fc-counters" id="fc-counters">
         <div class="fc-counter fc-counter-due">
-          <span class="fc-counter-value" id="fc-due-count">0</span>
-          <span class="fc-counter-label" data-i18n="fc_due_badge">مستحقة اليوم</span>
+          <span class="fc-counter-value" id="fc-remaining-reps">0</span>
+          <span class="fc-counter-label" data-i18n="fc_remaining_reps_badge">تكرار متبقٍ</span>
         </div>
         <div class="fc-counter fc-counter-new">
-          <span class="fc-counter-value" id="fc-new-count">0</span>
-          <span class="fc-counter-label" data-i18n="fc_new_badge">جديدة</span>
+          <span class="fc-counter-value" id="fc-active-cards">0</span>
+          <span class="fc-counter-label" data-i18n="fc_active_cards_badge">بطاقات نشطة</span>
         </div>
         <div class="fc-counter fc-counter-total">
-          <span class="fc-counter-value" id="fc-total-count">0</span>
-          <span class="fc-counter-label" data-i18n="fc_total_badge">إجمالي النشطة</span>
+          <span class="fc-counter-value" id="fc-completed-cards">0</span>
+          <span class="fc-counter-label" data-i18n="fc_completed_cards_badge">مكتملة</span>
         </div>
       </div>
 
       <!-- Deck toolbar -->
       <div class="fc-toolbar">
-        <div class="fc-mode-switch" id="fc-mode-switch">
-          <button type="button" class="fc-mode-btn active" data-mode="due" data-i18n="fc_mode_due">المستحقة</button>
-          <button type="button" class="fc-mode-btn" data-mode="all" data-i18n="fc_mode_all">الكل</button>
-        </div>
         <button type="button" id="btn-fc-filters" class="btn btn-ghost fc-tool-btn" data-i18n="fc_filters_btn">تصفية ⚙</button>
         <button type="button" id="btn-fc-shuffle" class="btn btn-ghost fc-tool-btn" data-i18n="fc_shuffle_btn">خلط 🔀</button>
         <button type="button" id="btn-fc-undo" class="btn btn-ghost fc-tool-btn" disabled data-i18n="fc_undo_btn">↩ تراجع</button>
@@ -194,7 +190,6 @@
       <h3 id="deck-empty-title" data-i18n="fc_empty_title">مبارك! لا توجد أخطاء نشطة بانتظار المعالجة</h3>
       <p class="hint" id="deck-empty-desc" style="margin-bottom: 1.5rem;" data-i18n="fc_empty_desc">تم إتقان جميع الأخطاء المسجلة أو لم يتم تسجيل أي أخطاء جديدة اليوم.</p>
       <div style="display:flex; justify-content:center; gap:0.75rem; flex-wrap:wrap;">
-        <button type="button" id="btn-practice-all" class="btn btn-primary hidden" data-i18n="fc_practice_all_btn">راجع كل البطاقات الآن</button>
         <a href="history.html" class="btn btn-success" data-i18n="fc_btn_view_history">عرض سجل الأخطاء المتقنة 📜</a>
         <a href="dashboard.html" class="btn btn-ghost" data-i18n="back_to_tasks">العودة لدفتر المهام</a>
       </div>
@@ -221,6 +216,18 @@
           <div>
             <div id="fc-meta" class="fc-meta-row">—</div>
             <div id="fc-flags" class="fc-flags"></div>
+
+            <div id="fc-practice-counter" class="fc-practice-counter">
+              <div class="fc-practice-head">
+                <span class="fc-practice-label" data-i18n="fc_practice_label">التكرار</span>
+                <span class="fc-practice-num">
+                  <span id="fc-practice-count">0</span> / <span id="fc-practice-target">40</span>
+                </span>
+              </div>
+              <div class="fc-practice-track"><div id="fc-practice-fill" class="fc-practice-fill"></div></div>
+              <div id="fc-practice-hint" class="fc-practice-hint"></div>
+            </div>
+
             <p class="hint" style="text-align:center; margin-top:0.75rem; margin-bottom:0;" data-i18n="fc_card_hint_front">
               💡 انقر على البطاقة لقلبها وقراءة الآية والملاحظة
             </p>
@@ -248,7 +255,7 @@
           <div id="fc-link-row" class="fc-link-row hidden">
             <div class="fc-link-head">
               <span>🔗</span>
-              <span data-i18n="fc_link_label">الآية التالية</span>
+              <span id="fc-link-label" data-i18n="fc_link_label">الآية التالية</span>
               <span id="fc-link-ref" class="fc-link-ref"></span>
             </div>
             <div id="fc-link-text" class="fc-link-text">—</div>
@@ -257,17 +264,16 @@
           <div id="fc-notes" class="fc-notes-content">لا توجد ملاحظات</div>
 
           <p class="hint" style="text-align:center; margin:0;" data-i18n="fc_card_hint_back">
-            قيّم تذكّرك: أخطأت / صعب / جيد / سهل — وتعود البطاقة في الوقت المناسب.
+            اقرأ الآية من حفظك، ثم اضغط «تلوتها صحيحة» أو «تعثرت».
           </p>
         </div>
       </div>
 
-      <!-- Grading Bar -->
+      <!-- Practice Bar -->
       <div id="deck-actions" class="deck-actions-bar hidden">
-        <button type="button" id="btn-again" class="btn fc-grade fc-grade-again" data-i18n="fc_grade_again">أخطأت</button>
-        <button type="button" id="btn-hard" class="btn fc-grade fc-grade-hard" data-i18n="fc_grade_hard">صعب</button>
-        <button type="button" id="btn-good" class="btn fc-grade fc-grade-good" data-i18n="fc_grade_good">جيد</button>
-        <button type="button" id="btn-easy" class="btn fc-grade fc-grade-easy" data-i18n="fc_grade_easy">سهل</button>
+        <button type="button" id="btn-correct" class="btn fc-grade fc-grade-good" data-i18n="fc_btn_correct" data-i18n-title="fc_btn_correct_title">✓ تلوتها صحيحة (+١)</button>
+        <button type="button" id="btn-slip" class="btn fc-grade fc-grade-again" data-i18n="fc_btn_slip" data-i18n-title="fc_btn_slip_title">✗ تعثرت</button>
+        <button type="button" id="btn-next-card" class="btn btn-ghost" data-i18n="fc_btn_next">التالي ←</button>
       </div>
 
       <div class="fc-secondary-actions">

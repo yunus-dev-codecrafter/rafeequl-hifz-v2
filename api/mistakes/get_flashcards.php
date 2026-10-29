@@ -4,12 +4,12 @@ declare(strict_types=1);
 /**
  * Rafeequl Hifz - Flashcard Deck Builder (Task 4: المعالجة)
  *
- * GET/POST: user_id, mode ('due'|'all'), mistake_type, surah_number,
- *           juz_number, page_number, limit, shuffle
+ * GET/POST: user_id, mistake_type, surah_number, juz_number, page_number,
+ *           limit, shuffle, mode (legacy: 'due' and 'all' now behave the same)
  *
- * `due` (default) returns only cards whose schedule is due (plus brand-new
- * cards). `all` returns the whole active deck. Every card carries the full
- * SRS state so the practice engine can show intervals and history.
+ * The deck is every ACTIVE mistake. Each card carries its 40-practice counter
+ * (`practice_count` / `practice_target`); a card leaves the deck when the
+ * counter reaches the target.
  */
 
 require __DIR__ . '/../../config/database.php';
@@ -60,8 +60,14 @@ require_once __DIR__ . '/../../config/auth.php';
 $authUser = rh_require_login($pdo);
 $userId   = rh_resolve_user_id($pdo, $authUser, $input['user_id'] ?? null);
 
-$mode         = ($input['mode'] ?? 'due') === 'all' ? 'all' : 'due';
+$mode         = ($input['mode'] ?? 'all') === 'due' ? 'due' : 'all';
 $filterType   = $input['mistake_type'] ?? null;
+if (is_string($filterType)) {
+    $legacyTypes = ['TAWAQQUF' => 'AYAH_MISTAKE', 'TASHKEEL' => 'AYAH_MISTAKE', 'LAFDH' => 'AYAH_MISTAKE'];
+    if (isset($legacyTypes[$filterType])) {
+        $filterType = $legacyTypes[$filterType];
+    }
+}
 $filterSurah  = read_int($input['surah_number'] ?? null, 0);
 $filterJuz    = read_int($input['juz_number'] ?? null, 0);
 $filterPage   = read_int($input['page_number'] ?? null, 0);
@@ -73,23 +79,25 @@ try {
     $stmt = $pdo->prepare(
         "SELECT
             SUM(CASE WHEN `status` = 'ACTIVE' THEN 1 ELSE 0 END) AS active,
-            SUM(CASE WHEN `status` = 'ACTIVE' AND (`due_at` IS NULL OR `due_at` <= NOW()) THEN 1 ELSE 0 END) AS due,
-            SUM(CASE WHEN `status` = 'ACTIVE' AND `last_reviewed_at` IS NULL THEN 1 ELSE 0 END) AS new_cards
+            SUM(CASE WHEN `status` = 'ACTIVE' AND `practice_count` < `practice_target` THEN 1 ELSE 0 END) AS remaining_cards,
+            SUM(CASE WHEN `status` = 'ACTIVE' AND `practice_count` = 0 THEN 1 ELSE 0 END) AS new_cards,
+            SUM(CASE WHEN `status` = 'ACTIVE' THEN GREATEST(`practice_target` - `practice_count`, 0) ELSE 0 END) AS remaining_reps,
+            SUM(CASE WHEN `status` = 'ARCHIVED' THEN 1 ELSE 0 END) AS completed
          FROM `mistakes` WHERE `user_id` = :u"
     );
     $stmt->execute([':u' => $userId]);
-    $c = $stmt->fetch() ?: ['active' => 0, 'due' => 0, 'new_cards' => 0];
-    $dueCount   = (int) ($c['due'] ?? 0);
-    $newCount   = (int) ($c['new_cards'] ?? 0);
-    $totalActive = (int) ($c['active'] ?? 0);
+    $c = $stmt->fetch() ?: [];
+    $totalActive     = (int) ($c['active'] ?? 0);
+    $remainingCards  = (int) ($c['remaining_cards'] ?? 0);
+    $newCount        = (int) ($c['new_cards'] ?? 0);
+    $remainingReps   = (int) ($c['remaining_reps'] ?? 0);
+    $completedCount  = (int) ($c['completed'] ?? 0);
+    $dueCount        = $totalActive; // legacy alias: every active card is available
 
     // ---- Deck query -------------------------------------------------------
     $where  = ["m.`user_id` = :u", "m.`status` = 'ACTIVE'"];
     $params = [':u' => $userId];
 
-    if ($mode === 'due') {
-        $where[] = '(m.`due_at` IS NULL OR m.`due_at` <= NOW())';
-    }
     if (is_string($filterType) && $filterType !== '') {
         $where[] = 'm.`mistake_type` = :ft';
         $params[':ft'] = $filterType;
@@ -110,15 +118,15 @@ try {
     $sql = 'SELECT m.`id`, m.`page_number`, m.`surah_number`, m.`ayah_number`,
                    m.`mistake_type`, m.`notes`, m.`severity`,
                    m.`confused_with_surah`, m.`confused_with_ayah`, m.`source_task`,
-                   m.`status`, m.`mastery_count`, m.`occurrence_count`,
+                   m.`status`, m.`practice_count`, m.`practice_target`,
+                   m.`mastery_count`, m.`occurrence_count`,
                    m.`interval_days`, m.`ease`, m.`lapses`, m.`streak_correct`,
                    m.`due_at`, m.`last_reviewed_at`, m.`graduated_at`, m.`created_at`,
                    p.`juz_number`, p.`hizb_number`, p.`rub_el_hizb`
             FROM `mistakes` m
             LEFT JOIN `madinah_pages_meta` p ON p.`page_number` = m.`page_number`
             WHERE ' . implode(' AND ', $where) . '
-            ORDER BY (m.`due_at` IS NULL) ASC, m.`due_at` ASC,
-                     m.`occurrence_count` DESC, m.`id` ASC';
+            ORDER BY m.`occurrence_count` DESC, m.`practice_count` ASC, m.`id` ASC';
 
     if ($limit > 0) {
         $sql .= ' LIMIT ' . (int) $limit;
@@ -137,6 +145,9 @@ try {
         $surahNum  = (int) $row['surah_number'];
         $type      = (string) $row['mistake_type'];
         $surahName = $surahs[$surahNum]['ar'] ?? ('سورة ' . $surahNum);
+        $practiceCount  = (int) $row['practice_count'];
+        $practiceTarget = (int) $row['practice_target'];
+        $remaining      = max(0, $practiceTarget - $practiceCount);
 
         $confusedSurah = $row['confused_with_surah'] !== null ? (int) $row['confused_with_surah'] : null;
 
@@ -162,12 +173,17 @@ try {
             ],
             'back' => [
                 'notes'          => $row['notes'],
+                'practice_count' => $practiceCount,
+                'practice_target' => $practiceTarget,
+                'remaining'      => $remaining,
+                'progress_percent' => $practiceTarget > 0
+                    ? (int) round(($practiceCount / $practiceTarget) * 100) : 0,
                 'mastery_count'  => (int) $row['mastery_count'],
                 'occurrence_count' => (int) $row['occurrence_count'],
                 'interval_days'  => (int) $row['interval_days'],
                 'lapses'         => (int) $row['lapses'],
                 'streak_correct' => (int) $row['streak_correct'],
-                'is_new'         => $row['last_reviewed_at'] === null,
+                'is_new'         => $practiceCount === 0,
                 'due_at'         => $row['due_at'],
                 'last_reviewed_at' => $row['last_reviewed_at'],
                 'logged_at'      => $row['created_at'],
@@ -182,6 +198,9 @@ try {
         'due_count'    => $dueCount,
         'new_count'    => $newCount,
         'total_active' => $totalActive,
+        'remaining_cards' => $remainingCards,
+        'remaining_reps'  => $remainingReps,
+        'completed_count' => $completedCount,
         'cards'        => $cards,
     ]);
 } catch (PDOException $e) {

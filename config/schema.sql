@@ -5,7 +5,7 @@
 -- hosts pre-create the database and usually forbid CREATE DATABASE.
 --
 -- Fresh installs: create the database, select it in phpMyAdmin, then import
--- this file. Upgrades: run config/migrate_v8.php (CLI) or use setup.php.
+-- this file. Upgrades: run config/migrate_v9.php (CLI) or use setup.php.
 
 -- 1. users table
 CREATE TABLE IF NOT EXISTS `users` (
@@ -93,13 +93,15 @@ CREATE TABLE IF NOT EXISTS `mistakes` (
     `page_number` INT NOT NULL,
     `surah_number` INT NOT NULL,
     `ayah_number` INT NOT NULL,
-    `mistake_type` ENUM('TRANSITION_FAILURE', 'MUTASHABIHAT', 'TAWAQQUF', 'TASHKEEL', 'LAFDH') NOT NULL,
+    `mistake_type` ENUM('AYAH_MISTAKE', 'TRANSITION_FAILURE', 'MUTASHABIHAT') NOT NULL,
     `notes` TEXT NULL,
     `severity` TINYINT NOT NULL DEFAULT 1,
     `confused_with_surah` INT NULL,
     `confused_with_ayah` INT NULL,
     `source_task` ENUM('HIFZ_JADID', 'TIKRAR_AMS', 'RABT', 'MURAJAAH', 'RUB_TAMKIN') NULL,
     `status` ENUM('ACTIVE', 'ARCHIVED') NOT NULL DEFAULT 'ACTIVE',
+    `practice_count` INT NOT NULL DEFAULT 0,
+    `practice_target` INT NOT NULL DEFAULT 40,
     `mastery_count` INT NOT NULL DEFAULT 0,
     `occurrence_count` INT NOT NULL DEFAULT 1,
     `interval_days` INT NOT NULL DEFAULT 0,
@@ -114,6 +116,7 @@ CREATE TABLE IF NOT EXISTS `mistakes` (
     PRIMARY KEY (`id`),
     KEY `idx_mistakes_user_status` (`user_id`, `status`),
     KEY `idx_mistakes_user_due` (`user_id`, `status`, `due_at`),
+    KEY `idx_mistakes_user_status_practice` (`user_id`, `status`, `practice_count`),
     CONSTRAINT `fk_mistakes_user`
         FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
         ON DELETE CASCADE ON UPDATE CASCADE

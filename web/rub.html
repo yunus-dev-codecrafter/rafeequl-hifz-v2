@@ -143,6 +143,10 @@
         <p class="rub-blur-hint"><span aria-hidden="true">👁</span><span data-i18n="rub_blur_hint">الآيات مغطاة افتراضيًا — اكشف الموقف عند الحاجة بعد التسميع.</span></p>
 
         <div class="rub-hero-actions">
+          <button type="button" class="btn btn-primary js-rub-mic-open" title="تسميع الربع كاملاً بالمايك" data-i18n-title="rub_mic_title">
+            <span aria-hidden="true">🎙️</span>
+            <span data-i18n="rub_mic_open_short">تسميع كامل</span>
+          </button>
           <button type="button" id="btn-toggle-all-reveal" class="btn btn-ghost rub-reveal-all" aria-pressed="false" title="إظهار الكل" data-i18n-title="rub_show_all">
             <svg class="rub-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
             <span id="rub-reveal-all-label" data-i18n="rub_show_all">إظهار الكل</span>
@@ -156,6 +160,18 @@
             <span data-i18n="rub_reset_all">إعادة ضبط الربع</span>
           </button>
         </div>
+      </section>
+
+      <!-- Optional full-rub' microphone self-test -->
+      <section class="rub-mic-card" id="rub-mic-card" aria-labelledby="rub-mic-card-title">
+        <div class="rub-mic-card-icon" aria-hidden="true">🎙️</div>
+        <div class="rub-mic-card-body">
+          <div class="rub-mic-card-kicker" data-i18n="rub_mic_optional">اختياري — لاختبار الحفظ بعد التثبيت</div>
+          <h3 id="rub-mic-card-title" data-i18n="rub_mic_title">تسميع الربع كاملاً</h3>
+          <p data-i18n="rub_mic_card_sub">اقرأ الربع بصوتك ويظهر النص كلمة بكلمة. عند الخطأ يتوقف النص حتى تصحح.</p>
+          <span id="rub-mic-last" class="rub-mic-last hidden" aria-live="polite"></span>
+        </div>
+        <button type="button" class="btn btn-primary js-rub-mic-open" data-i18n="rub_mic_open">ابدأ التسميع</button>
       </section>
 
       <!-- Stop-sign legend -->
@@ -183,6 +199,10 @@
         <div class="rub-end-icon" aria-hidden="true">✓</div>
         <h3 data-i18n="rub_end_title">تم تثبيت الربع بحمد الله</h3>
         <p data-i18n="rub_end_desc">أتممت تكرار كل مواقف الربع ثلاث مرات. ستُختار لك أرباع أخرى في الأيام القادمة.</p>
+        <button type="button" class="btn btn-primary rub-mic-end-cta js-rub-mic-open">
+          <span aria-hidden="true">🎙️</span>
+          <span data-i18n="rub_mic_end_cta">اختبر حفظك: سمّع الربع كاملاً بالمايك</span>
+        </button>
       </div>
     </div>
   </main>
@@ -221,8 +241,99 @@
     </div>
   </div>
 
+  <!-- Full-rub' microphone recitation overlay -->
+  <div id="rub-mic-overlay" class="rub-mic-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="rub-mic-heading">
+    <div class="rub-mic-shell">
+      <header class="rub-mic-head">
+        <button type="button" id="rub-mic-close" class="rub-mic-icon-btn" title="إغلاق" aria-label="إغلاق" data-i18n-title="rub_mic_close">✕</button>
+        <div class="rub-mic-head-title">
+          <strong id="rub-mic-heading" data-i18n="rub_mic_title">تسميع الربع كاملاً</strong>
+          <span id="rub-mic-timer" class="rub-mic-timer">00:00</span>
+        </div>
+        <span class="rub-mic-head-spacer" aria-hidden="true"></span>
+      </header>
+
+      <div id="rub-mic-intro" class="rub-mic-intro">
+        <div class="rub-mic-intro-icon" aria-hidden="true">🎙️</div>
+        <h2 data-i18n="rub_mic_intro_title">سمّع الربع كاملاً</h2>
+        <p class="rub-mic-intro-lead" data-i18n="rub_mic_intro_desc">اقرأ الربع من أوله إلى آخره بصوتك. كل كلمة تقرؤها تظهر على الشاشة، وإن أخطأت يتوقف النص عندك حتى تصحح.</p>
+
+        <ul class="rub-mic-tips">
+          <li><span aria-hidden="true">🎧</span><span data-i18n="rub_mic_tip_headset">استخدم سماعة رأس في مكان هادئ لأفضل دقة.</span></li>
+          <li><span aria-hidden="true">🌐</span><span data-i18n="rub_mic_tip_network">التعرف الصوتي يحتاج اتصالاً بالإنترنت.</span></li>
+          <li><span aria-hidden="true">🔒</span><span data-i18n="rub_mic_tip_privacy">لا نحتفظ بتسجيل صوتك داخل التطبيق.</span></li>
+        </ul>
+
+        <div id="rub-mic-support-note" class="rub-mic-note hidden"></div>
+
+        <div class="rub-mic-intro-actions">
+          <button type="button" id="rub-mic-start" class="btn btn-primary" data-i18n="rub_mic_start">ابدأ التسميع</button>
+          <button type="button" id="rub-mic-resume" class="btn btn-ghost hidden" data-i18n="rub_mic_resume_btn">متابعة من آخر موضع</button>
+          <button type="button" id="rub-mic-cancel" class="btn btn-ghost" data-i18n="rub_mic_cancel">إلغاء</button>
+        </div>
+      </div>
+
+      <div id="rub-mic-live" class="rub-mic-live hidden">
+        <div class="rub-mic-statusbar">
+          <span id="rub-mic-dot" class="rub-mic-dot" aria-hidden="true"></span>
+          <span id="rub-mic-status" class="rub-mic-status" aria-live="polite">🎙️ يسمعك… اقرأ الآن</span>
+          <span id="rub-mic-percent" class="rub-mic-percent">0%</span>
+        </div>
+
+        <div class="rub-mic-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+          <span id="rub-mic-progress-bar"></span>
+        </div>
+
+        <div id="rub-mic-live-note" class="rub-mic-note hidden" role="status"></div>
+
+        <div id="rub-mic-stall" class="rub-mic-stall hidden" role="status">
+          <span aria-hidden="true">⏸</span>
+          <span data-i18n="rub_mic_stall">لم يظهر النص — أعد الكلمة أو اضغط تلميح</span>
+        </div>
+
+        <div id="rub-mic-sheet" class="rub-mic-sheet"></div>
+
+        <div id="rub-mic-debug" class="rub-mic-debug hidden">
+          <div class="rub-mic-debug-tools">
+            <textarea id="rub-mic-debug-input" rows="2" placeholder="الصق ما «سمعه» المتصفح لاختبار المطابقة…"></textarea>
+            <button type="button" id="rub-mic-debug-run" class="btn btn-ghost">حلّل النص</button>
+          </div>
+          <pre id="rub-mic-debug-output" class="rub-mic-debug-output"></pre>
+        </div>
+
+        <div class="rub-mic-controls">
+          <button type="button" id="rub-mic-pause" class="btn btn-ghost" data-i18n="rub_mic_pause">إيقاف مؤقت</button>
+          <button type="button" id="rub-mic-hint" class="btn btn-ghost" data-i18n="rub_mic_hint">تلميح</button>
+          <button type="button" id="rub-mic-rewind" class="btn btn-ghost" data-i18n="rub_mic_rewind">إعادة الآية</button>
+          <button type="button" id="rub-mic-show-all" class="btn btn-ghost" data-i18n="rub_mic_show_all" aria-pressed="false">إظهار النص</button>
+          <button type="button" id="rub-mic-finish" class="btn btn-ghost" data-i18n="rub_mic_finish">إنهاء</button>
+        </div>
+      </div>
+
+      <div id="rub-mic-report" class="rub-mic-report hidden">
+        <div id="rub-mic-report-icon" class="rub-mic-report-icon" aria-hidden="true">✓</div>
+        <h2 id="rub-mic-report-title">تسميع كامل ✓</h2>
+        <p id="rub-mic-report-sub"></p>
+
+        <div class="rub-mic-report-grid">
+          <div><strong id="rub-mic-report-verses">0</strong><span data-i18n="rub_mic_report_verses">آية</span></div>
+          <div><strong id="rub-mic-report-words" dir="ltr">0</strong><span data-i18n="rub_mic_report_words">كلمة ظهرت</span></div>
+          <div><strong id="rub-mic-report-stalls">0</strong><span data-i18n="rub_mic_report_stalls">توقف</span></div>
+          <div><strong id="rub-mic-report-time" dir="ltr">0:00</strong><span data-i18n="rub_mic_report_time">الوقت</span></div>
+          <div id="rub-mic-report-hint-row" class="hidden"><strong id="rub-mic-report-hints">0</strong><span data-i18n="rub_mic_report_hints">تلميحات</span></div>
+        </div>
+
+        <div class="rub-mic-report-actions">
+          <button type="button" id="rub-mic-again" class="btn btn-primary" data-i18n="rub_mic_again">أعد التسميع</button>
+          <button type="button" id="rub-mic-done" class="btn btn-ghost" data-i18n="rub_mic_done">تم</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="js/app.js"></script>
   <script src="js/rub.js"></script>
+  <script src="js/rub-recitation.js"></script>
   <script src="js/nav.js"></script>
 </body>
 </html>
