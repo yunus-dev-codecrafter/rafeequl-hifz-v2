@@ -267,7 +267,7 @@ if ($locked) {
     <body style="font-family:system-ui,sans-serif;max-width:680px;margin:3rem auto;padding:0 1rem;line-height:1.9">
       <h1>الإعداد مكتمل بالفعل</h1>
       <p>ملف القفل <code>config/installed.lock</code> موجود، لذلك تم تعطيل مثبّت التطبيق. هذا سلوك طبيعي وليس خطأ.</p>
-      <p>لتطبيق ترقية جديدة (مثل v9) <strong>لا تحذف ملف القفل</strong>. سجّل الدخول بحساب مشرف ثم افتح <a href="migrate.php">migrate.php</a>.</p>
+      <p>لتطبيق ترقية جديدة (مثل v10) <strong>لا تحذف ملف القفل</strong>. سجّل الدخول بحساب مشرف ثم افتح <a href="migrate.php">migrate.php</a>.</p>
       <p>أما إذا كنت تحتاج إلى إعادة تعيين حساب المشرف فقط، فاحذف ملف القفل ثم أنشئ ملف <code>config/install.enable</code> مؤقتاً، وبعد الانتهاء احذف <code>setup.php</code>.</p>
       <p><strong>احذف <code>setup.php</code> من الخادم الآن بعد التأكد من الترقية.</strong></p>
       <p><a href="web/index.html">الانتقال إلى التطبيق</a></p>
@@ -431,17 +431,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action !== '' && $action !== 'save
                     rh_setup_import_schema($pdo);
                 }
 
-                $notices[] = 'تطبيق ترقية قاعدة البيانات v9 (تشمل v7 و v8)...';
+                $notices[] = 'تطبيق ترقية قاعدة البيانات v10 (تشمل v7 و v8 و v9)...';
                 require_once __DIR__ . '/config/migrate_v9.php';
                 if (!function_exists('rh_migrate_v9')) {
                     throw new RuntimeException('تعذر تحميل ملف الترقية config/migrate_v9.php.');
                 }
                 $stats = rh_migrate_v9($pdo, $log);
+                require_once __DIR__ . '/config/migrate_v10.php';
+                if (!function_exists('rh_migrate_v10')) {
+                    throw new RuntimeException('تعذر تحميل ملف الترقية config/migrate_v10.php.');
+                }
+                $stats10 = rh_migrate_v10($pdo, $log);
                 $notices[] = sprintf(
-                    'الترقية: %d عموداً، %d فهرساً، %d جدولاً.',
+                    'الترقية: %d عموداً، %d فهرساً، %d جدولاً (v10: %d جدولاً).',
                     $stats['columns_added'],
                     $stats['indexes_added'],
-                    $stats['tables_created']
+                    $stats['tables_created'],
+                    $stats10['tables_created']
                 );
 
                 $pageCount = rh_setup_seed_pages($pdo);
@@ -655,7 +661,7 @@ if (!in_array($selectedTimezone, $timezones, true)) {
         </form>
       <?php else: ?>
         <h3>ترقية قاعدة بيانات موجودة</h3>
-        <p class="muted">تُطبّق ترقية v9 (تشمل v7 و v8: عدّاد التكرار 40، وتصنيفات الخطأ الثلاثة، وأعمدة الترحيل والفهارس)، تُحدّث بيانات الصفحات، وتُبقي الحسابات والمهام الحالية كما هي.</p>
+        <p class="muted">تُطبّق ترقية v10 (تشمل v7 و v8 و v9: عدّاد التكرار 40، وتصنيفات الخطأ الثلاثة، وأعمدة الترحيل والفهارس، وجدول تقدّم معاني الكلمات)، تُحدّث بيانات الصفحات، وتُبقي الحسابات والمهام الحالية كما هي.</p>
         <form method="post" action="setup.php">
           <input type="hidden" name="csrf" value="<?= rh_h($csrf) ?>">
           <input type="hidden" name="action" value="upgrade">

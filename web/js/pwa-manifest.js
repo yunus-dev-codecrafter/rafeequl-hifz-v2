@@ -34,6 +34,7 @@
       lang: 'ar',
       dir: 'rtl',
       shortcuts: [
+        { name: 'معاني الكلمات', short_name: 'الكلمات', url: base + 'kalimaat.html', icons: [{ src: base + 'icons/icon-192.png', sizes: '192x192', type: 'image/png' }] },
         { name: 'تثبيت الربع', short_name: 'الربع', url: base + 'rub.html', icons: [{ src: base + 'icons/icon-192.png', sizes: '192x192', type: 'image/png' }] },
         { name: 'مركز المراجعة', short_name: 'المراجعة', url: base + 'review.html', icons: [{ src: base + 'icons/icon-192.png', sizes: '192x192', type: 'image/png' }] }
       ],

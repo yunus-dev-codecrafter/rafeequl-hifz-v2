@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0f766e">
+  <script src="js/pwa-manifest.js"></script>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="رفيق الحفظ">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <title data-i18n="kalimaat_page_title">معاني كلمات القرآن — رفيق الحفظ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/kalimaat.css">
+  <script src="js/i18n.js"></script>
+</head>
+<body>
+
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="header-nav-title">
+        <a href="dashboard.html" class="back-link" title="العودة لدفتر اليوم" data-i18n-title="back_to_dashboard">
+          <span>←</span>
+          <span data-i18n="back_to_tasks">العودة للمهام</span>
+        </a>
+        <span class="greeting" data-i18n="kalimaat_page_title">معاني كلمات القرآن</span>
+      </div>
+
+      <div class="header-actions">
+        <button type="button" class="lang-toggle-btn header-action-btn" title="English / العربية" aria-label="تغيير اللغة">
+          <span class="lang-code-text">EN</span>
+        </button>
+        <button type="button" class="theme-toggle-btn header-action-btn" title="تغيير المظهر">
+          <svg class="icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="4.5" fill="currentColor"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+          <svg class="icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+        </button>
+        <a href="history.html" class="header-action-btn" title="سجل الأخطاء والإتقان" data-i18n-title="history_btn_title">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+          </svg>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container kalimaat-page">
+
+    <section class="kalimaat-hero">
+      <div class="kalimaat-hero-top">
+        <div>
+          <h2 data-i18n="kalimaat_hero_title">معاني كلمات القرآن</h2>
+          <p data-i18n="kalimaat_hero_desc">كلمة واحدة في كل مرة، حتى تصل إلى ١٠٠٠ تكرار ثم تنتقل إلى الاختبار.</p>
+        </div>
+        <span class="kalimaat-zone-badge" id="kalimaat-zone-badge" data-i18n="kalimaat_zone_loading">جارٍ تحديد نطاق الحفظ…</span>
+      </div>
+
+      <div class="kalimaat-stats" aria-live="polite">
+        <div class="kalimaat-stat">
+          <span data-i18n="kalimaat_stat_locked">الكلمة المثبتة</span>
+          <strong id="kalimaat-stat-locked">—</strong>
+        </div>
+        <div class="kalimaat-stat">
+          <span data-i18n="kalimaat_stat_ready">جاهزة للاختبار</span>
+          <strong id="kalimaat-stat-ready">—</strong>
+        </div>
+        <div class="kalimaat-stat">
+          <span data-i18n="kalimaat_stat_mastered">متقنة</span>
+          <strong id="kalimaat-stat-mastered">—</strong>
+        </div>
+        <div class="kalimaat-stat">
+          <span data-i18n="kalimaat_stat_total">إجمالي التكرار</span>
+          <strong id="kalimaat-stat-total">—</strong>
+        </div>
+      </div>
+    </section>
+
+    <div class="kalimaat-tabs" role="tablist" aria-label="أقسام معاني الكلمات">
+      <button type="button" class="kalimaat-tab is-active" data-view="study" role="tab" aria-selected="true" data-i18n="kalimaat_tab_study">المراجعة</button>
+      <button type="button" class="kalimaat-tab" data-view="test" role="tab" aria-selected="false" data-i18n="kalimaat_tab_test">الاختبار</button>
+    </div>
+
+    <section id="kalimaat-study" class="kalimaat-view" role="tabpanel">
+      <div class="kalimaat-study-grid">
+        <div class="kalimaat-card">
+          <div class="kalimaat-card-head">
+            <h3 data-i18n="kalimaat_locked_title">الكلمة المثبتة الآن</h3>
+            <small id="kalimaat-locked-counter">—</small>
+          </div>
+          <div class="kalimaat-locked" id="kalimaat-locked">
+            <div class="kalimaat-empty">
+              <p data-i18n="kalimaat_loading">جارٍ تحميل الكلمة…</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="kalimaat-card">
+          <div class="kalimaat-card-head">
+            <h3 data-i18n="kalimaat_browser_title">تصفح الكلمات</h3>
+            <small id="kalimaat-browser-count">—</small>
+          </div>
+
+          <div class="kalimaat-browser-toolbar">
+            <div class="kalimaat-browser-row">
+              <select id="kalimaat-juz" aria-label="الجزء" data-i18n-title="kalimaat_juz_label"></select>
+              <select id="kalimaat-status" aria-label="الحالة" data-i18n-title="kalimaat_status_label">
+                <option value="" data-i18n="kalimaat_status_all">كل الحالات</option>
+                <option value="NEW" data-i18n="kalimaat_status_new">جديدة</option>
+                <option value="LOCKED" data-i18n="kalimaat_status_locked">مثبتة</option>
+                <option value="READY" data-i18n="kalimaat_status_ready">جاهزة للاختبار</option>
+                <option value="MASTERED" data-i18n="kalimaat_status_mastered">متقنة</option>
+              </select>
+            </div>
+            <input type="search" id="kalimaat-search" placeholder="ابحث في الكلمة أو المعنى…" data-i18n-placeholder="kalimaat_search_ph" autocomplete="off">
+          </div>
+
+          <div class="kalimaat-page-chips" id="kalimaat-page-chips" aria-label="صفحات الجزء"></div>
+          <div class="kalimaat-list" id="kalimaat-list">
+            <div class="kalimaat-empty">
+              <p data-i18n="kalimaat_loading">جارٍ التحميل…</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kalimaat-test" class="kalimaat-view hidden" role="tabpanel">
+      <div class="kalimaat-card">
+        <div class="kalimaat-card-head">
+          <h3 data-i18n="kalimaat_test_title">اختبار الكلمات الجاهزة</h3>
+          <small id="kalimaat-test-counter">0 / 3</small>
+        </div>
+        <div id="kalimaat-test-body" class="kalimaat-test-card">
+          <div class="kalimaat-test-empty">
+            <strong data-i18n="kalimaat_test_empty_title">لا توجد كلمات جاهزة بعد</strong>
+            <p data-i18n="kalimaat_test_empty_desc">أكمل ١٠٠٠ تكرار لكلمة واحدة على الأقل ليبدأ الاختبار.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="js/app.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/nav.js"></script>
+  <script src="js/kalimaat.js"></script>
+  <script src="js/entry-gate.js"></script>
+</body>
+</html>

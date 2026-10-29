@@ -27,6 +27,8 @@ CREATE TABLE IF NOT EXISTS `users` (
     `murajaah_days` INT NOT NULL DEFAULT 6,
     `rabt_extra_pages` INT NOT NULL DEFAULT 0,
     `last_tikrar_page` INT NOT NULL DEFAULT 0,
+    `gate_mistake_id` INT NULL,
+    `gate_mistake_locked_at` DATETIME NULL,
     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_users_email` (`email`),
@@ -201,4 +203,36 @@ CREATE TABLE IF NOT EXISTS `login_attempts` (
     `last_attempt_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`email`),
     KEY `idx_login_attempts_time` (`last_attempt_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 10. kalimaat_progress table (per-user معاني كلمات القرآن repetitions)
+-- The word catalog itself is static content in web/data/kalimaat/.
+CREATE TABLE IF NOT EXISTS `kalimaat_progress` (
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `user_id` INT NOT NULL,
+    `word_key` CHAR(40) NOT NULL,
+    `word_text` VARCHAR(190) NOT NULL,
+    `meaning` TEXT NOT NULL,
+    `book_name` VARCHAR(190) NULL,
+    `surah_number` SMALLINT UNSIGNED NOT NULL,
+    `ayah_number` SMALLINT UNSIGNED NOT NULL,
+    `page_number` SMALLINT UNSIGNED NOT NULL,
+    `repeat_count` SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    `status` ENUM('LOCKED','READY','MASTERED') NOT NULL DEFAULT 'LOCKED',
+    `locked_at` DATETIME NULL,
+    `last_repeated_at` DATETIME NULL,
+    `test_attempts` INT NOT NULL DEFAULT 0,
+    `test_correct` INT NOT NULL DEFAULT 0,
+    `last_test_session` CHAR(40) NULL,
+    `mastered_at` DATETIME NULL,
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_kalimaat_user_word` (`user_id`, `word_key`),
+    KEY `idx_kalimaat_user_status` (`user_id`, `status`),
+    KEY `idx_kalimaat_user_repeat` (`user_id`, `repeat_count`),
+    KEY `idx_kalimaat_user_page` (`user_id`, `page_number`),
+    CONSTRAINT `fk_kalimaat_progress_user`
+        FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
+        ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

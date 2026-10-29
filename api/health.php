@@ -5,12 +5,12 @@ declare(strict_types=1);
  * Lightweight health check for monitoring and for distinguishing a code/API
  * problem from a host-level 502. It never exposes credentials or user data.
  *
- * 200 = PHP + database + v9 schema ready
+ * 200 = PHP + database + v10 schema ready
  * 503 = database or schema not ready
  *
- * The per-rub' tafsir bundle is reported separately (`tafsir_ok`); it is static
- * content and never changes the health status, so a missing upload only hides
- * the optional tafsir panel.
+ * The per-rub' tafsir bundle and the kalimaat catalog are reported separately
+ * (`tafsir_ok`, `kalimaat_ok`); they are static content and never change the
+ * health status, so a missing upload only hides the optional feature.
  */
 
 require __DIR__ . '/../config/database.php';
@@ -22,6 +22,7 @@ $required = [
     'users' => [
         'role', 'status', 'must_change_password',
         'murajaah_days', 'rabt_extra_pages', 'last_tikrar_page',
+        'gate_mistake_id', 'gate_mistake_locked_at',
     ],
     'daily_task_logs' => [
         'completed_pages', 'repetition_count', 'rub_id', 'completed_stations',
@@ -30,6 +31,7 @@ $required = [
     'madinah_pages_meta' => ['page_number'],
     'mistakes' => ['id', 'status', 'due_at', 'practice_count', 'practice_target'],
     'rub_history' => ['id', 'user_id', 'rub_id'],
+    'kalimaat_progress' => ['id', 'user_id', 'word_key', 'repeat_count', 'status', 'last_test_session'],
 ];
 
 $missing = [];
@@ -65,6 +67,10 @@ $tafsirOk = is_array($tafsirFiles)
     && is_readable(__DIR__ . '/data/tafsir/1.json')
     && is_readable(__DIR__ . '/data/tafsir/240.json');
 
+$kalimaatOk = is_readable(__DIR__ . '/../web/data/kalimaat/meta.json')
+    && is_readable(__DIR__ . '/../web/data/kalimaat/juz/1.json')
+    && is_readable(__DIR__ . '/../web/data/kalimaat/juz/30.json');
+
 http_response_code($ok ? 200 : 503);
 echo json_encode([
     'success'     => $ok,
@@ -74,6 +80,7 @@ echo json_encode([
     'db'          => $dbOk,
     'schema_ok'   => $schemaOk,
     'tafsir_ok'   => $tafsirOk,
+    'kalimaat_ok' => $kalimaatOk,
     'missing'     => $missing,
     'time'        => date('c'),
 ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);

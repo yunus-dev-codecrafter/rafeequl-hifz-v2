@@ -15,12 +15,13 @@
     more: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1.4" fill="currentColor" stroke="none"></circle><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"></circle><circle cx="19" cy="12" r="1.4" fill="currentColor" stroke="none"></circle></svg>',
     tikrar: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>',
     rabt: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>',
+    kalimaat: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path><path d="M8 7h8M8 11h6"></path></svg>',
     murajaah: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>',
     rub: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 4.9 5.4.8-3.9 3.8.9 5.4-4.8-2.5-4.8 2.5.9-5.4L4.2 7.7l5.4-.8z"></path></svg>',
     history: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>',
   };
 
-  const MORE_PAGES = ['tikrar.html', 'rabt.html', 'murajaah.html', 'rub.html', 'history.html'];
+  const MORE_PAGES = ['kalimaat.html', 'tikrar.html', 'rabt.html', 'murajaah.html', 'rub.html', 'history.html'];
 
   function currentPage() {
     const parts = location.pathname.split('/');
@@ -79,6 +80,7 @@
         <div class="nav-sheet-grid">
           <a href="tikrar.html" class="nav-sheet-item ${page === 'tikrar.html' ? 'is-active' : ''}">${ICONS.tikrar}<span><span data-i18n="nav_tikrar">${t('nav_tikrar', 'تكرار الأمس')}</span><small data-i18n="nav_tikrar_sub">${t('nav_tikrar_sub', 'تثبيت حفظ الأمس')}</small></span></a>
           <a href="rabt.html" class="nav-sheet-item ${page === 'rabt.html' ? 'is-active' : ''}">${ICONS.rabt}<span><span data-i18n="nav_rabt">${t('nav_rabt', 'الربط')}</span><small data-i18n="nav_rabt_sub">${t('nav_rabt_sub', 'ربط الصفحات المحفوظة')}</small></span></a>
+          <a href="kalimaat.html" class="nav-sheet-item ${page === 'kalimaat.html' ? 'is-active' : ''}">${ICONS.kalimaat}<span><span data-i18n="nav_kalimaat">${t('nav_kalimaat', 'معاني الكلمات')}</span><small data-i18n="nav_kalimaat_sub">${t('nav_kalimaat_sub', 'كلمة حتى ١٠٠٠ تكرار')}</small></span></a>
           <a href="rub.html" class="nav-sheet-item ${page === 'rub.html' ? 'is-active' : ''}">${ICONS.rub}<span><span data-i18n="nav_rub">${t('nav_rub', 'تثبيت الربع')}</span><small data-i18n="nav_rub_sub">${t('nav_rub_sub', 'ربع واحد كل يوم')}</small></span></a>
           <a href="murajaah.html" class="nav-sheet-item ${page === 'murajaah.html' ? 'is-active' : ''}">${ICONS.murajaah}<span><span data-i18n="nav_murajaah">${t('nav_murajaah', 'المراجعة')}</span><small data-i18n="nav_murajaah_sub">${t('nav_murajaah_sub', 'الختمة الدورية')}</small></span></a>
           <div class="nav-sheet-sep" aria-hidden="true"></div>

@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'rafeequl-hifz-v20';
+const CACHE_NAME = 'rafeequl-hifz-v21';
 const AUDIO_CACHE = 'rafeequl-hifz-audio-v1';
 const PRECACHE_TIMEOUT_MS = 12000;
 
@@ -14,12 +14,16 @@ const STATIC_ASSETS = [
   'rub.html',
   'review.html',
   'flashcards.html',
+  'kalimaat.html',
   'history.html',
   'admin.html',
   'change-password.html',
   'css/style.css',
+  'css/kalimaat.css',
   'js/i18n.js',
   'js/app.js',
+  'js/entry-gate.js',
+  'js/kalimaat.js',
   'js/hifz.js',
   'js/page-notes.js',
   'js/mutashabihat.js',

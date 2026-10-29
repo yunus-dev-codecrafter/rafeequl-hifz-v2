@@ -21,7 +21,7 @@ Quran memorization daily logbook: PHP 8 + MySQL backend (`api/`), RTL web fronte
 4. Open `https://your-host/setup.php` and follow the three steps:
    database connection → fresh install → admin account.
 5. The installer writes `config/database.local.php`, imports the schema, seeds
-   all 604 Madinah pages, applies migration v9 (which includes v7 and v8),
+   all 604 Madinah pages, applies migration v10 (which includes v7-v9),
    creates the `SUPER_ADMIN` account, then writes `config/installed.lock` and
    removes the enable marker.
 6. **Delete `setup.php` from the server.** Check `api/health.php` returns 200,
@@ -51,24 +51,30 @@ location ~ ^/(config|api/data)/ { deny all; return 404; }
 
 ## Upgrading an existing database
 
-The current release needs **migration v9**. It runs v7 and v8 first, then:
+The current release needs **migration v10**. It runs v7, v8, and v9 first, then:
 
-- adds `practice_count` / `practice_target` (default 40) to `mistakes`;
-- narrows `mistake_type` to `AYAH_MISTAKE`, `TRANSITION_FAILURE`, and
-  `MUTASHABIHAT`, remapping the old `TAWAQQUF` / `TASHKEEL` / `LAFDH` values;
-- backfills archived rows to 40/40 and adds the practice index.
+- creates `kalimaat_progress` for per-user Qur’anic word meanings;
+- adds `users.gate_mistake_id` / `users.gate_mistake_locked_at` for the entry gate;
+- adds `kalimaat_progress.last_test_session` so a word needs three correct
+  answers in three separate app sessions before it is mastered.
+
+Migration v9 itself adds `practice_count` / `practice_target` (default 40) to
+`mistakes`, narrows `mistake_type` to `AYAH_MISTAKE`, `TRANSITION_FAILURE`, and
+`MUTASHABIHAT`, remaps the old `TAWAQQUF` / `TASHKEEL` / `LAFDH` values, and
+backfills archived rows to 40/40.
 
 `setup.php` is intentionally locked after installation. **Do not delete
 `config/installed.lock` for a normal upgrade.** Use the admin-only migration
 runner instead:
 
-1. Upload the new code, including `migrate.php`, `config/migrate_v9.php`,
-   `config/migrate_v8.php`, and `config/migrate_v7.php`.
+1. Upload the new code, including `migrate.php`, `config/migrate_v10.php`,
+   `config/migrate_v9.php`, `config/migrate_v8.php`, and `config/migrate_v7.php`.
 2. Sign in at `web/index.html` with an `ADMIN` or `SUPER_ADMIN` account.
-3. Open `https://your-host/migrate.php` and press **تشغيل ترقية v9 الآن**.
-4. Check `api/health.php` returns 200 with `"schema_ok": true`.
+3. Open `https://your-host/migrate.php` and press **تشغيل ترقية v10 الآن**.
+4. Check `api/health.php` returns 200 with `"schema_ok": true` and
+   `"kalimaat_ok": true`.
 
-Alternative CLI: `php config/migrate_v9.php`.
+Alternative CLI: `php config/migrate_v10.php`.
 
 The installer remains available as a fallback for a lost admin or a fresh
 install: re-upload `setup.php`, delete `config/installed.lock`, create
@@ -76,10 +82,11 @@ install: re-upload `setup.php`, delete `config/installed.lock`, create
 
 The migration is additive and idempotent. If you are upgrading from v1, run
 `migrate_v2.php` through `migrate_v6.php` first (CLI, or temporary web access),
-then run v9. `config/` is denied over HTTP by `config/.htaccess`; `migrate.php`
+then run v10. `config/` is denied over HTTP by `config/.htaccess`; `migrate.php`
 is the supported browser entry point and is protected by admin login and CSRF.
-Until v9 is applied, the mistake/flashcard APIs report a schema error; local
-device data is not deleted.
+Until v10 is applied, the kalimaat APIs and the entry gate fail open; the
+mistake/flashcard APIs report a schema error until v9 is present. Local device
+data is not deleted.
 
 ## Rollover counting
 
@@ -103,6 +110,11 @@ default), so “today” is consistent for every request.
 > adds `practice_count` / `practice_target` (default 40), and backfills archived
 > rows to 40/40. Run `php config/migrate_v9.php`, or sign in as an admin and
 > open `migrate.php`.
+>
+> **Word meanings + entry gate (v10)** creates `kalimaat_progress`, adds the
+> gate columns on `users`, and adds `last_test_session`. Run
+> `php config/migrate_v10.php` (it also runs v7–v9), or open `migrate.php` as an
+> admin.
 
 ## New memorization (HIFZ_JADID)
 
@@ -118,9 +130,9 @@ The new-memorization room is a single active verse at a time:
 
 Progress is saved locally after every tap and mirrored with a debounce to
 `api/tasks/update_hifz_progress.php`, so a reload resumes where you stopped.
-Completion still goes through `api/tasks/update_progress.php`. If v9 is not
-applied yet, local progress and task completion still work, but the screen warns
-that server-side verse progress is pending.
+Completion still goes through `api/tasks/update_progress.php`. If the required
+migration is not applied yet, local progress and task completion still work, but
+the screen warns that server-side verse progress is pending.
 >
 > **Offline Quran text?** `php api/data/build_quran_text.php` downloads the
 > Uthmani text once and writes `web/data/quran-uthmani.json`. It is fetched on
@@ -345,6 +357,70 @@ for the two pair categories.
 - Verify it with `php config/verify_mutashabihat.php`; the service worker
   pre-caches the 55 KB file, so suggestions work offline.
 
+## Word meanings + entry gate (v10)
+
+### The blocking entry gate
+
+`web/js/entry-gate.js` is loaded on the dashboard and every main task page, so
+a direct bookmark cannot bypass it. It opens **once per browser app session**
+(`sessionStorage`) before the daily tasks are usable:
+
+1. **معاني كلمات القرآن** — the currently locked word is shown with its meaning
+   and reference. The user must record **10 repetitions** for this entry, or the
+   remaining lifetime count if fewer than 10 are left before 1,000.
+2. **بطاقة خطأ** — the mistake card locked in `users.gate_mistake_id` is shown
+   with its ayah. Only **correct** recitations count; 10 are required per entry
+   (or the remainder before 40). The card is archived automatically at 40/40.
+
+The gate is sequential, cannot be dismissed by clicking the backdrop, and fails
+open if the API or catalog is unavailable. If the user must change their
+password, the gate steps aside. `sessionStorage` is per tab, so closing the tab
+re-arms the gate. The dedicated Kalimaat page remains reachable from **More**.
+
+### Progress model
+
+| Status | Meaning |
+| --- | --- |
+| `LOCKED` | The one word currently practised; it stays locked until 1,000 repetitions |
+| `READY` | 1,000 reached; the word is in the test pool |
+| `MASTERED` | Three correct answers in three separate app sessions |
+
+- The locked word is chosen randomly from pages `1..current_hifz_page`, or all
+  `604` pages for `COMPLETE` users.
+- Only one word is locked at a time. When it reaches 1,000 the next entry (or the
+  dedicated page) locks another eligible word.
+- The test draws randomly from `READY` words **inside the current zone**.
+- A user can browse the whole zone, filter by juz/page/status, and manually lock
+  a new word only when nothing is locked.
+
+### Endpoints
+
+| File | Purpose |
+| --- | --- |
+| `api/kalimaat/get_entry.php` | gate state: locked word, stats, zone, locked mistake |
+| `api/kalimaat/repeat.php` | add 1–50 repetitions to the locked word |
+| `api/kalimaat/lock.php` | manually lock a word when nothing is locked |
+| `api/kalimaat/list.php` | browse/filter words in the zone with progress |
+| `api/kalimaat/test.php` | random test question from `READY` words |
+| `api/kalimaat/test_answer.php` | grade one answer; one counted correct per app session |
+
+### Catalog
+
+The catalog is static content under `web/data/kalimaat/` and is **not** fetched
+from a third party at runtime. It is generated from the Quranpedia.net meanings
+dump:
+
+```powershell
+php config/build_kalimaat.php --source="$env:TEMP\opencode\qp\meanings.json.gz"
+```
+
+The output is `meta.json` plus 30 juz shards (`juz/1.json` … `juz/30.json`).
+About 13,600 word/expression cards cover 4,709 ayahs because the source books are
+ghareeb/selected-word works, not a full word-by-word lexicon. The source licence
+allows free in-app use with a link appreciated; republishing the dataset requires
+credit to Quranpedia.net and the dump version. `api/health.php` reports
+`kalimaat_ok` separately so a missing upload does not make the whole app fail.
+
 ## Page Recall Board (بطاقة تثبيت الصفحة)
 
 Every recitation task page (new memorization, yesterday's repetition, rabt,
@@ -489,7 +565,7 @@ migration scripts. On a host without CLI, temporarily comment out the
 `RewriteRule ^(?:config|api/data)...` line in the root `.htaccess` **and**
 rename `config/.htaccess`, open
 `https://your-host/config/migrate_v4.php?confirm=1`, then restore both files
-immediately. Prefer `migrate.php` for v9 and later upgrades, and `setup.php`
+immediately. Prefer `migrate.php` for v10 and later upgrades, and `setup.php`
 for fresh installs.
 
 This is additive and idempotent: it adds `role`, `status`, `status_reason`,
@@ -589,12 +665,12 @@ active super admin cannot be suspended or demoted.
 
 ### Deploy order
 
-1. Upload `config/` (including `.htaccess`, `database.example.php`, `migrate_v9.php`, `migrate_v8.php`, and `migrate_v7.php`), `migrate.php`, `setup.php`, `api/` and the changed `web/` files.
+1. Upload `config/` (including `.htaccess`, `database.example.php`, `migrate_v10.php`, `migrate_v9.php`, `migrate_v8.php`, and `migrate_v7.php`), `migrate.php`, `setup.php`, `api/` and the changed `web/` files (including `web/data/kalimaat/`, `web/js/entry-gate.js`, and `web/js/kalimaat.js`).
 2. Upload `config/database.local.php` separately with the current credentials if you deploy over FTP (it is intentionally ignored by git). If you deploy through git and that file is absent, the app cannot connect until you run `setup.php`; use the wizard to write it, or set `DB_*` environment variables.
-3. Sign in as an administrator and open `https://your-host/migrate.php`, then press **تشغيل ترقية v9 الآن**. For a fresh install, use `setup.php` instead.
-4. The migration runner applies v9 (including v7/v8) and leaves `config/installed.lock` untouched. `setup.php` remains locked.
-5. Open `api/health.php` (expect 200, `"schema_ok": true`, and `"tafsir_ok": true`), hard-refresh `web/index.html`, and confirm the new service worker cache (`rafeequl-hifz-v20`) is active.
+3. Sign in as an administrator and open `https://your-host/migrate.php`, then press **تشغيل ترقية v10 الآن**. For a fresh install, use `setup.php` instead.
+4. The migration runner applies v10 (including v7-v9) and leaves `config/installed.lock` untouched. `setup.php` remains locked.
+5. Open `api/health.php` (expect 200, `"schema_ok": true`, `"tafsir_ok": true`, and `"kalimaat_ok": true`), hard-refresh `web/index.html`, and confirm the new service worker cache (`rafeequl-hifz-v21`) is active.
 
 > Back up the database before step 3 on a live site. The migration is additive,
 > but a backup is always the right first move. If the host's PHP cannot reach
-> MySQL, use its phpMyAdmin/CLI and run `config/migrate_v9.php` there instead.
+> MySQL, use its phpMyAdmin/CLI and run `config/migrate_v10.php` there instead.

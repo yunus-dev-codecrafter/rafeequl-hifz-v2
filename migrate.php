@@ -6,7 +6,7 @@ declare(strict_types=1);
  *
  * Why this page exists: setup.php intentionally locks itself after the first
  * successful install, so it cannot be used for ordinary code upgrades. This
- * page applies migration v9 (including v7/v8) to an existing database without
+ * page applies migration v10 (including v7/v8/v9) to an existing database without
  * deleting config/installed.lock or re-enabling the installer.
  *
  * Security:
@@ -36,7 +36,7 @@ function mh_h($value): string
     return htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
 
-/** Current v9 readiness, without assuming the columns already exist. */
+/** Current v10 readiness, without assuming the columns already exist. */
 function mh_schema(PDO $pdo): array
 {
     $out = [
@@ -47,13 +47,37 @@ function mh_schema(PDO $pdo): array
         'enum'            => '',
         'enum_values'     => [],
         'index'           => false,
+        'kalimaat_table'  => false,
+        'kalimaat_session' => false,
+        'gate_column'     => false,
         'ready'           => false,
     ];
 
     try {
         $out['users'] = (bool) $pdo->query("SHOW TABLES LIKE 'users'")->fetchColumn();
+        $out['kalimaat_table'] = (bool) $pdo->query("SHOW TABLES LIKE 'kalimaat_progress'")->fetchColumn();
     } catch (Throwable $t) {
         $out['users'] = false;
+    }
+
+    try {
+        $userCols = [];
+        foreach ($pdo->query('SHOW COLUMNS FROM `users`') as $row) {
+            $userCols[strtolower((string) $row['Field'])] = true;
+        }
+        $out['gate_column'] = isset($userCols['gate_mistake_id'], $userCols['gate_mistake_locked_at']);
+    } catch (Throwable $t) {
+        $out['gate_column'] = false;
+    }
+
+    try {
+        $kalCols = [];
+        foreach ($pdo->query('SHOW COLUMNS FROM `kalimaat_progress`') as $row) {
+            $kalCols[strtolower((string) $row['Field'])] = true;
+        }
+        $out['kalimaat_session'] = isset($kalCols['last_test_session']);
+    } catch (Throwable $t) {
+        $out['kalimaat_session'] = false;
     }
 
     $cols = [];
@@ -82,7 +106,10 @@ function mh_schema(PDO $pdo): array
     $out['ready'] = $out['practice_count']
         && $out['practice_target']
         && $hasRequired
-        && !$hasLegacy;
+        && !$hasLegacy
+        && $out['kalimaat_table']
+        && $out['kalimaat_session']
+        && $out['gate_column'];
 
     try {
         foreach ($pdo->query('SHOW INDEX FROM `mistakes`') as $row) {
@@ -237,8 +264,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $logs[] = $message;
             };
             $stats = rh_migrate_v9($pdo, $log);
+            require_once __DIR__ . '/config/migrate_v10.php';
+            if (!function_exists('rh_migrate_v10')) {
+                throw new RuntimeException('تعذر تحميل config/migrate_v10.php.');
+            }
+            $stats10 = rh_migrate_v10($pdo, $log);
+            foreach (['columns_added', 'indexes_added', 'tables_created', 'enum_updates'] as $statKey) {
+                $stats[$statKey] = (int) ($stats[$statKey] ?? 0) + (int) ($stats10[$statKey] ?? 0);
+            }
         } catch (Throwable $t) {
-            error_log('[Migrate v9] ' . $t->getMessage());
+            error_log('[Migrate v10] ' . $t->getMessage());
             $error = $t->getMessage();
         }
         $schema = mh_schema($pdo);
@@ -250,10 +285,10 @@ $enumDisplay = $schema['enum'] !== '' ? $schema['enum'] : '—';
 mh_page_start('رفيق الحفظ — ترقية قاعدة البيانات');
 ?>
 <span class="badge">ترقية قاعدة البيانات</span>
-<h1>ترقية قاعدة البيانات إلى v9</h1>
+<h1>ترقية قاعدة البيانات إلى v10</h1>
 <p class="muted">
-  مرحباً <?= mh_h($user['name'] ?? $user['email'] ?? '') ?>. هذه الصفحة تطبّق ترقية v9
-  (وتشمل v7 و v8) على قاعدة البيانات الحالية. لا تحذف
+  مرحباً <?= mh_h($user['name'] ?? $user['email'] ?? '') ?>. هذه الصفحة تطبّق ترقية v10
+  (وتشمل v7 و v8 و v9) على قاعدة البيانات الحالية. لا تحذف
   <code>config/installed.lock</code> ولا تعيد تفعيل المثبّت.
 </p>
 <p class="warn" style="margin-top:0">
@@ -273,6 +308,9 @@ mh_page_start('رفيق الحفظ — ترقية قاعدة البيانات');
     <li><span>العمود <code>practice_count</code></span><span class="<?= $schema['practice_count'] ? 'pass' : 'fail' ?>"><?= $schema['practice_count'] ? '✓' : '✗' ?></span></li>
     <li><span>العمود <code>practice_target</code></span><span class="<?= $schema['practice_target'] ? 'pass' : 'fail' ?>"><?= $schema['practice_target'] ? '✓' : '✗' ?></span></li>
     <li><span>فهرس <code>idx_mistakes_user_status_practice</code></span><span class="<?= $schema['index'] ? 'pass' : 'fail' ?>"><?= $schema['index'] ? '✓' : '✗' ?></span></li>
+    <li><span>جدول <code>kalimaat_progress</code></span><span class="<?= $schema['kalimaat_table'] ? 'pass' : 'fail' ?>"><?= $schema['kalimaat_table'] ? '✓' : '✗' ?></span></li>
+    <li><span>العمود <code>kalimaat_progress.last_test_session</code></span><span class="<?= $schema['kalimaat_session'] ? 'pass' : 'fail' ?>"><?= $schema['kalimaat_session'] ? '✓' : '✗' ?></span></li>
+    <li><span>عمودا <code>users.gate_mistake_*</code></span><span class="<?= $schema['gate_column'] ? 'pass' : 'fail' ?>"><?= $schema['gate_column'] ? '✓' : '✗' ?></span></li>
   </ul>
   <p class="muted" style="margin-bottom:0">نوع الخطأ الحالي: <code><?= mh_h($enumDisplay) ?></code></p>
 </div>
@@ -284,8 +322,8 @@ mh_page_start('رفيق الحفظ — ترقية قاعدة البيانات');
   </div>
 <?php elseif ($schema['ready']): ?>
   <div class="ok">
-    <strong>قاعدة البيانات جاهزة لـ v9.</strong>
-    عمودا العدّاد ونوع الخطأ الجديد موجودة. يمكنك إعادة تشغيل الترقية بأمان إذا أردت إصلاح أي شيء.
+    <strong>قاعدة البيانات جاهزة لـ v10.</strong>
+    عدّاد التكرار ونوع الخطأ الجديد وجدول تقدّم معاني الكلمات موجودة. يمكنك إعادة تشغيل الترقية بأمان إذا أردت إصلاح أي شيء.
   </div>
   <?php if (!$schema['index']): ?>
     <div class="warn">
@@ -293,23 +331,23 @@ mh_page_start('رفيق الحفظ — ترقية قاعدة البيانات');
     </div>
   <?php endif; ?>
   <div class="card">
-    <form method="post" action="migrate.php" onsubmit="return confirm('إعادة تشغيل ترقية v9 آمنة ومتكررة. هل تريد المتابعة؟');">
+    <form method="post" action="migrate.php" onsubmit="return confirm('إعادة تشغيل ترقية v10 آمنة ومتكررة. هل تريد المتابعة؟');">
       <input type="hidden" name="csrf" value="<?= mh_h($csrf) ?>">
       <input type="hidden" name="action" value="migrate">
-      <button type="submit" class="secondary">إعادة تشغيل ترقية v9</button>
+      <button type="submit" class="secondary">إعادة تشغيل ترقية v10</button>
     </form>
   </div>
 <?php else: ?>
   <div class="warn">
     <strong>الترقية مطلوبة.</strong>
     ستُضاف أعمدة عدّاد التكرار، ويُحوَّل نوع الخطأ إلى التصنيفات الثلاثة،
-    وتُؤرشف البطاقات القديمة عند 40/40. الترقية آمنة ومتكررة.
+    وتُؤرشف البطاقات القديمة عند 40/40، ويُضاف جدول تقدّم معاني الكلمات. الترقية آمنة ومتكررة.
   </div>
   <div class="card">
     <form method="post" action="migrate.php">
       <input type="hidden" name="csrf" value="<?= mh_h($csrf) ?>">
       <input type="hidden" name="action" value="migrate">
-      <button type="submit">تشغيل ترقية v9 الآن</button>
+      <button type="submit">تشغيل ترقية v10 الآن</button>
     </form>
     <p class="muted" style="margin-bottom:0">قد تستغرق الترقية بعض الثواني على قاعدة بيانات كبيرة. لا تغلق الصفحة.</p>
   </div>

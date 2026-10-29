@@ -58,6 +58,12 @@ try {
         $stmt->execute([':u' => $userId]);
     } catch (Throwable $t) {}
 
+    // 2c. Clear kalimaat progress (table may not exist before migration v10)
+    try {
+        $stmt = $pdo->prepare("DELETE FROM `kalimaat_progress` WHERE `user_id` = :u");
+        $stmt->execute([':u' => $userId]);
+    } catch (Throwable $t) {}
+
     // 3. Reset user table fields to default baseline (0 current page, NEW user, default 6 days / 100 pages target)
     $stmt = $pdo->prepare("
         UPDATE `users`
@@ -66,7 +72,9 @@ try {
             `user_type` = 'NEW',
             `daily_murajaah_target_pages` = 100,
             `murajaah_days` = 6,
-            `rabt_extra_pages` = 0
+            `rabt_extra_pages` = 0,
+            `gate_mistake_id` = NULL,
+            `gate_mistake_locked_at` = NULL
         WHERE `id` = :u
     ");
     $stmt->execute([':u' => $userId]);

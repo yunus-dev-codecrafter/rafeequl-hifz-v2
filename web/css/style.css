@@ -1518,6 +1518,56 @@ h1, h2, h3, h4 {
   font-weight: 800;
 }
 
+/* Tikrar uses the compact stage too, but its action row is generated inline
+   (add / complete / undo / focus / mushaf / mistake). Keep it to two columns on
+   phones and one row on larger screens. */
+.recitation-stage.is-compact .stage-actions.is-sticky:not(.stage-actions-compact) {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-top: 1rem !important;
+}
+
+.recitation-stage.is-compact .stage-actions.is-sticky:not(.stage-actions-compact) > .btn,
+.recitation-stage.is-compact .stage-actions.is-sticky:not(.stage-actions-compact) > a.btn {
+  min-height: 42px;
+  padding: 0.45rem 0.55rem;
+  font-size: 0.8rem;
+  line-height: 1.2;
+}
+
+.recitation-stage.is-compact .stage-actions.is-sticky:not(.stage-actions-compact) > #btn-add-rep,
+.recitation-stage.is-compact .stage-actions.is-sticky:not(.stage-actions-compact) > #btn-complete-all-rep,
+.recitation-stage.is-compact .stage-actions.is-sticky:not(.stage-actions-compact) > a.btn-success {
+  grid-column: 1 / -1;
+}
+
+.stage-secondary-actions.is-four {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.compact-pages-strip {
+  margin-bottom: 0.85rem;
+}
+
+.compact-task-head {
+  padding: 0.85rem 0.95rem;
+}
+
+@media (min-width: 821px) {
+  .recitation-stage.is-compact .stage-actions.is-sticky:not(.stage-actions-compact) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .recitation-stage.is-compact .stage-actions.is-sticky:not(.stage-actions-compact) > #btn-add-rep,
+  .recitation-stage.is-compact .stage-actions.is-sticky:not(.stage-actions-compact) > #btn-complete-all-rep,
+  .recitation-stage.is-compact .stage-actions.is-sticky:not(.stage-actions-compact) > a.btn-success {
+    flex: 1 1 auto;
+  }
+}
+
 /* Bottom sheets for the plan and the complete page grid */
 .modal-overlay.sheet-overlay {
   align-items: flex-end;

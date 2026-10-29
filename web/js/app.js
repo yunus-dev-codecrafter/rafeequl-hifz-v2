@@ -827,6 +827,14 @@ async function loadSharedData() {
 
 /* ---------------- 5. Auth Controller (index.html) ---------------- */
 
+/** A new login should re-arm the entry gate in this tab. */
+function clearEntryGateSession() {
+  try {
+    sessionStorage.removeItem('rh_entry_gate_done');
+    sessionStorage.removeItem('rh_kalimaat_test_session');
+  } catch (e) {}
+}
+
 function initAuthPage() {
   const tabs = document.querySelectorAll('.tab');
   const registerForm = document.getElementById('register-form');
@@ -903,6 +911,7 @@ function initAuthPage() {
       if (res.user && res.user.name) {
         localStorage.setItem('hifz_name', res.user.name);
       }
+      clearEntryGateSession();
       showToast(window.I18N ? I18N.t('auth_welcome_toast') : 'تم إنشاء الحساب بنجاح! مرحباً بك 📖');
       setTimeout(() => { location.href = 'dashboard.html'; }, 400);
     } catch (err) {
@@ -927,6 +936,7 @@ function initAuthPage() {
       if (res.user && res.user.name) {
         localStorage.setItem('hifz_name', res.user.name);
       }
+      clearEntryGateSession();
       showToast(window.I18N ? I18N.t('auth_login_toast') : 'تم تسجيل الدخول بنجاح ✓');
       const isAdmin = res.user && (res.user.role === 'SUPER_ADMIN' || res.user.role === 'ADMIN');
       const dest = res.user && res.user.must_change_password
@@ -975,6 +985,7 @@ async function initDashboard() {
         // Even if the request fails (offline), leave the UI.
       }
       localStorage.removeItem('hifz_name');
+      clearEntryGateSession();
       location.href = 'index.html';
     });
   }
@@ -1592,6 +1603,56 @@ function renderMurajaahHeader({ taskTitle, completedCount, totalPages, percent, 
     </div>`;
 }
 
+/**
+ * Compact task header for Rabt (and any other page-range task that does not
+ * need the full Murajaah prayer plan). The complete page grid lives in a bottom
+ * sheet, so mobile users never scroll through a wall of chips.
+ */
+function renderCompactTaskHeader({ taskTitle, completedCount, totalPages, percent, isAllDone, fillClass }) {
+  const headMeta = window.I18N
+    ? I18N.t('compact_task_meta', { pages: totalPages })
+    : `${totalPages} صفحة — تثبيت الربط`;
+  const allPagesBtn = window.I18N ? I18N.t('murajaah_all_pages_button') : 'كل الصفحات';
+  const doneLabel = window.I18N ? I18N.t('murajaah_head_done') : '✓ مكتمل';
+  const status = isAllDone ? doneLabel : `${completedCount} / ${totalPages}`;
+
+  return `
+    <div class="murajaah-head compact-task-head">
+      <div class="murajaah-head-main">
+        <div class="murajaah-head-title">
+          <h2>${esc(taskTitle)}</h2>
+          <span class="murajaah-head-status ${isAllDone ? 'is-done' : ''}">${esc(status)}</span>
+        </div>
+        <div class="murajaah-head-meta">
+          <span>${esc(headMeta)}</span>
+          <strong>${percent}%</strong>
+        </div>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill ${fillClass}" style="width: ${percent}%;"></div>
+      </div>
+      <div class="murajaah-head-actions">
+        <button type="button" id="btn-open-all-pages" class="btn btn-ghost murajaah-head-btn" title="${esc(allPagesBtn)}">${esc(allPagesBtn)}</button>
+      </div>
+    </div>`;
+}
+
+function renderCompactPagesStrip(taskTitle, task, activePage) {
+  const completedList = task.completed_pages || [];
+  const totalPages = Math.max(1, task.end_page - task.start_page + 1);
+  const title = window.I18N
+    ? I18N.t('compact_pages_title', { task: taskTitle })
+    : `صفحات ${taskTitle}`;
+  return `
+    <div class="session-pages compact-pages-strip" id="session-pages">
+      <div class="session-pages-head">
+        <span class="session-pages-title">${esc(title)}</span>
+        <span class="session-pages-count">${completedList.length} / ${totalPages}</span>
+      </div>
+      <div class="page-chips page-chips-strip" id="task-page-chips"></div>
+    </div>`;
+}
+
 function renderSessionRail(activePage, sessions) {
   if (!sessions || !sessions.length) return '';
   const aria = window.I18N ? I18N.t('prayer_plan_aria') : 'تقسيم المراجعة على الصلوات الخمس';
@@ -1839,6 +1900,7 @@ function renderTaskPage(taskType) {
   const prayerPlanHtml = renderPrayerPlan(taskType, task, activePage);
 
   const isMurajaah = taskType === 'MURAJAAH';
+  const isCompactTask = taskType === 'RABT';
   const prayerSessions = isMurajaah ? buildPrayerSessions(task, completedList) : [];
   const activeSession = isMurajaah
     ? (prayerSessions.find((s) => !s.isEmpty && activePage >= s.start && activePage <= s.end)
@@ -1870,7 +1932,9 @@ function renderTaskPage(taskType) {
 
   const headerHtml = isMurajaah
     ? renderMurajaahHeader({ taskTitle, completedCount, totalPages, percent, isAllDone, fillClass })
-    : genericHeaderHtml;
+    : isCompactTask
+      ? renderCompactTaskHeader({ taskTitle, completedCount, totalPages, percent, isAllDone, fillClass })
+      : genericHeaderHtml;
 
   const rolloverNotice = rolloverNoticeHtml(task);
 
@@ -1885,7 +1949,15 @@ function renderTaskPage(taskType) {
       ${renderMurajaahPlanSheet(prayerPlanHtml)}
       ${renderMurajaahPagesSheet(chipsHint)}
     `
-    : `
+    : isCompactTask
+      ? `
+      ${rolloverNotice}
+      ${headerHtml}
+      ${renderCompactPagesStrip(taskTitle, task, activePage)}
+      <div class="recitation-stage is-compact" id="recitation-stage"></div>
+      ${renderMurajaahPagesSheet(chipsHint)}
+    `
+      : `
       ${rolloverNotice}
       ${headerHtml}
       ${prayerPlanHtml}
@@ -1990,12 +2062,12 @@ function renderChipsList(taskType, task, activePage, activeSession) {
 
     chipsWrap.innerHTML = html;
     bindChips(chipsWrap);
-    if (taskType === 'MURAJAAH') {
+    if (taskType === 'MURAJAAH' || taskType === 'RABT') {
       scrollChipStripToActive(chipsWrap);
     }
   }
 
-  if (taskType === 'MURAJAAH') {
+  if (taskType === 'MURAJAAH' || taskType === 'RABT') {
     const allWrap = document.getElementById('all-pages-grid');
     if (allWrap) {
       let html = '';
@@ -2050,28 +2122,23 @@ function renderTikrarStage(task) {
 
   const html = `
     ${rolloverNoticeHtml(task)}
-    <div class="task-page-head">
-      <div class="task-page-title-row">
-        <div>
+    <div class="murajaah-head compact-task-head tikrar-head">
+      <div class="murajaah-head-main">
+        <div class="murajaah-head-title">
           <h2>${taskTitle}</h2>
-          <p class="hint">${rangeHint}</p>
+          <span class="murajaah-head-status ${isAllDone ? 'is-done' : ''}">${doneBadge}</span>
         </div>
-        <div class="task-page-badge ${isAllDone ? 'green' : 'amber'}">
-          ${doneBadge}
+        <div class="murajaah-head-meta">
+          <span>${esc(rangeHint)}</span>
+          <strong>${percent}%</strong>
         </div>
       </div>
-      <div class="progress-wrap">
-        <div class="progress-header">
-          <span>${progressLbl}</span>
-          <span>${percent}%</span>
-        </div>
-        <div class="progress-bar">
-          <div class="progress-fill fill-amber" style="width: ${percent}%;"></div>
-        </div>
+      <div class="progress-bar">
+        <div class="progress-fill fill-amber" style="width: ${percent}%;"></div>
       </div>
     </div>
 
-    <div class="recitation-stage" id="recitation-stage">
+    <div class="recitation-stage is-compact" id="recitation-stage">
       <div class="stage-top">
         <div class="stage-page-title">
           <span>${pageTitle}</span>
@@ -2245,6 +2312,25 @@ function renderTikrarStage(task) {
   }
 
   if (window.PageNotes) PageNotes.mount(activePage, 'TIKRAR_AMS');
+
+  // On phones the recall board starts collapsed so the repetition controls are
+  // visible without a long scroll.
+  if (window.matchMedia && window.matchMedia('(max-width: 820px)').matches) {
+    let hasPreference = true;
+    try {
+      hasPreference = localStorage.getItem('rh_page_notes_collapsed') !== null;
+    } catch (e) {
+      hasPreference = true;
+    }
+    if (!hasPreference) {
+      const pnCard = document.getElementById('pn-card');
+      const pnToggle = document.getElementById('pn-toggle');
+      if (pnCard && !pnCard.classList.contains('is-collapsed')) {
+        pnCard.classList.add('is-collapsed');
+        if (pnToggle) pnToggle.setAttribute('aria-expanded', 'false');
+      }
+    }
+  }
 }
 
 function renderActivePageStage(taskType, task, activePage) {
@@ -2284,6 +2370,7 @@ function renderActivePageStage(taskType, task, activePage) {
   const kbdHintText = window.I18N ? I18N.t('kbd_hints') : '<span>مفاتيح سريعة:</span> <kbd>→</kbd> <kbd>←</kbd> للتنقل | <kbd>Enter</kbd> للإتمام | <kbd>U</kbd> للتراجع | <kbd>M</kbd> لتسجيل خطأ';
 
   const isMurajaah = taskType === 'MURAJAAH';
+  const isCompactLayout = isMurajaah || taskType === 'RABT';
   const focusLabel = window.I18N ? I18N.t('focus_mode') : 'وضع التركيز';
   const focusExitLabel = window.I18N ? I18N.t('focus_exit') : 'إنهاء وضع التركيز';
   const focusTitle = window.I18N ? I18N.t('focus_mode_title') : 'إخفاء العناصر الجانبية والتركيز على التلاوة';
@@ -2341,7 +2428,7 @@ function renderActivePageStage(taskType, task, activePage) {
       </div>
     </div>`;
 
-  const actionsHtml = isMurajaah ? compactActionsHtml : fullActionsHtml;
+  const actionsHtml = isCompactLayout ? compactActionsHtml : fullActionsHtml;
 
   const verseSummary = formatPageVerseSummary(activePage, window.I18N && window.I18N.lang === 'en');
 
@@ -2496,7 +2583,7 @@ function renderActivePageStage(taskType, task, activePage) {
 
   // On phones/tablets, keep the recall board collapsed until the user opens it.
   // An explicit saved preference always wins.
-  if (taskType === 'MURAJAAH' && window.matchMedia && window.matchMedia('(max-width: 820px)').matches) {
+  if (isCompactLayout && window.matchMedia && window.matchMedia('(max-width: 820px)').matches) {
     let hasPreference = true;
     try {
       hasPreference = localStorage.getItem('rh_page_notes_collapsed') !== null;
