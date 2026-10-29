@@ -11,7 +11,8 @@
    ========================================================================== */
 
 (function () {
-  const SESSION_KEY = 'rh_entry_gate_done';
+  const SESSION_KEY = 'rh_entry_gate_done_v2';
+  try { sessionStorage.removeItem('rh_entry_gate_done'); } catch (e) {}
   let alreadyDone = false;
   try { alreadyDone = sessionStorage.getItem(SESSION_KEY) === '1'; } catch (e) {}
   if (alreadyDone) return;
@@ -210,7 +211,7 @@
     if (status) status.textContent = t('entry_gate_saving', 'جارٍ الحفظ...');
 
     try {
-      const { ok, data } = await api('api/kalimaat/repeat.php', {
+      const { ok, data } = await api('../api/kalimaat/repeat.php', {
         method: 'POST',
         body: { word_key: k.word.key, amount: 1 },
       });
@@ -372,7 +373,7 @@
     if (status) status.textContent = t('entry_gate_saving', 'جارٍ الحفظ...');
 
     try {
-      const { ok, data } = await api('api/mistakes/review_mistake.php', {
+      const { ok, data } = await api('../api/mistakes/review_mistake.php', {
         method: 'POST',
         body: { mistake_id: m.card.mistake_id, result },
       });
@@ -503,7 +504,7 @@
     try { done = sessionStorage.getItem(SESSION_KEY) === '1'; } catch (e) {}
     if (done) return;
     try {
-      const { ok, status, data } = await api('api/kalimaat/get_entry.php', { method: 'GET' });
+      const { ok, status, data } = await api('../api/kalimaat/get_entry.php', { method: 'GET' });
       if (status === 401) return;
       if (!ok || !data || !data.success) {
         markDone();

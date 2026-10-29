@@ -142,7 +142,7 @@
   async function refreshDashboard() {
     if (!$('kalimaat-dashboard-card')) return;
     try {
-      const { data } = await api('api/kalimaat/get_entry.php', { method: 'GET' });
+      const { data } = await api('../api/kalimaat/get_entry.php', { method: 'GET' });
       if (data && data.success) renderDashboard(data);
     } catch (e) {
       // Dashboard app.js already handles auth/network states.
@@ -193,7 +193,7 @@
     bindTest();
 
     try {
-      const { data } = await api('api/kalimaat/get_entry.php', { method: 'GET' });
+      const { data } = await api('../api/kalimaat/get_entry.php', { method: 'GET' });
       if (!data || !data.success) {
         setText('kalimaat-zone-badge', t('kalimaat_load_error', 'تعذر تحميل بيانات الكلمات.'));
         return;
@@ -320,7 +320,7 @@
     document.querySelectorAll('[data-kalimaat-add]').forEach((btn) => { btn.disabled = true; });
 
     try {
-      const { ok, data } = await api('api/kalimaat/repeat.php', {
+      const { ok, data } = await api('../api/kalimaat/repeat.php', {
         method: 'POST',
         body: { word_key: word.key, amount },
       });
@@ -353,7 +353,7 @@
   }
 
   async function refreshEntry() {
-    const { data } = await api('api/kalimaat/get_entry.php', { method: 'GET' });
+    const { data } = await api('../api/kalimaat/get_entry.php', { method: 'GET' });
     if (data && data.success) {
       state.entry = data;
       state.zone = data.zone || null;
@@ -439,7 +439,7 @@
       if (state.status) params.set('status', state.status);
       if (state.q) params.set('q', state.q);
 
-      const { ok, data } = await api('api/kalimaat/list.php?' + params.toString(), { method: 'GET' });
+      const { ok, data } = await api('../api/kalimaat/list.php?' + params.toString(), { method: 'GET' });
       if (!ok || !data || !data.success) {
         state.list = null;
         list.innerHTML = `<div class="kalimaat-empty"><p>${esc((data && data.error) || t('kalimaat_load_error', 'تعذر تحميل الكلمات.'))}</p></div>`;
@@ -517,7 +517,7 @@
   async function lockWord(key, page) {
     if (!key || !page) return;
     try {
-      const { ok, data } = await api('api/kalimaat/lock.php', {
+      const { ok, data } = await api('../api/kalimaat/lock.php', {
         method: 'POST',
         body: { word_key: key, page_number: page },
       });
@@ -569,7 +569,7 @@
     state.testResult = null;
     body.innerHTML = `<div class="kalimaat-test-empty"><p>${esc(t('kalimaat_loading', 'جارٍ التحميل…'))}</p></div>`;
     try {
-      const { ok, data } = await api('api/kalimaat/test.php', { method: 'GET' });
+      const { ok, data } = await api('../api/kalimaat/test.php', { method: 'GET' });
       if (!ok || !data || !data.success) {
         body.innerHTML = `<div class="kalimaat-test-empty"><strong>${esc(t('kalimaat_test_error_title', 'تعذر تحميل الاختبار'))}</strong><p>${esc((data && data.error) || t('kalimaat_network_error', 'تعذر الاتصال بالخادم.'))}</p></div>`;
         return;
@@ -658,7 +658,7 @@
     }
 
     try {
-      const { ok, data: result } = await api('api/kalimaat/test_answer.php', {
+      const { ok, data: result } = await api('../api/kalimaat/test_answer.php', {
         method: 'POST',
         body: {
           word_key: word.key,

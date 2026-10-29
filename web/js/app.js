@@ -831,6 +831,7 @@ async function loadSharedData() {
 function clearEntryGateSession() {
   try {
     sessionStorage.removeItem('rh_entry_gate_done');
+    sessionStorage.removeItem('rh_entry_gate_done_v2');
     sessionStorage.removeItem('rh_kalimaat_test_session');
   } catch (e) {}
 }
