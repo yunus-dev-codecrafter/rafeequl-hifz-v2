@@ -373,7 +373,8 @@ a direct bookmark cannot bypass it. It opens **once per browser app session**
    `TRANSITION_FAILURE` shows the ayah where the user stopped plus the next ayah;
    `MUTASHABIHAT` shows both the current and the similar ayah. Only **correct**
    recitations count; 10 are required per entry (or the remainder before 40). The
-   card is archived automatically at 40/40.
+   card is archived automatically at 40/40. If a legacy transition card has no
+   stored next-ayah reference, the client derives it from the Quran text.
 
 The gate is sequential, cannot be dismissed by clicking the backdrop, and fails
 open if the API or catalog is unavailable. If the user must change their
@@ -672,7 +673,7 @@ active super admin cannot be suspended or demoted.
 2. Upload `config/database.local.php` separately with the current credentials if you deploy over FTP (it is intentionally ignored by git). If you deploy through git and that file is absent, the app cannot connect until you run `setup.php`; use the wizard to write it, or set `DB_*` environment variables.
 3. Sign in as an administrator and open `https://your-host/migrate.php`, then press **تشغيل ترقية v10 الآن**. For a fresh install, use `setup.php` instead.
 4. The migration runner applies v10 (including v7-v9) and leaves `config/installed.lock` untouched. `setup.php` remains locked.
-5. Open `api/health.php` (expect 200, `"schema_ok": true`, `"tafsir_ok": true`, and `"kalimaat_ok": true`), hard-refresh `web/index.html`, and confirm the new service worker cache (`rafeequl-hifz-v23`) is active.
+5. Open `api/health.php` (expect 200, `"schema_ok": true`, `"tafsir_ok": true`, and `"kalimaat_ok": true`), hard-refresh `web/index.html`, and confirm the new service worker cache (`rafeequl-hifz-v24`) is active.
 
 > Back up the database before step 3 on a live site. The migration is additive,
 > but a backup is always the right first move. If the host's PHP cannot reach

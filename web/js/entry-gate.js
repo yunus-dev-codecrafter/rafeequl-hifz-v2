@@ -306,6 +306,25 @@
     return surah[Number(ayahNumber) - 1] || '';
   }
 
+  function nextAyahRef(surahNumber, ayahNumber) {
+    if (!state.quran) return null;
+    const currentSurah = Number(surahNumber) || 0;
+    const currentAyah = Number(ayahNumber) || 0;
+    const current = state.quran[String(currentSurah)];
+    if (!Array.isArray(current) || currentAyah < 1 || currentAyah > current.length) {
+      return null;
+    }
+    if (currentAyah < current.length) {
+      return { surah: currentSurah, ayah: currentAyah + 1 };
+    }
+    const nextSurah = Object.keys(state.quran)
+      .map(Number)
+      .filter((key) => Number.isFinite(key) && key > currentSurah)
+      .sort((a, b) => a - b)
+      .find((key) => Array.isArray(state.quran[String(key)]) && state.quran[String(key)].length);
+    return nextSurah ? { surah: nextSurah, ayah: 1 } : null;
+  }
+
   function ayahBlockHtml(surahNumber, ayahNumber, label, extraClass) {
     const text = ayahTextAt(surahNumber, ayahNumber);
     return `
@@ -349,9 +368,17 @@
     const type = String(card.mistake_type || 'AYAH_MISTAKE');
     const typeLabel = mistakeTypeLabel(type);
     const typeClass = mistakeTypeClass(type);
-    const pairSurah = Number(card.confused_with_surah) || 0;
-    const pairAyah = Number(card.confused_with_ayah) || 0;
+    let pairSurah = Number(card.confused_with_surah) || 0;
+    let pairAyah = Number(card.confused_with_ayah) || 0;
+    if (type === 'TRANSITION_FAILURE' && (!pairSurah || !pairAyah)) {
+      const next = nextAyahRef(card.surah_number, card.ayah_number);
+      if (next) {
+        pairSurah = next.surah;
+        pairAyah = next.ayah;
+      }
+    }
     const hasPair = type !== 'AYAH_MISTAKE' && pairSurah > 0 && pairAyah > 0;
+    const quranReady = state.quran !== null;
     const currentLabel = t('entry_gate_mistake_current_ayah', 'الآية التي وقفت عندها');
     const pairLabel = type === 'MUTASHABIHAT'
       ? t('entry_gate_mistake_similar_ayah', 'الآية المتشابهة')
@@ -377,7 +404,7 @@
       : `<div class="entry-gate-ayah" id="entry-gate-ayah">${currentText
           ? esc(currentText)
           : `<span class="entry-gate-loading">${esc(t('entry_gate_loading_ayah', 'جارٍ تحميل الآية...'))}</span>`}</div>
-        ${type !== 'AYAH_MISTAKE'
+        ${type !== 'AYAH_MISTAKE' && quranReady
           ? `<p class="entry-gate-note">${esc(t('entry_gate_mistake_pair_missing', 'لم تُحفظ الآية المرتبطة بهذه البطاقة.'))}</p>`
           : ''}`;
     const body = `
