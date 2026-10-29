@@ -290,6 +290,11 @@ function kal_mistake_payload(?array $row): ?array
         'ayah_number' => (int) $row['ayah_number'],
         'page_number' => (int) $row['page_number'],
         'mistake_type' => (string) $row['mistake_type'],
+        'confused_with_surah' => isset($row['confused_with_surah']) && $row['confused_with_surah'] !== null
+            ? (int) $row['confused_with_surah'] : null,
+        'confused_with_ayah' => isset($row['confused_with_ayah']) && $row['confused_with_ayah'] !== null
+            ? (int) $row['confused_with_ayah'] : null,
+        'severity' => (int) ($row['severity'] ?? 1),
         'notes' => $row['notes'] ?? '',
         'practice_count' => $count,
         'practice_target' => $target,

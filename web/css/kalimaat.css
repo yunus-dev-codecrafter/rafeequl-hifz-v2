@@ -280,11 +280,43 @@ body.entry-gate-open {
 .entry-gate-mistake-ref {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   justify-content: space-between;
   gap: 0.4rem;
   color: var(--muted);
   font-size: 0.72rem;
   font-weight: 700;
+}
+
+.entry-gate-mistake-type {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.18rem 0.55rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--ink-secondary);
+  font-size: 0.67rem;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+.entry-gate-mistake-type.is-transition {
+  border-color: var(--task-amber-border);
+  background: var(--task-amber-bg);
+  color: var(--task-amber);
+}
+
+.entry-gate-mistake-type.is-mutashabihat {
+  border-color: var(--task-blue-border);
+  background: var(--task-blue-bg);
+  color: var(--task-blue);
+}
+
+.entry-gate-mistake-type.is-ayah {
+  border-color: var(--accent-soft-border);
+  background: var(--accent-soft);
+  color: var(--accent);
 }
 
 .entry-gate-ayah {
@@ -293,6 +325,59 @@ body.entry-gate-open {
   line-height: 2.1;
   font-weight: 700;
   color: var(--ink);
+}
+
+.entry-gate-ayah-stack {
+  display: grid;
+  gap: 0.55rem;
+  margin-top: 0.8rem;
+}
+
+.entry-gate-ayah-block {
+  padding: 0.65rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--card);
+}
+
+.entry-gate-ayah-block.is-pair {
+  border-color: var(--accent-soft-border);
+  background: var(--accent-soft);
+}
+
+.entry-gate-ayah-label {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.entry-gate-ayah-block .entry-gate-ayah {
+  margin-top: 0.3rem;
+  font-size: clamp(1.05rem, 4.2vw, 1.35rem);
+  line-height: 1.95;
+}
+
+.entry-gate-ayah-ref {
+  margin-top: 0.35rem;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.entry-gate-ayah-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  color: var(--accent);
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.entry-gate-ayah-link span:first-child {
+  font-size: 1.15rem;
+  line-height: 1;
 }
 
 .entry-gate-loading {

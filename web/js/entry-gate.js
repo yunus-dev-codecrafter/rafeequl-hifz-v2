@@ -57,6 +57,21 @@
     return t('entry_gate_surah', 'سورة') + ' ' + id;
   }
 
+  function mistakeTypeLabel(type) {
+    try {
+      if (window.I18N && typeof I18N.getMistakeLabel === 'function') {
+        return I18N.getMistakeLabel(type);
+      }
+    } catch (e) {}
+    return type || '';
+  }
+
+  function mistakeTypeClass(type) {
+    if (type === 'TRANSITION_FAILURE') return 'is-transition';
+    if (type === 'MUTASHABIHAT') return 'is-mutashabihat';
+    return 'is-ayah';
+  }
+
   async function api(path, options) {
     const opts = Object.assign({ credentials: 'same-origin', headers: { Accept: 'application/json' } }, options || {});
     if (opts.body && typeof opts.body !== 'string') {
@@ -284,11 +299,23 @@
     return state.quranPromise;
   }
 
-  function ayahText(card) {
-    if (!state.quran || !card) return '';
-    const surah = state.quran[String(card.surah_number)];
+  function ayahTextAt(surahNumber, ayahNumber) {
+    if (!state.quran) return '';
+    const surah = state.quran[String(Number(surahNumber) || 0)];
     if (!Array.isArray(surah)) return '';
-    return surah[Number(card.ayah_number) - 1] || '';
+    return surah[Number(ayahNumber) - 1] || '';
+  }
+
+  function ayahBlockHtml(surahNumber, ayahNumber, label, extraClass) {
+    const text = ayahTextAt(surahNumber, ayahNumber);
+    return `
+      <div class="entry-gate-ayah-block ${extraClass || ''}">
+        <div class="entry-gate-ayah-label">${esc(label)}</div>
+        <div class="entry-gate-ayah">${text
+          ? esc(text)
+          : `<span class="entry-gate-loading">${esc(t('entry_gate_loading_ayah', 'جارٍ تحميل الآية...'))}</span>`}</div>
+        <div class="entry-gate-ayah-ref">${esc(surahName(surahNumber))} • ${esc(t('entry_gate_ayah', 'الآية'))} ${Number(ayahNumber) || ''}</div>
+      </div>`;
   }
 
   function startMistake() {
@@ -319,15 +346,49 @@
     const m = state.mistake;
     if (!m) return;
     const card = m.card;
-    const text = ayahText(card);
+    const type = String(card.mistake_type || 'AYAH_MISTAKE');
+    const typeLabel = mistakeTypeLabel(type);
+    const typeClass = mistakeTypeClass(type);
+    const pairSurah = Number(card.confused_with_surah) || 0;
+    const pairAyah = Number(card.confused_with_ayah) || 0;
+    const hasPair = type !== 'AYAH_MISTAKE' && pairSurah > 0 && pairAyah > 0;
+    const currentLabel = t('entry_gate_mistake_current_ayah', 'الآية التي وقفت عندها');
+    const pairLabel = type === 'MUTASHABIHAT'
+      ? t('entry_gate_mistake_similar_ayah', 'الآية المتشابهة')
+      : t('entry_gate_mistake_next_ayah', 'الآية التالية');
+    const linkHint = type === 'MUTASHABIHAT'
+      ? t('entry_gate_mistake_compare_hint', 'قارن بين الآيتين')
+      : t('entry_gate_mistake_link_hint', 'صل الآيتين معًا');
+    const typeHint = type === 'TRANSITION_FAILURE'
+      ? t('entry_gate_mistake_hint_transition', 'اقرأ الآية الأولى ثم صلها بالآية التالية. أعد الربط كاملًا قبل اختيار النتيجة.')
+      : type === 'MUTASHABIHAT'
+        ? t('entry_gate_mistake_hint_mutashabihat', 'اقرأ الآيتين المتشابهتين وفرّق بينهما، ثم اختر النتيجة.')
+        : t('entry_gate_mistake_hint', 'أعد الآية مرة واحدة ثم اختر النتيجة. تُحسب المحاولة الصحيحة فقط.');
+    const currentText = ayahTextAt(card.surah_number, card.ayah_number);
+    const verses = hasPair
+      ? `<div class="entry-gate-ayah-stack">
+          ${ayahBlockHtml(card.surah_number, card.ayah_number, currentLabel, 'is-current')}
+          <div class="entry-gate-ayah-link">
+            <span aria-hidden="true">↓</span>
+            <span>${esc(linkHint)}</span>
+          </div>
+          ${ayahBlockHtml(pairSurah, pairAyah, pairLabel, 'is-pair')}
+        </div>`
+      : `<div class="entry-gate-ayah" id="entry-gate-ayah">${currentText
+          ? esc(currentText)
+          : `<span class="entry-gate-loading">${esc(t('entry_gate_loading_ayah', 'جارٍ تحميل الآية...'))}</span>`}</div>
+        ${type !== 'AYAH_MISTAKE'
+          ? `<p class="entry-gate-note">${esc(t('entry_gate_mistake_pair_missing', 'لم تُحفظ الآية المرتبطة بهذه البطاقة.'))}</p>`
+          : ''}`;
     const body = `
       ${progressHtml(m.done, m.target, t('entry_gate_this_entry', 'هذا الدخول'))}
       <div class="entry-gate-mistake-card" dir="rtl">
         <div class="entry-gate-mistake-ref">
+          <span class="entry-gate-mistake-type ${typeClass}">${esc(typeLabel)}</span>
           <span>${esc(surahName(card.surah_number))} • ${esc(t('entry_gate_ayah', 'الآية'))} ${Number(card.ayah_number) || ''}</span>
           <span>${esc(t('entry_gate_page', 'صفحة'))} ${Number(card.page_number) || ''}</span>
         </div>
-        <div class="entry-gate-ayah" id="entry-gate-ayah">${text ? esc(text) : `<span class="entry-gate-loading">${esc(t('entry_gate_loading_ayah', 'جارٍ تحميل الآية...'))}</span>`}</div>
+        ${verses}
         ${card.notes ? `<p class="entry-gate-note">${esc(card.notes)}</p>` : ''}
         <div class="entry-gate-lifetime">
           <span>${esc(t('entry_gate_mistake_lifetime', 'تكرار البطاقة'))}</span>
@@ -345,7 +406,7 @@
       <p class="entry-gate-hint" id="entry-gate-status">
         ${esc(m.lastResult === 'slip'
           ? t('entry_gate_slip_hint', 'التعثر لا يُحسب. أعد المحاولة حتى تصل إلى العدد المطلوب.')
-          : t('entry_gate_mistake_hint', 'أعد الآية مرة واحدة ثم اختر النتيجة. تُحسب المحاولة الصحيحة فقط.'))}
+          : typeHint)}
       </p>`;
 
     render(shell(
