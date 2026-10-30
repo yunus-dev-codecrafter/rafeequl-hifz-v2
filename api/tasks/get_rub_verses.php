@@ -6,10 +6,10 @@ declare(strict_types=1);
  *
  * GET/POST: task_id (preferred) or rub_id.
  *
- * Returns the rub' in mushaf order, each verse split at stop-preferring waqf
- * signs into stations. Every station is repeated 3 times by the client. Each
- * verse also carries its Arabic and English Mukhtasar tafsir, so switching the
- * interface language needs no second request.
+ * Returns the rub' in mushaf order, each verse split at every waqf sign
+ * except "لا" (do not stop) into stations. Every station is repeated 3 times
+ * by the client. Each verse also carries its Arabic and English Mukhtasar
+ * tafsir, so switching the interface language needs no second request.
  */
 
 require __DIR__ . '/../../config/database.php';
@@ -141,7 +141,7 @@ json_out(200, [
         'start_page'     => (int) $rub['start_page'],
         'end_page'       => (int) $rub['end_page'],
         'verse_count'    => (int) $rub['verse_count'],
-        'segments_total' => (int) $rub['segments_total'],
+        'segments_total' => (int) $payload['segments_total'],
     ],
     'completed_stations' => $completed,
     'verses'             => $verses,

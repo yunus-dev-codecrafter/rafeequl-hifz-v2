@@ -1,7 +1,7 @@
 {
     "version": 1,
     "source": "quran.com rub_el_hizb_number + web\/js\/madinah_page_verses.json",
-    "built_at": "2026-10-23T18:52:38+00:00",
+    "built_at": "2026-10-30T08:49:51+00:00",
     "rubs": [
         {
             "id": 1,
@@ -18,7 +18,7 @@
             "start_page": 1,
             "end_page": 5,
             "verse_count": 32,
-            "segments_total": 34
+            "segments_total": 48
         },
         {
             "id": 2,
@@ -35,7 +35,7 @@
             "start_page": 5,
             "end_page": 7,
             "verse_count": 18,
-            "segments_total": 19
+            "segments_total": 35
         },
         {
             "id": 3,
@@ -52,7 +52,7 @@
             "start_page": 7,
             "end_page": 9,
             "verse_count": 16,
-            "segments_total": 16
+            "segments_total": 23
         },
         {
             "id": 4,
@@ -69,7 +69,7 @@
             "start_page": 9,
             "end_page": 11,
             "verse_count": 15,
-            "segments_total": 19
+            "segments_total": 37
         },
         {
             "id": 5,
@@ -86,7 +86,7 @@
             "start_page": 11,
             "end_page": 14,
             "verse_count": 17,
-            "segments_total": 20
+            "segments_total": 35
         },
         {
             "id": 6,
@@ -103,7 +103,7 @@
             "start_page": 14,
             "end_page": 16,
             "verse_count": 14,
-            "segments_total": 18
+            "segments_total": 33
         },
         {
             "id": 7,
@@ -120,7 +120,7 @@
             "start_page": 17,
             "end_page": 19,
             "verse_count": 18,
-            "segments_total": 33
+            "segments_total": 44
         },
         {
             "id": 8,
@@ -137,7 +137,7 @@
             "start_page": 19,
             "end_page": 21,
             "verse_count": 18,
-            "segments_total": 22
+            "segments_total": 44
         },
         {
             "id": 9,
@@ -154,7 +154,7 @@
             "start_page": 22,
             "end_page": 24,
             "verse_count": 16,
-            "segments_total": 22
+            "segments_total": 42
         },
         {
             "id": 10,
@@ -171,7 +171,7 @@
             "start_page": 24,
             "end_page": 26,
             "verse_count": 19,
-            "segments_total": 23
+            "segments_total": 35
         },
         {
             "id": 11,
@@ -188,7 +188,7 @@
             "start_page": 27,
             "end_page": 29,
             "verse_count": 12,
-            "segments_total": 19
+            "segments_total": 40
         },
         {
             "id": 12,
@@ -205,7 +205,7 @@
             "start_page": 29,
             "end_page": 31,
             "verse_count": 14,
-            "segments_total": 23
+            "segments_total": 44
         },
         {
             "id": 13,
@@ -222,7 +222,7 @@
             "start_page": 32,
             "end_page": 34,
             "verse_count": 16,
-            "segments_total": 27
+            "segments_total": 46
         },
         {
             "id": 14,
@@ -239,7 +239,7 @@
             "start_page": 34,
             "end_page": 37,
             "verse_count": 14,
-            "segments_total": 30
+            "segments_total": 59
         },
         {
             "id": 15,
@@ -256,7 +256,7 @@
             "start_page": 37,
             "end_page": 39,
             "verse_count": 10,
-            "segments_total": 15
+            "segments_total": 33
         },
         {
             "id": 16,
@@ -273,7 +273,7 @@
             "start_page": 39,
             "end_page": 41,
             "verse_count": 10,
-            "segments_total": 14
+            "segments_total": 28
         },
         {
             "id": 17,
@@ -290,7 +290,7 @@
             "start_page": 42,
             "end_page": 44,
             "verse_count": 10,
-            "segments_total": 19
+            "segments_total": 45
         },
         {
             "id": 18,
@@ -307,7 +307,7 @@
             "start_page": 44,
             "end_page": 46,
             "verse_count": 9,
-            "segments_total": 17
+            "segments_total": 25
         },
         {
             "id": 19,
@@ -324,7 +324,7 @@
             "start_page": 46,
             "end_page": 48,
             "verse_count": 11,
-            "segments_total": 18
+            "segments_total": 41
         },
         {
             "id": 20,
@@ -341,7 +341,7 @@
             "start_page": 49,
             "end_page": 51,
             "verse_count": 18,
-            "segments_total": 31
+            "segments_total": 52
         },
         {
             "id": 21,
@@ -358,7 +358,7 @@
             "start_page": 51,
             "end_page": 54,
             "verse_count": 18,
-            "segments_total": 30
+            "segments_total": 41
         },
         {
             "id": 22,
@@ -375,7 +375,7 @@
             "start_page": 54,
             "end_page": 56,
             "verse_count": 19,
-            "segments_total": 22
+            "segments_total": 40
         },
         {
             "id": 23,
@@ -392,7 +392,7 @@
             "start_page": 56,
             "end_page": 59,
             "verse_count": 23,
-            "segments_total": 28
+            "segments_total": 37
         },
         {
             "id": 24,
@@ -409,7 +409,7 @@
             "start_page": 59,
             "end_page": 62,
             "verse_count": 18,
-            "segments_total": 21
+            "segments_total": 26
         },
         {
             "id": 25,
@@ -426,7 +426,7 @@
             "start_page": 62,
             "end_page": 64,
             "verse_count": 20,
-            "segments_total": 28
+            "segments_total": 39
         },
         {
             "id": 26,
@@ -443,7 +443,7 @@
             "start_page": 64,
             "end_page": 66,
             "verse_count": 20,
-            "segments_total": 27
+            "segments_total": 39
         },
         {
             "id": 27,
@@ -460,7 +460,7 @@
             "start_page": 67,
             "end_page": 69,
             "verse_count": 20,
-            "segments_total": 27
+            "segments_total": 39
         },
         {
             "id": 28,
@@ -477,7 +477,7 @@
             "start_page": 69,
             "end_page": 72,
             "verse_count": 18,
-            "segments_total": 32
+            "segments_total": 50
         },
         {
             "id": 29,
@@ -494,7 +494,7 @@
             "start_page": 72,
             "end_page": 74,
             "verse_count": 15,
-            "segments_total": 24
+            "segments_total": 34
         },
         {
             "id": 30,
@@ -511,7 +511,7 @@
             "start_page": 74,
             "end_page": 76,
             "verse_count": 15,
-            "segments_total": 21
+            "segments_total": 29
         },
         {
             "id": 31,
@@ -528,7 +528,7 @@
             "start_page": 77,
             "end_page": 78,
             "verse_count": 11,
-            "segments_total": 13
+            "segments_total": 36
         },
         {
             "id": 32,
@@ -545,7 +545,7 @@
             "start_page": 79,
             "end_page": 81,
             "verse_count": 12,
-            "segments_total": 17
+            "segments_total": 35
         },
         {
             "id": 33,
@@ -562,7 +562,7 @@
             "start_page": 82,
             "end_page": 84,
             "verse_count": 12,
-            "segments_total": 17
+            "segments_total": 40
         },
         {
             "id": 34,
@@ -579,7 +579,7 @@
             "start_page": 84,
             "end_page": 87,
             "verse_count": 22,
-            "segments_total": 27
+            "segments_total": 42
         },
         {
             "id": 35,
@@ -596,7 +596,7 @@
             "start_page": 87,
             "end_page": 89,
             "verse_count": 16,
-            "segments_total": 17
+            "segments_total": 24
         },
         {
             "id": 36,
@@ -613,7 +613,7 @@
             "start_page": 89,
             "end_page": 92,
             "verse_count": 14,
-            "segments_total": 20
+            "segments_total": 41
         },
         {
             "id": 37,
@@ -630,7 +630,7 @@
             "start_page": 92,
             "end_page": 94,
             "verse_count": 12,
-            "segments_total": 13
+            "segments_total": 37
         },
         {
             "id": 38,
@@ -647,7 +647,7 @@
             "start_page": 94,
             "end_page": 96,
             "verse_count": 14,
-            "segments_total": 18
+            "segments_total": 34
         },
         {
             "id": 39,
@@ -664,7 +664,7 @@
             "start_page": 97,
             "end_page": 99,
             "verse_count": 21,
-            "segments_total": 26
+            "segments_total": 46
         },
         {
             "id": 40,
@@ -681,7 +681,7 @@
             "start_page": 100,
             "end_page": 101,
             "verse_count": 13,
-            "segments_total": 15
+            "segments_total": 26
         },
         {
             "id": 41,
@@ -698,7 +698,7 @@
             "start_page": 102,
             "end_page": 103,
             "verse_count": 15,
-            "segments_total": 16
+            "segments_total": 30
         },
         {
             "id": 42,
@@ -715,7 +715,7 @@
             "start_page": 104,
             "end_page": 106,
             "verse_count": 14,
-            "segments_total": 18
+            "segments_total": 40
         },
         {
             "id": 43,
@@ -732,7 +732,7 @@
             "start_page": 106,
             "end_page": 109,
             "verse_count": 11,
-            "segments_total": 15
+            "segments_total": 41
         },
         {
             "id": 44,
@@ -749,7 +749,7 @@
             "start_page": 109,
             "end_page": 112,
             "verse_count": 15,
-            "segments_total": 18
+            "segments_total": 40
         },
         {
             "id": 45,
@@ -766,7 +766,7 @@
             "start_page": 112,
             "end_page": 114,
             "verse_count": 14,
-            "segments_total": 17
+            "segments_total": 28
         },
         {
             "id": 46,
@@ -783,7 +783,7 @@
             "start_page": 114,
             "end_page": 116,
             "verse_count": 10,
-            "segments_total": 12
+            "segments_total": 38
         },
         {
             "id": 47,
@@ -800,7 +800,7 @@
             "start_page": 117,
             "end_page": 119,
             "verse_count": 16,
-            "segments_total": 19
+            "segments_total": 39
         },
         {
             "id": 48,
@@ -817,7 +817,7 @@
             "start_page": 119,
             "end_page": 121,
             "verse_count": 15,
-            "segments_total": 19
+            "segments_total": 34
         },
         {
             "id": 49,
@@ -834,7 +834,7 @@
             "start_page": 121,
             "end_page": 124,
             "verse_count": 15,
-            "segments_total": 19
+            "segments_total": 36
         },
         {
             "id": 50,
@@ -851,7 +851,7 @@
             "start_page": 124,
             "end_page": 125,
             "verse_count": 12,
-            "segments_total": 16
+            "segments_total": 23
         },
         {
             "id": 51,
@@ -868,7 +868,7 @@
             "start_page": 126,
             "end_page": 129,
             "verse_count": 24,
-            "segments_total": 24
+            "segments_total": 56
         },
         {
             "id": 52,
@@ -885,7 +885,7 @@
             "start_page": 129,
             "end_page": 131,
             "verse_count": 23,
-            "segments_total": 27
+            "segments_total": 55
         },
         {
             "id": 53,
@@ -902,7 +902,7 @@
             "start_page": 132,
             "end_page": 134,
             "verse_count": 23,
-            "segments_total": 28
+            "segments_total": 44
         },
         {
             "id": 54,
@@ -919,7 +919,7 @@
             "start_page": 134,
             "end_page": 136,
             "verse_count": 15,
-            "segments_total": 18
+            "segments_total": 35
         },
         {
             "id": 55,
@@ -936,7 +936,7 @@
             "start_page": 137,
             "end_page": 139,
             "verse_count": 21,
-            "segments_total": 27
+            "segments_total": 58
         },
         {
             "id": 56,
@@ -953,7 +953,7 @@
             "start_page": 140,
             "end_page": 141,
             "verse_count": 16,
-            "segments_total": 21
+            "segments_total": 43
         },
         {
             "id": 57,
@@ -970,7 +970,7 @@
             "start_page": 142,
             "end_page": 144,
             "verse_count": 16,
-            "segments_total": 22
+            "segments_total": 36
         },
         {
             "id": 58,
@@ -987,7 +987,7 @@
             "start_page": 144,
             "end_page": 146,
             "verse_count": 14,
-            "segments_total": 17
+            "segments_total": 35
         },
         {
             "id": 59,
@@ -1004,7 +1004,7 @@
             "start_page": 146,
             "end_page": 148,
             "verse_count": 10,
-            "segments_total": 14
+            "segments_total": 32
         },
         {
             "id": 60,
@@ -1021,7 +1021,7 @@
             "start_page": 148,
             "end_page": 150,
             "verse_count": 15,
-            "segments_total": 19
+            "segments_total": 42
         },
         {
             "id": 61,
@@ -1038,7 +1038,7 @@
             "start_page": 151,
             "end_page": 153,
             "verse_count": 30,
-            "segments_total": 36
+            "segments_total": 49
         },
         {
             "id": 62,
@@ -1055,7 +1055,7 @@
             "start_page": 154,
             "end_page": 156,
             "verse_count": 16,
-            "segments_total": 17
+            "segments_total": 39
         },
         {
             "id": 63,
@@ -1072,7 +1072,7 @@
             "start_page": 156,
             "end_page": 158,
             "verse_count": 18,
-            "segments_total": 20
+            "segments_total": 32
         },
         {
             "id": 64,
@@ -1089,7 +1089,7 @@
             "start_page": 158,
             "end_page": 161,
             "verse_count": 23,
-            "segments_total": 27
+            "segments_total": 49
         },
         {
             "id": 65,
@@ -1106,7 +1106,7 @@
             "start_page": 162,
             "end_page": 164,
             "verse_count": 29,
-            "segments_total": 29
+            "segments_total": 45
         },
         {
             "id": 66,
@@ -1123,7 +1123,7 @@
             "start_page": 164,
             "end_page": 167,
             "verse_count": 25,
-            "segments_total": 26
+            "segments_total": 42
         },
         {
             "id": 67,
@@ -1140,7 +1140,7 @@
             "start_page": 167,
             "end_page": 169,
             "verse_count": 14,
-            "segments_total": 15
+            "segments_total": 34
         },
         {
             "id": 68,
@@ -1157,7 +1157,7 @@
             "start_page": 170,
             "end_page": 172,
             "verse_count": 15,
-            "segments_total": 18
+            "segments_total": 37
         },
         {
             "id": 69,
@@ -1174,7 +1174,7 @@
             "start_page": 173,
             "end_page": 175,
             "verse_count": 18,
-            "segments_total": 21
+            "segments_total": 43
         },
         {
             "id": 70,
@@ -1191,7 +1191,7 @@
             "start_page": 175,
             "end_page": 176,
             "verse_count": 18,
-            "segments_total": 19
+            "segments_total": 32
         },
         {
             "id": 71,
@@ -1208,7 +1208,7 @@
             "start_page": 177,
             "end_page": 179,
             "verse_count": 21,
-            "segments_total": 21
+            "segments_total": 35
         },
         {
             "id": 72,
@@ -1225,7 +1225,7 @@
             "start_page": 179,
             "end_page": 181,
             "verse_count": 19,
-            "segments_total": 21
+            "segments_total": 33
         },
         {
             "id": 73,
@@ -1242,7 +1242,7 @@
             "start_page": 182,
             "end_page": 184,
             "verse_count": 20,
-            "segments_total": 26
+            "segments_total": 39
         },
         {
             "id": 74,
@@ -1259,7 +1259,7 @@
             "start_page": 184,
             "end_page": 186,
             "verse_count": 15,
-            "segments_total": 21
+            "segments_total": 37
         },
         {
             "id": 75,
@@ -1276,7 +1276,7 @@
             "start_page": 187,
             "end_page": 189,
             "verse_count": 18,
-            "segments_total": 22
+            "segments_total": 38
         },
         {
             "id": 76,
@@ -1293,7 +1293,7 @@
             "start_page": 189,
             "end_page": 192,
             "verse_count": 15,
-            "segments_total": 18
+            "segments_total": 31
         },
         {
             "id": 77,
@@ -1310,7 +1310,7 @@
             "start_page": 192,
             "end_page": 194,
             "verse_count": 12,
-            "segments_total": 18
+            "segments_total": 30
         },
         {
             "id": 78,
@@ -1327,7 +1327,7 @@
             "start_page": 194,
             "end_page": 196,
             "verse_count": 14,
-            "segments_total": 16
+            "segments_total": 23
         },
         {
             "id": 79,
@@ -1344,7 +1344,7 @@
             "start_page": 196,
             "end_page": 199,
             "verse_count": 15,
-            "segments_total": 18
+            "segments_total": 44
         },
         {
             "id": 80,
@@ -1361,7 +1361,7 @@
             "start_page": 199,
             "end_page": 201,
             "verse_count": 18,
-            "segments_total": 20
+            "segments_total": 31
         },
         {
             "id": 81,
@@ -1378,7 +1378,7 @@
             "start_page": 201,
             "end_page": 204,
             "verse_count": 18,
-            "segments_total": 25
+            "segments_total": 48
         },
         {
             "id": 82,
@@ -1395,7 +1395,7 @@
             "start_page": 204,
             "end_page": 206,
             "verse_count": 11,
-            "segments_total": 12
+            "segments_total": 25
         },
         {
             "id": 83,
@@ -1412,7 +1412,7 @@
             "start_page": 206,
             "end_page": 209,
             "verse_count": 18,
-            "segments_total": 19
+            "segments_total": 37
         },
         {
             "id": 84,
@@ -1429,7 +1429,7 @@
             "start_page": 209,
             "end_page": 211,
             "verse_count": 15,
-            "segments_total": 16
+            "segments_total": 35
         },
         {
             "id": 85,
@@ -1446,7 +1446,7 @@
             "start_page": 212,
             "end_page": 214,
             "verse_count": 27,
-            "segments_total": 29
+            "segments_total": 62
         },
         {
             "id": 86,
@@ -1463,7 +1463,7 @@
             "start_page": 214,
             "end_page": 216,
             "verse_count": 18,
-            "segments_total": 24
+            "segments_total": 39
         },
         {
             "id": 87,
@@ -1480,7 +1480,7 @@
             "start_page": 217,
             "end_page": 219,
             "verse_count": 19,
-            "segments_total": 20
+            "segments_total": 29
         },
         {
             "id": 88,
@@ -1497,7 +1497,7 @@
             "start_page": 219,
             "end_page": 221,
             "verse_count": 25,
-            "segments_total": 25
+            "segments_total": 49
         },
         {
             "id": 89,
@@ -1514,7 +1514,7 @@
             "start_page": 222,
             "end_page": 224,
             "verse_count": 18,
-            "segments_total": 21
+            "segments_total": 36
         },
         {
             "id": 90,
@@ -1531,7 +1531,7 @@
             "start_page": 224,
             "end_page": 226,
             "verse_count": 17,
-            "segments_total": 17
+            "segments_total": 31
         },
         {
             "id": 91,
@@ -1548,7 +1548,7 @@
             "start_page": 226,
             "end_page": 228,
             "verse_count": 20,
-            "segments_total": 23
+            "segments_total": 45
         },
         {
             "id": 92,
@@ -1565,7 +1565,7 @@
             "start_page": 228,
             "end_page": 231,
             "verse_count": 23,
-            "segments_total": 26
+            "segments_total": 48
         },
         {
             "id": 93,
@@ -1582,7 +1582,7 @@
             "start_page": 231,
             "end_page": 233,
             "verse_count": 24,
-            "segments_total": 25
+            "segments_total": 52
         },
         {
             "id": 94,
@@ -1599,7 +1599,7 @@
             "start_page": 233,
             "end_page": 236,
             "verse_count": 22,
-            "segments_total": 24
+            "segments_total": 40
         },
         {
             "id": 95,
@@ -1616,7 +1616,7 @@
             "start_page": 236,
             "end_page": 238,
             "verse_count": 23,
-            "segments_total": 23
+            "segments_total": 45
         },
         {
             "id": 96,
@@ -1633,7 +1633,7 @@
             "start_page": 238,
             "end_page": 241,
             "verse_count": 23,
-            "segments_total": 23
+            "segments_total": 49
         },
         {
             "id": 97,
@@ -1650,7 +1650,7 @@
             "start_page": 242,
             "end_page": 244,
             "verse_count": 24,
-            "segments_total": 25
+            "segments_total": 49
         },
         {
             "id": 98,
@@ -1667,7 +1667,7 @@
             "start_page": 244,
             "end_page": 247,
             "verse_count": 24,
-            "segments_total": 24
+            "segments_total": 49
         },
         {
             "id": 99,
@@ -1684,7 +1684,7 @@
             "start_page": 247,
             "end_page": 249,
             "verse_count": 15,
-            "segments_total": 20
+            "segments_total": 36
         },
         {
             "id": 100,
@@ -1701,7 +1701,7 @@
             "start_page": 249,
             "end_page": 251,
             "verse_count": 14,
-            "segments_total": 20
+            "segments_total": 40
         },
         {
             "id": 101,
@@ -1718,7 +1718,7 @@
             "start_page": 252,
             "end_page": 253,
             "verse_count": 16,
-            "segments_total": 24
+            "segments_total": 34
         },
         {
             "id": 102,
@@ -1735,7 +1735,7 @@
             "start_page": 254,
             "end_page": 256,
             "verse_count": 18,
-            "segments_total": 22
+            "segments_total": 44
         },
         {
             "id": 103,
@@ -1752,7 +1752,7 @@
             "start_page": 256,
             "end_page": 259,
             "verse_count": 18,
-            "segments_total": 20
+            "segments_total": 42
         },
         {
             "id": 104,
@@ -1769,7 +1769,7 @@
             "start_page": 259,
             "end_page": 261,
             "verse_count": 25,
-            "segments_total": 30
+            "segments_total": 43
         },
         {
             "id": 105,
@@ -1786,7 +1786,7 @@
             "start_page": 262,
             "end_page": 264,
             "verse_count": 48,
-            "segments_total": 48
+            "segments_total": 52
         },
         {
             "id": 106,
@@ -1803,7 +1803,7 @@
             "start_page": 264,
             "end_page": 267,
             "verse_count": 51,
-            "segments_total": 52
+            "segments_total": 54
         },
         {
             "id": 107,
@@ -1820,7 +1820,7 @@
             "start_page": 267,
             "end_page": 270,
             "verse_count": 29,
-            "segments_total": 36
+            "segments_total": 51
         },
         {
             "id": 108,
@@ -1837,7 +1837,7 @@
             "start_page": 270,
             "end_page": 272,
             "verse_count": 21,
-            "segments_total": 23
+            "segments_total": 39
         },
         {
             "id": 109,
@@ -1854,7 +1854,7 @@
             "start_page": 272,
             "end_page": 275,
             "verse_count": 24,
-            "segments_total": 28
+            "segments_total": 49
         },
         {
             "id": 110,
@@ -1871,7 +1871,7 @@
             "start_page": 275,
             "end_page": 277,
             "verse_count": 15,
-            "segments_total": 16
+            "segments_total": 27
         },
         {
             "id": 111,
@@ -1888,7 +1888,7 @@
             "start_page": 277,
             "end_page": 279,
             "verse_count": 21,
-            "segments_total": 23
+            "segments_total": 35
         },
         {
             "id": 112,
@@ -1905,7 +1905,7 @@
             "start_page": 280,
             "end_page": 281,
             "verse_count": 18,
-            "segments_total": 18
+            "segments_total": 30
         },
         {
             "id": 113,
@@ -1922,7 +1922,7 @@
             "start_page": 282,
             "end_page": 284,
             "verse_count": 22,
-            "segments_total": 25
+            "segments_total": 39
         },
         {
             "id": 114,
@@ -1939,7 +1939,7 @@
             "start_page": 284,
             "end_page": 286,
             "verse_count": 27,
-            "segments_total": 30
+            "segments_total": 46
         },
         {
             "id": 115,
@@ -1956,7 +1956,7 @@
             "start_page": 287,
             "end_page": 289,
             "verse_count": 20,
-            "segments_total": 21
+            "segments_total": 41
         },
         {
             "id": 116,
@@ -1973,7 +1973,7 @@
             "start_page": 289,
             "end_page": 292,
             "verse_count": 29,
-            "segments_total": 30
+            "segments_total": 44
         },
         {
             "id": 117,
@@ -1990,7 +1990,7 @@
             "start_page": 292,
             "end_page": 295,
             "verse_count": 29,
-            "segments_total": 30
+            "segments_total": 42
         },
         {
             "id": 118,
@@ -2007,7 +2007,7 @@
             "start_page": 295,
             "end_page": 297,
             "verse_count": 15,
-            "segments_total": 17
+            "segments_total": 42
         },
         {
             "id": 119,
@@ -2024,7 +2024,7 @@
             "start_page": 297,
             "end_page": 299,
             "verse_count": 19,
-            "segments_total": 22
+            "segments_total": 29
         },
         {
             "id": 120,
@@ -2041,7 +2041,7 @@
             "start_page": 299,
             "end_page": 301,
             "verse_count": 24,
-            "segments_total": 24
+            "segments_total": 34
         },
         {
             "id": 121,
@@ -2058,7 +2058,7 @@
             "start_page": 302,
             "end_page": 304,
             "verse_count": 24,
-            "segments_total": 25
+            "segments_total": 36
         },
         {
             "id": 122,
@@ -2075,7 +2075,7 @@
             "start_page": 304,
             "end_page": 306,
             "verse_count": 33,
-            "segments_total": 33
+            "segments_total": 42
         },
         {
             "id": 123,
@@ -2092,7 +2092,7 @@
             "start_page": 306,
             "end_page": 309,
             "verse_count": 37,
-            "segments_total": 37
+            "segments_total": 57
         },
         {
             "id": 124,
@@ -2109,7 +2109,7 @@
             "start_page": 309,
             "end_page": 312,
             "verse_count": 40,
-            "segments_total": 41
+            "segments_total": 52
         },
         {
             "id": 125,
@@ -2126,7 +2126,7 @@
             "start_page": 312,
             "end_page": 315,
             "verse_count": 54,
-            "segments_total": 55
+            "segments_total": 66
         },
         {
             "id": 126,
@@ -2143,7 +2143,7 @@
             "start_page": 315,
             "end_page": 317,
             "verse_count": 28,
-            "segments_total": 29
+            "segments_total": 40
         },
         {
             "id": 127,
@@ -2160,7 +2160,7 @@
             "start_page": 317,
             "end_page": 319,
             "verse_count": 28,
-            "segments_total": 28
+            "segments_total": 41
         },
         {
             "id": 128,
@@ -2177,7 +2177,7 @@
             "start_page": 319,
             "end_page": 321,
             "verse_count": 25,
-            "segments_total": 28
+            "segments_total": 41
         },
         {
             "id": 129,
@@ -2194,7 +2194,7 @@
             "start_page": 322,
             "end_page": 324,
             "verse_count": 28,
-            "segments_total": 31
+            "segments_total": 43
         },
         {
             "id": 130,
@@ -2211,7 +2211,7 @@
             "start_page": 324,
             "end_page": 326,
             "verse_count": 22,
-            "segments_total": 26
+            "segments_total": 39
         },
         {
             "id": 131,
@@ -2228,7 +2228,7 @@
             "start_page": 326,
             "end_page": 329,
             "verse_count": 32,
-            "segments_total": 33
+            "segments_total": 44
         },
         {
             "id": 132,
@@ -2245,7 +2245,7 @@
             "start_page": 329,
             "end_page": 331,
             "verse_count": 30,
-            "segments_total": 31
+            "segments_total": 45
         },
         {
             "id": 133,
@@ -2262,7 +2262,7 @@
             "start_page": 332,
             "end_page": 334,
             "verse_count": 18,
-            "segments_total": 19
+            "segments_total": 34
         },
         {
             "id": 134,
@@ -2279,7 +2279,7 @@
             "start_page": 334,
             "end_page": 336,
             "verse_count": 19,
-            "segments_total": 23
+            "segments_total": 33
         },
         {
             "id": 135,
@@ -2296,7 +2296,7 @@
             "start_page": 336,
             "end_page": 339,
             "verse_count": 22,
-            "segments_total": 31
+            "segments_total": 38
         },
         {
             "id": 136,
@@ -2313,7 +2313,7 @@
             "start_page": 339,
             "end_page": 341,
             "verse_count": 19,
-            "segments_total": 30
+            "segments_total": 45
         },
         {
             "id": 137,
@@ -2330,7 +2330,7 @@
             "start_page": 342,
             "end_page": 344,
             "verse_count": 35,
-            "segments_total": 35
+            "segments_total": 42
         },
         {
             "id": 138,
@@ -2347,7 +2347,7 @@
             "start_page": 344,
             "end_page": 346,
             "verse_count": 39,
-            "segments_total": 39
+            "segments_total": 52
         },
         {
             "id": 139,
@@ -2364,7 +2364,7 @@
             "start_page": 347,
             "end_page": 349,
             "verse_count": 44,
-            "segments_total": 44
+            "segments_total": 58
         },
         {
             "id": 140,
@@ -2381,7 +2381,7 @@
             "start_page": 350,
             "end_page": 351,
             "verse_count": 20,
-            "segments_total": 20
+            "segments_total": 31
         },
         {
             "id": 141,
@@ -2398,7 +2398,7 @@
             "start_page": 352,
             "end_page": 354,
             "verse_count": 14,
-            "segments_total": 20
+            "segments_total": 40
         },
         {
             "id": 142,
@@ -2415,7 +2415,7 @@
             "start_page": 354,
             "end_page": 356,
             "verse_count": 18,
-            "segments_total": 24
+            "segments_total": 41
         },
         {
             "id": 143,
@@ -2432,7 +2432,7 @@
             "start_page": 356,
             "end_page": 359,
             "verse_count": 12,
-            "segments_total": 16
+            "segments_total": 42
         },
         {
             "id": 144,
@@ -2449,7 +2449,7 @@
             "start_page": 359,
             "end_page": 361,
             "verse_count": 20,
-            "segments_total": 22
+            "segments_total": 29
         },
         {
             "id": 145,
@@ -2466,7 +2466,7 @@
             "start_page": 362,
             "end_page": 364,
             "verse_count": 32,
-            "segments_total": 35
+            "segments_total": 46
         },
         {
             "id": 146,
@@ -2483,7 +2483,7 @@
             "start_page": 364,
             "end_page": 366,
             "verse_count": 25,
-            "segments_total": 28
+            "segments_total": 34
         },
         {
             "id": 147,
@@ -2500,7 +2500,7 @@
             "start_page": 367,
             "end_page": 369,
             "verse_count": 51,
-            "segments_total": 51
+            "segments_total": 60
         },
         {
             "id": 148,
@@ -2517,7 +2517,7 @@
             "start_page": 369,
             "end_page": 371,
             "verse_count": 59,
-            "segments_total": 59
+            "segments_total": 64
         },
         {
             "id": 149,
@@ -2534,7 +2534,7 @@
             "start_page": 371,
             "end_page": 374,
             "verse_count": 70,
-            "segments_total": 72
+            "segments_total": 83
         },
         {
             "id": 150,
@@ -2551,7 +2551,7 @@
             "start_page": 374,
             "end_page": 376,
             "verse_count": 47,
-            "segments_total": 48
+            "segments_total": 50
         },
         {
             "id": 151,
@@ -2568,7 +2568,7 @@
             "start_page": 377,
             "end_page": 379,
             "verse_count": 26,
-            "segments_total": 26
+            "segments_total": 35
         },
         {
             "id": 152,
@@ -2585,7 +2585,7 @@
             "start_page": 379,
             "end_page": 381,
             "verse_count": 29,
-            "segments_total": 31
+            "segments_total": 45
         },
         {
             "id": 153,
@@ -2602,7 +2602,7 @@
             "start_page": 382,
             "end_page": 384,
             "verse_count": 26,
-            "segments_total": 32
+            "segments_total": 45
         },
         {
             "id": 154,
@@ -2619,7 +2619,7 @@
             "start_page": 384,
             "end_page": 386,
             "verse_count": 23,
-            "segments_total": 24
+            "segments_total": 38
         },
         {
             "id": 155,
@@ -2636,7 +2636,7 @@
             "start_page": 386,
             "end_page": 388,
             "verse_count": 17,
-            "segments_total": 17
+            "segments_total": 36
         },
         {
             "id": 156,
@@ -2653,7 +2653,7 @@
             "start_page": 389,
             "end_page": 391,
             "verse_count": 22,
-            "segments_total": 22
+            "segments_total": 38
         },
         {
             "id": 157,
@@ -2670,7 +2670,7 @@
             "start_page": 392,
             "end_page": 394,
             "verse_count": 25,
-            "segments_total": 26
+            "segments_total": 41
         },
         {
             "id": 158,
@@ -2687,7 +2687,7 @@
             "start_page": 394,
             "end_page": 396,
             "verse_count": 13,
-            "segments_total": 14
+            "segments_total": 33
         },
         {
             "id": 159,
@@ -2704,7 +2704,7 @@
             "start_page": 396,
             "end_page": 399,
             "verse_count": 25,
-            "segments_total": 25
+            "segments_total": 45
         },
         {
             "id": 160,
@@ -2721,7 +2721,7 @@
             "start_page": 399,
             "end_page": 401,
             "verse_count": 20,
-            "segments_total": 23
+            "segments_total": 40
         },
         {
             "id": 161,
@@ -2738,7 +2738,7 @@
             "start_page": 402,
             "end_page": 404,
             "verse_count": 24,
-            "segments_total": 25
+            "segments_total": 48
         },
         {
             "id": 162,
@@ -2755,7 +2755,7 @@
             "start_page": 404,
             "end_page": 407,
             "verse_count": 30,
-            "segments_total": 33
+            "segments_total": 55
         },
         {
             "id": 163,
@@ -2772,7 +2772,7 @@
             "start_page": 407,
             "end_page": 410,
             "verse_count": 23,
-            "segments_total": 23
+            "segments_total": 41
         },
         {
             "id": 164,
@@ -2789,7 +2789,7 @@
             "start_page": 410,
             "end_page": 413,
             "verse_count": 28,
-            "segments_total": 29
+            "segments_total": 54
         },
         {
             "id": 165,
@@ -2806,7 +2806,7 @@
             "start_page": 413,
             "end_page": 415,
             "verse_count": 23,
-            "segments_total": 26
+            "segments_total": 45
         },
         {
             "id": 166,
@@ -2823,7 +2823,7 @@
             "start_page": 415,
             "end_page": 417,
             "verse_count": 20,
-            "segments_total": 20
+            "segments_total": 29
         },
         {
             "id": 167,
@@ -2840,7 +2840,7 @@
             "start_page": 418,
             "end_page": 420,
             "verse_count": 17,
-            "segments_total": 19
+            "segments_total": 37
         },
         {
             "id": 168,
@@ -2857,7 +2857,7 @@
             "start_page": 420,
             "end_page": 421,
             "verse_count": 13,
-            "segments_total": 13
+            "segments_total": 28
         },
         {
             "id": 169,
@@ -2874,7 +2874,7 @@
             "start_page": 422,
             "end_page": 424,
             "verse_count": 20,
-            "segments_total": 25
+            "segments_total": 37
         },
         {
             "id": 170,
@@ -2891,7 +2891,7 @@
             "start_page": 425,
             "end_page": 426,
             "verse_count": 9,
-            "segments_total": 12
+            "segments_total": 25
         },
         {
             "id": 171,
@@ -2908,7 +2908,7 @@
             "start_page": 426,
             "end_page": 429,
             "verse_count": 23,
-            "segments_total": 26
+            "segments_total": 40
         },
         {
             "id": 172,
@@ -2925,7 +2925,7 @@
             "start_page": 429,
             "end_page": 431,
             "verse_count": 14,
-            "segments_total": 15
+            "segments_total": 35
         },
         {
             "id": 173,
@@ -2942,7 +2942,7 @@
             "start_page": 431,
             "end_page": 433,
             "verse_count": 22,
-            "segments_total": 23
+            "segments_total": 37
         },
         {
             "id": 174,
@@ -2959,7 +2959,7 @@
             "start_page": 433,
             "end_page": 436,
             "verse_count": 23,
-            "segments_total": 23
+            "segments_total": 60
         },
         {
             "id": 175,
@@ -2976,7 +2976,7 @@
             "start_page": 436,
             "end_page": 439,
             "verse_count": 26,
-            "segments_total": 30
+            "segments_total": 52
         },
         {
             "id": 176,
@@ -2993,7 +2993,7 @@
             "start_page": 439,
             "end_page": 441,
             "verse_count": 32,
-            "segments_total": 32
+            "segments_total": 48
         },
         {
             "id": 177,
@@ -3010,7 +3010,7 @@
             "start_page": 442,
             "end_page": 444,
             "verse_count": 32,
-            "segments_total": 34
+            "segments_total": 37
         },
         {
             "id": 178,
@@ -3027,7 +3027,7 @@
             "start_page": 444,
             "end_page": 446,
             "verse_count": 45,
-            "segments_total": 46
+            "segments_total": 57
         },
         {
             "id": 179,
@@ -3044,7 +3044,7 @@
             "start_page": 446,
             "end_page": 449,
             "verse_count": 61,
-            "segments_total": 61
+            "segments_total": 65
         },
         {
             "id": 180,
@@ -3061,7 +3061,7 @@
             "start_page": 449,
             "end_page": 451,
             "verse_count": 62,
-            "segments_total": 63
+            "segments_total": 67
         },
         {
             "id": 181,
@@ -3078,7 +3078,7 @@
             "start_page": 451,
             "end_page": 454,
             "verse_count": 58,
-            "segments_total": 58
+            "segments_total": 70
         },
         {
             "id": 182,
@@ -3095,7 +3095,7 @@
             "start_page": 454,
             "end_page": 456,
             "verse_count": 31,
-            "segments_total": 33
+            "segments_total": 49
         },
         {
             "id": 183,
@@ -3112,7 +3112,7 @@
             "start_page": 456,
             "end_page": 459,
             "verse_count": 44,
-            "segments_total": 48
+            "segments_total": 69
         },
         {
             "id": 184,
@@ -3129,7 +3129,7 @@
             "start_page": 459,
             "end_page": 461,
             "verse_count": 24,
-            "segments_total": 30
+            "segments_total": 50
         },
         {
             "id": 185,
@@ -3146,7 +3146,7 @@
             "start_page": 462,
             "end_page": 464,
             "verse_count": 21,
-            "segments_total": 22
+            "segments_total": 43
         },
         {
             "id": 186,
@@ -3163,7 +3163,7 @@
             "start_page": 464,
             "end_page": 467,
             "verse_count": 23,
-            "segments_total": 24
+            "segments_total": 36
         },
         {
             "id": 187,
@@ -3180,7 +3180,7 @@
             "start_page": 467,
             "end_page": 469,
             "verse_count": 20,
-            "segments_total": 21
+            "segments_total": 39
         },
         {
             "id": 188,
@@ -3197,7 +3197,7 @@
             "start_page": 469,
             "end_page": 471,
             "verse_count": 20,
-            "segments_total": 21
+            "segments_total": 37
         },
         {
             "id": 189,
@@ -3214,7 +3214,7 @@
             "start_page": 472,
             "end_page": 474,
             "verse_count": 25,
-            "segments_total": 27
+            "segments_total": 42
         },
         {
             "id": 190,
@@ -3231,7 +3231,7 @@
             "start_page": 474,
             "end_page": 477,
             "verse_count": 28,
-            "segments_total": 30
+            "segments_total": 42
         },
         {
             "id": 191,
@@ -3248,7 +3248,7 @@
             "start_page": 477,
             "end_page": 479,
             "verse_count": 16,
-            "segments_total": 16
+            "segments_total": 26
         },
         {
             "id": 192,
@@ -3265,7 +3265,7 @@
             "start_page": 479,
             "end_page": 481,
             "verse_count": 22,
-            "segments_total": 26
+            "segments_total": 45
         },
         {
             "id": 193,
@@ -3282,7 +3282,7 @@
             "start_page": 482,
             "end_page": 484,
             "verse_count": 20,
-            "segments_total": 23
+            "segments_total": 39
         },
         {
             "id": 194,
@@ -3299,7 +3299,7 @@
             "start_page": 484,
             "end_page": 486,
             "verse_count": 14,
-            "segments_total": 21
+            "segments_total": 45
         },
         {
             "id": 195,
@@ -3316,7 +3316,7 @@
             "start_page": 486,
             "end_page": 488,
             "verse_count": 24,
-            "segments_total": 29
+            "segments_total": 45
         },
         {
             "id": 196,
@@ -3333,7 +3333,7 @@
             "start_page": 488,
             "end_page": 491,
             "verse_count": 26,
-            "segments_total": 28
+            "segments_total": 36
         },
         {
             "id": 197,
@@ -3350,7 +3350,7 @@
             "start_page": 491,
             "end_page": 493,
             "verse_count": 33,
-            "segments_total": 34
+            "segments_total": 45
         },
         {
             "id": 198,
@@ -3367,7 +3367,7 @@
             "start_page": 493,
             "end_page": 496,
             "verse_count": 49,
-            "segments_total": 49
+            "segments_total": 70
         },
         {
             "id": 199,
@@ -3384,7 +3384,7 @@
             "start_page": 496,
             "end_page": 499,
             "verse_count": 54,
-            "segments_total": 54
+            "segments_total": 70
         },
         {
             "id": 200,
@@ -3401,7 +3401,7 @@
             "start_page": 499,
             "end_page": 502,
             "verse_count": 26,
-            "segments_total": 26
+            "segments_total": 43
         },
         {
             "id": 201,
@@ -3418,7 +3418,7 @@
             "start_page": 502,
             "end_page": 504,
             "verse_count": 20,
-            "segments_total": 20
+            "segments_total": 37
         },
         {
             "id": 202,
@@ -3435,7 +3435,7 @@
             "start_page": 505,
             "end_page": 507,
             "verse_count": 24,
-            "segments_total": 25
+            "segments_total": 40
         },
         {
             "id": 203,
@@ -3452,7 +3452,7 @@
             "start_page": 507,
             "end_page": 510,
             "verse_count": 23,
-            "segments_total": 24
+            "segments_total": 39
         },
         {
             "id": 204,
@@ -3469,7 +3469,7 @@
             "start_page": 510,
             "end_page": 513,
             "verse_count": 23,
-            "segments_total": 25
+            "segments_total": 49
         },
         {
             "id": 205,
@@ -3486,7 +3486,7 @@
             "start_page": 513,
             "end_page": 515,
             "verse_count": 12,
-            "segments_total": 14
+            "segments_total": 29
         },
         {
             "id": 206,
@@ -3503,7 +3503,7 @@
             "start_page": 515,
             "end_page": 517,
             "verse_count": 13,
-            "segments_total": 13
+            "segments_total": 33
         },
         {
             "id": 207,
@@ -3520,7 +3520,7 @@
             "start_page": 517,
             "end_page": 519,
             "verse_count": 31,
-            "segments_total": 31
+            "segments_total": 49
         },
         {
             "id": 208,
@@ -3537,7 +3537,7 @@
             "start_page": 519,
             "end_page": 521,
             "verse_count": 49,
-            "segments_total": 49
+            "segments_total": 60
         },
         {
             "id": 209,
@@ -3554,7 +3554,7 @@
             "start_page": 522,
             "end_page": 524,
             "verse_count": 53,
-            "segments_total": 53
+            "segments_total": 60
         },
         {
             "id": 210,
@@ -3571,7 +3571,7 @@
             "start_page": 524,
             "end_page": 526,
             "verse_count": 51,
-            "segments_total": 51
+            "segments_total": 61
         },
         {
             "id": 211,
@@ -3588,7 +3588,7 @@
             "start_page": 526,
             "end_page": 529,
             "verse_count": 45,
-            "segments_total": 46
+            "segments_total": 57
         },
         {
             "id": 212,
@@ -3605,7 +3605,7 @@
             "start_page": 529,
             "end_page": 531,
             "verse_count": 47,
-            "segments_total": 47
+            "segments_total": 50
         },
         {
             "id": 213,
@@ -3622,7 +3622,7 @@
             "start_page": 531,
             "end_page": 534,
             "verse_count": 78,
-            "segments_total": 78
+            "segments_total": 81
         },
         {
             "id": 214,
@@ -3656,7 +3656,7 @@
             "start_page": 536,
             "end_page": 539,
             "verse_count": 37,
-            "segments_total": 37
+            "segments_total": 57
         },
         {
             "id": 216,
@@ -3673,7 +3673,7 @@
             "start_page": 539,
             "end_page": 541,
             "verse_count": 14,
-            "segments_total": 16
+            "segments_total": 34
         },
         {
             "id": 217,
@@ -3690,7 +3690,7 @@
             "start_page": 542,
             "end_page": 544,
             "verse_count": 13,
-            "segments_total": 14
+            "segments_total": 40
         },
         {
             "id": 218,
@@ -3707,7 +3707,7 @@
             "start_page": 544,
             "end_page": 547,
             "verse_count": 19,
-            "segments_total": 19
+            "segments_total": 45
         },
         {
             "id": 219,
@@ -3724,7 +3724,7 @@
             "start_page": 547,
             "end_page": 550,
             "verse_count": 20,
-            "segments_total": 20
+            "segments_total": 44
         },
         {
             "id": 220,
@@ -3741,7 +3741,7 @@
             "start_page": 550,
             "end_page": 552,
             "verse_count": 21,
-            "segments_total": 22
+            "segments_total": 48
         },
         {
             "id": 221,
@@ -3758,7 +3758,7 @@
             "start_page": 553,
             "end_page": 554,
             "verse_count": 14,
-            "segments_total": 15
+            "segments_total": 25
         },
         {
             "id": 222,
@@ -3775,7 +3775,7 @@
             "start_page": 554,
             "end_page": 557,
             "verse_count": 26,
-            "segments_total": 30
+            "segments_total": 59
         },
         {
             "id": 223,
@@ -3792,7 +3792,7 @@
             "start_page": 558,
             "end_page": 559,
             "verse_count": 12,
-            "segments_total": 12
+            "segments_total": 36
         },
         {
             "id": 224,
@@ -3809,7 +3809,7 @@
             "start_page": 560,
             "end_page": 561,
             "verse_count": 12,
-            "segments_total": 12
+            "segments_total": 26
         },
         {
             "id": 225,
@@ -3826,7 +3826,7 @@
             "start_page": 562,
             "end_page": 564,
             "verse_count": 30,
-            "segments_total": 30
+            "segments_total": 45
         },
         {
             "id": 226,
@@ -3843,7 +3843,7 @@
             "start_page": 564,
             "end_page": 566,
             "verse_count": 52,
-            "segments_total": 52
+            "segments_total": 58
         },
         {
             "id": 227,
@@ -3860,7 +3860,7 @@
             "start_page": 566,
             "end_page": 569,
             "verse_count": 70,
-            "segments_total": 70
+            "segments_total": 75
         },
         {
             "id": 228,
@@ -3877,7 +3877,7 @@
             "start_page": 569,
             "end_page": 571,
             "verse_count": 54,
-            "segments_total": 54
+            "segments_total": 59
         },
         {
             "id": 229,
@@ -3894,7 +3894,7 @@
             "start_page": 572,
             "end_page": 574,
             "verse_count": 47,
-            "segments_total": 47
+            "segments_total": 56
         },
         {
             "id": 230,
@@ -3911,7 +3911,7 @@
             "start_page": 575,
             "end_page": 577,
             "verse_count": 57,
-            "segments_total": 57
+            "segments_total": 72
         },
         {
             "id": 231,
@@ -3928,7 +3928,7 @@
             "start_page": 577,
             "end_page": 579,
             "verse_count": 58,
-            "segments_total": 59
+            "segments_total": 60
         },
         {
             "id": 232,
@@ -3945,7 +3945,7 @@
             "start_page": 579,
             "end_page": 581,
             "verse_count": 63,
-            "segments_total": 63
+            "segments_total": 69
         },
         {
             "id": 233,
@@ -3962,7 +3962,7 @@
             "start_page": 582,
             "end_page": 584,
             "verse_count": 86,
-            "segments_total": 86
+            "segments_total": 90
         },
         {
             "id": 234,
@@ -3996,7 +3996,7 @@
             "start_page": 587,
             "end_page": 589,
             "verse_count": 55,
-            "segments_total": 56
+            "segments_total": 59
         },
         {
             "id": 236,
@@ -4013,7 +4013,7 @@
             "start_page": 589,
             "end_page": 591,
             "verse_count": 64,
-            "segments_total": 64
+            "segments_total": 66
         },
         {
             "id": 237,
@@ -4030,7 +4030,7 @@
             "start_page": 591,
             "end_page": 594,
             "verse_count": 75,
-            "segments_total": 75
+            "segments_total": 78
         },
         {
             "id": 238,
@@ -4064,7 +4064,7 @@
             "start_page": 596,
             "end_page": 599,
             "verse_count": 64,
-            "segments_total": 64
+            "segments_total": 68
         },
         {
             "id": 240,
@@ -4081,7 +4081,7 @@
             "start_page": 599,
             "end_page": 604,
             "verse_count": 82,
-            "segments_total": 82
+            "segments_total": 84
         }
     ]
 }

@@ -18,18 +18,20 @@ declare(strict_types=1);
 /* -------------------------------------------------------------------------
  * Waqf (stop) signs in the Uthmani text.
  *
- * Only the stop-preferring marks split a verse into separately repeated
- * stations. Signs meaning "continue" stay in the text and are explained by
- * the UI legend.
+ * Every waqf sign splits a verse into separately repeated stations — each one
+ * is recited three times so the user understands the verse at that stop —
+ * except "لا" (do not stop), which must stay inside the station it forbids
+ * stopping at. All signs remain in the text and are explained by the UI
+ * legend.
  * ---------------------------------------------------------------------- */
 function rh_waqf_marks(): array
 {
     return [
-        0x06D6 => ['key' => 'salli',     'ar' => 'صلى: الوصل أولى',          'en' => 'Continue preferred',   'splits' => false],
+        0x06D6 => ['key' => 'salli',     'ar' => 'صلى: الوصل أولى',          'en' => 'Continue preferred',   'splits' => true],
         0x06D7 => ['key' => 'qala',      'ar' => 'قلى: الوقف أولى',          'en' => 'Stop preferred',       'splits' => true],
         0x06D8 => ['key' => 'lazim',     'ar' => 'لازم: الوقف لازم',         'en' => 'Obligatory stop',      'splits' => true],
         0x06D9 => ['key' => 'la',        'ar' => 'لا: لا تقف',               'en' => 'Do not stop',          'splits' => false],
-        0x06DA => ['key' => 'jaiz',      'ar' => 'ج: الوقف جائز',            'en' => 'Permissible stop',     'splits' => false],
+        0x06DA => ['key' => 'jaiz',      'ar' => 'ج: الوقف جائز',            'en' => 'Permissible stop',     'splits' => true],
         0x06DB => ['key' => 'muanaqah',  'ar' => 'ۛ معانقة: قف على أحدهما',  'en' => 'Stop at one of the two', 'splits' => true],
         0x06DC => ['key' => 'saktah',    'ar' => 'س: سكتة لطيفة',            'en' => 'Brief pause',          'splits' => true],
     ];
@@ -70,6 +72,30 @@ function rh_from_codepoints(array $cps): string
 }
 
 /**
+ * True when the codepoints contain something that can actually be recited.
+ *
+ * A run of waqf/sajdah/rub' marks alone (e.g. the two adjacent signs in 36:52)
+ * must not become a station of its own: it carries no verse text to repeat.
+ */
+function rh_has_recitable_content(array $cps): bool
+{
+    $marks = rh_waqf_marks();
+    $rubCp = rh_rub_mark_cp();
+    $sajdahCp = rh_sajdah_cp();
+
+    foreach ($cps as $cp) {
+        if (isset($marks[$cp]) || $cp === $rubCp || $cp === $sajdahCp) {
+            continue;
+        }
+        if ($cp === 0x20 || $cp === 0x09 || $cp === 0x0A || $cp === 0x0D || $cp === 0xA0) {
+            continue;
+        }
+        return true;
+    }
+    return false;
+}
+
+/**
  * Split one verse into stop stations.
  *
  * Returns:
@@ -82,7 +108,7 @@ function rh_from_codepoints(array $cps): string
  *     'has_sajdah'   => bool,
  *   ]
  *
- * A verse without a stop-preferring sign returns exactly one segment.
+ * A verse without an allowed stop sign returns exactly one segment.
  */
 function rh_split_verse(string $text): array
 {
@@ -142,19 +168,41 @@ function rh_split_verse(string $text): array
         $segText = trim(rh_from_codepoints($buffer));
         if ($segText !== '') {
             $info = $marks[$cp];
-            $segments[] = [
-                'text'    => $segText,
-                'stop'    => $info['key'],
-                'stop_ar' => $info['ar'],
-                'stop_en' => $info['en'],
-            ];
+            $recitable = rh_has_recitable_content($buffer);
+
+            if (!$recitable && $segments) {
+                // Consecutive stop signs with no words between them: keep the
+                // extra mark(s) on the station that just closed instead of
+                // making an unrecitable "ۗ"-only station.
+                $last = count($segments) - 1;
+                $segments[$last]['text'] = trim($segments[$last]['text'] . ' ' . $segText);
+                $segments[$last]['stop'] = $info['key'];
+                $segments[$last]['stop_ar'] = $info['ar'];
+                $segments[$last]['stop_en'] = $info['en'];
+            } elseif (!$recitable && !$segments) {
+                // Verse starts with a bare mark: carry it into the first
+                // recitable station instead of splitting here.
+                continue;
+            } else {
+                $segments[] = [
+                    'text'    => $segText,
+                    'stop'    => $info['key'],
+                    'stop_ar' => $info['ar'],
+                    'stop_en' => $info['en'],
+                ];
+            }
         }
         $buffer = [];
     }
 
     $tail = trim(rh_from_codepoints($buffer));
     if ($tail !== '') {
-        $segments[] = ['text' => $tail, 'stop' => null, 'stop_ar' => '', 'stop_en' => ''];
+        if (!rh_has_recitable_content($buffer) && $segments) {
+            $last = count($segments) - 1;
+            $segments[$last]['text'] = trim($segments[$last]['text'] . ' ' . $tail);
+        } else {
+            $segments[] = ['text' => $tail, 'stop' => null, 'stop_ar' => '', 'stop_en' => ''];
+        }
     }
 
     // Never return zero segments (e.g. a verse made only of a stop mark).

@@ -82,10 +82,13 @@ for ($id = 1; $id <= 240; $id++) {
             if (trim((string) $segment['text']) === '') {
                 $fail('verse ' . $key . ' has an empty station #' . $i);
             }
+            if (!rh_has_recitable_content(rh_codepoints((string) $segment['text']))) {
+                $fail('verse ' . $key . ' has a mark-only station #' . $i);
+            }
             if ((int) $segment['index'] !== $i) {
                 $fail('verse ' . $key . ' station #' . $i . ' has index ' . $segment['index']);
             }
-            if ($segment['stop'] !== null && !in_array($segment['stop'], ['lazim', 'qala', 'muanaqah', 'saktah'], true)) {
+            if ($segment['stop'] !== null && !in_array($segment['stop'], ['salli', 'qala', 'lazim', 'jaiz', 'muanaqah', 'saktah'], true)) {
                 $fail('verse ' . $key . ' has unknown stop type ' . $segment['stop']);
             }
         }
@@ -143,7 +146,7 @@ foreach ($checks as $id => $expect) {
 
 // Splitter behaviour on a few known verses.
 echo "\n== Stop-station splitter spot checks ==\n";
-$samples = [[2, 26], [2, 44], [1, 1], [114, 6]];
+$samples = [[2, 26], [2, 44], [1, 1], [36, 52], [114, 6]];
 foreach ($samples as [$s, $a]) {
     $text = rh_verse_text($quran, $s, $a);
     $split = rh_split_verse($text);
@@ -158,8 +161,8 @@ foreach ($samples as [$s, $a]) {
     }
 }
 
-// A lazim/qala/muanaqah/saktah sign must always split.
-$mustSplit = ["\u{06D8}", "\u{06D7}", "\u{06DB}", "\u{06DC}"];
+// Every waqf sign except "لا" must always split.
+$mustSplit = ["\u{06D6}", "\u{06D7}", "\u{06D8}", "\u{06DA}", "\u{06DB}", "\u{06DC}"];
 foreach ($mustSplit as $mark) {
     $sample = 'بِسْمِ اللَّهِ ' . $mark . ' الرَّحْمَٰنِ الرَّحِيمِ';
     $split = rh_split_verse($sample);
@@ -179,8 +182,24 @@ if (count($split['segments']) === 2) {
     $fail('mu‘anaqah pair produced ' . count($split['segments']) . ' stations');
 }
 
-// Continue-preferred signs must NOT split.
-foreach (["\u{06D6}", "\u{06D9}", "\u{06DA}"] as $mark) {
+// Consecutive stop signs with no words between them must not create a
+// station made only of marks.
+$adjacent = 'الأول ' . "\u{06DC} \u{06D7}" . ' الثاني';
+$split = rh_split_verse($adjacent);
+$markOnly = false;
+foreach ($split['segments'] as $seg) {
+    if (!rh_has_recitable_content(rh_codepoints($seg['text']))) {
+        $markOnly = true;
+    }
+}
+if (count($split['segments']) === 2 && !$markOnly) {
+    $ok('adjacent stop signs merge into one station');
+} else {
+    $fail('adjacent stop signs produced ' . count($split['segments']) . ' station(s)');
+}
+
+// The "لا" (do not stop) sign must NOT split.
+foreach (["\u{06D9}"] as $mark) {
     $sample = 'كلمة ' . $mark . ' أخرى';
     $split = rh_split_verse($sample);
     if (count($split['segments']) === 1) {

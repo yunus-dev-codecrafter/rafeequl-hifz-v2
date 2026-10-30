@@ -470,17 +470,18 @@ already consolidated (`last_tikrar_page`; `COMPLETE` accounts draw from all
 240). The same rub' is kept for the whole day, rolls over if unfinished, and
 does not repeat until the eligible pool has been used once.
 
-- Every verse is split at the **stop-preferring** waqf signs only: ۘ لازم,
-  ۗ قلى, ۛ معانقة (first of the pair) and ۜ سكتة. ۖ صلى, ۙ لا and ۚ ج remain in
-  the text as a legend, without splitting.
-- Each station must be repeated **3 times, slowly**. A verse without a stop sign
-  is one station.
+- Every verse is split at **every waqf (stop) sign except** ۙ لا (do not stop):
+  ۖ صلى, ۗ قلى, ۘ لازم, ۚ ج, ۛ معانقة (first of the pair) and ۜ سكتة. لا stays
+  inside the text so the station it forbids stopping at is never cut. Every sign
+  is explained by the on-page legend.
+- Each station must be repeated **3 times, slowly**. A verse without an allowed
+  stop sign is one station.
 - Progress is the count of completed stations, stored as a JSON key list on the
   task row (`completed_stations`) so retries are idempotent. The page also keeps
   a per-task local copy and an offline queue; the latest state wins.
 - The exact 240 boundaries come from Quran.com's `rub_el_hizb_number` field,
   cross-checked against the app's own page map. `verify_rub.php` asserts all
-  6,236 verses are covered exactly once (6,872 stations in total).
+  6,236 verses are covered exactly once (10,525 stations in total).
 - Every verse has a collapsible tafsir from **Al-Mukhtasar fi al-Tafsir**
   (المختصر في التفسير). Arabic is shown in the Arabic interface and English in
   the English interface, with a graceful fallback if one language is missing.
