@@ -4,18 +4,23 @@
    Rafeequl Hifz — HIFZ_JADID verse-by-verse memorization room
 
    The page is deliberately a single active verse at a time:
-     • repeat the current verse 40 times
-     • after verse 2+ is complete, recite 1..N together
-     • after the final verse, recite the whole page, then mark the task done
+     • repeat the current verse 20 times alone
+     • after verse 2+, join it with the previous verse 20 times (adjacent pair)
+     • after the final pair, recite the whole page once, then mark the task done
 
    Progress is kept in localStorage immediately and mirrored to
    api/tasks/update_hifz_progress.php with a debounce. The actual task
    completion still goes through update_progress.php, which validates that the
-   saved state really contains 40 repetitions for every verse and every link.
+   saved state really contains 20 repetitions for every verse, 20 for every
+   adjacent pair, and the full-page pass.
    ========================================================================== */
 
-const HIFZ_REPS_TARGET = 40;
-const HIFZ_LOCAL_PREFIX = 'rh_hifz_verse_v1_';
+const HIFZ_REPS_TARGET = 20;
+const HIFZ_PAIR_TARGET = 20;
+const HIFZ_PAGE_PASS_TARGET = 1;
+const HIFZ_STATE_VERSION = 2;
+const HIFZ_LOCAL_PREFIX = 'rh_hifz_verse_v2_';
+const HIFZ_LEGACY_LOCAL_PREFIX = 'rh_hifz_verse_v1_';
 const HIFZ_TEXT_HIDDEN_KEY = 'rh_hifz_text_hidden';
 
 function hifzT(key, params, fallback) {
@@ -48,10 +53,11 @@ function hifzSurahName(id) {
 
 function hifzNewState(page, total) {
   return {
-    v: 1,
+    v: HIFZ_STATE_VERSION,
     page,
     reps: Array(total).fill(0),
     links: Array(total).fill(0),
+    page_pass: 0,
     current: 0,
     phase: 'repeat',
     complete: false,
@@ -62,50 +68,76 @@ function hifzScore(state) {
   if (!state || !Array.isArray(state.reps) || !Array.isArray(state.links)) return -1;
   let score = 0;
   state.reps.forEach((value) => { score += Math.max(0, Math.min(HIFZ_REPS_TARGET, Number(value) || 0)); });
-  state.links.forEach((value) => { if (Number(value) === 1) score += HIFZ_REPS_TARGET; });
+  state.links.forEach((value) => { score += Math.max(0, Math.min(HIFZ_PAIR_TARGET, Number(value) || 0)); });
+  score += Math.max(0, Math.min(1, Number(state.page_pass) || 0)) * 100;
   if (state.complete) score += 1000;
   return score;
 }
 
 function hifzAllRepsDone(reps) {
-  return Array.isArray(reps) && reps.length > 0 && reps.every((value) => Number(value) >= HIFZ_REPS_TARGET);
+  return Array.isArray(reps) && reps.length > 0
+    && reps.every((value) => Number(value) >= HIFZ_REPS_TARGET);
 }
 
-function hifzAllLinksDone(links) {
-  return Array.isArray(links) && links.length > 0 && links.every((value) => Number(value) === 1);
+function hifzAllPairsDone(links) {
+  if (!Array.isArray(links) || !links.length) return false;
+  for (let i = 1; i < links.length; i++) {
+    if (Number(links[i]) < HIFZ_PAIR_TARGET) return false;
+  }
+  return true;
 }
 
 function hifzNormalizeState(raw, page, total) {
   if (!raw || typeof raw !== 'object') return null;
+  if (Number(raw.v) !== HIFZ_STATE_VERSION) return null;
   if (Number(raw.page) !== Number(page)) return null;
   if (!Array.isArray(raw.reps) || !Array.isArray(raw.links)) return null;
   if (raw.reps.length !== total || raw.links.length !== total) return null;
 
   const state = {
-    v: 1,
+    v: HIFZ_STATE_VERSION,
     page,
     reps: raw.reps.map((value) => Math.max(0, Math.min(HIFZ_REPS_TARGET, Number(value) || 0))),
-    links: raw.links.map((value) => (Number(value) === 1 || value === true) ? 1 : 0),
+    links: raw.links.map((value) => Math.max(0, Math.min(HIFZ_PAIR_TARGET, Number(value) || 0))),
+    page_pass: Math.max(0, Math.min(1, Number(raw.page_pass) || 0)),
     current: Math.max(0, Math.min(total - 1, Number(raw.current) || 0)),
-    phase: ['repeat', 'link', 'complete'].includes(raw.phase) ? raw.phase : 'repeat',
+    phase: ['repeat', 'link', 'page', 'complete'].includes(raw.phase) ? raw.phase : 'repeat',
     complete: !!raw.complete,
   };
+  state.links[0] = 0;
 
-  if (hifzAllRepsDone(state.reps) && hifzAllLinksDone(state.links)) {
+  const allReps = hifzAllRepsDone(state.reps);
+  const allPairs = hifzAllPairsDone(state.links);
+  if (allReps && allPairs && state.page_pass >= HIFZ_PAGE_PASS_TARGET) {
     state.complete = true;
     state.phase = 'complete';
     state.current = total - 1;
   } else {
     state.complete = false;
     if (state.phase === 'complete') state.phase = 'repeat';
-    if (state.current === 0 && state.reps[0] >= HIFZ_REPS_TARGET && total > 1) {
-      state.links[0] = 1;
-      state.current = 1;
-      state.phase = 'repeat';
-    }
+    if (state.phase === 'page' && !allReps) state.phase = 'repeat';
+    if (state.phase === 'link' && state.current < 1) state.phase = 'repeat';
   }
 
   return state;
+}
+
+function hifzStepStats(state, total) {
+  if (!state) return { done: 0, total: 0, verses: 0, pairs: 0, pagePass: 0 };
+  const verses = state.reps.filter((value) => Number(value) >= HIFZ_REPS_TARGET).length;
+  let pairs = 0;
+  for (let i = 1; i < state.links.length; i++) {
+    if (Number(state.links[i]) >= HIFZ_PAIR_TARGET) pairs++;
+  }
+  const pagePass = Number(state.page_pass) >= HIFZ_PAGE_PASS_TARGET ? 1 : 0;
+  const pairsTotal = Math.max(0, total - 1);
+  return {
+    done: verses + pairs + pagePass,
+    total: total + pairsTotal + 1,
+    verses,
+    pairs,
+    pagePass,
+  };
 }
 
 const HifzPage = {
@@ -266,6 +298,13 @@ const HifzPage = {
     } catch (error) {}
   },
 
+  clearLegacyLocal() {
+    try {
+      const id = this.task && this.task.id ? String(this.task.id) : ('page-' + this.page);
+      localStorage.removeItem(HIFZ_LEGACY_LOCAL_PREFIX + id);
+    } catch (error) {}
+  },
+
   readTextHidden() {
     try {
       return localStorage.getItem(HIFZ_TEXT_HIDDEN_KEY) === '1';
@@ -276,6 +315,8 @@ const HifzPage = {
 
   restoreState() {
     const total = this.verses.length;
+    this.clearLegacyLocal();
+
     const serverState = hifzNormalizeState(this.task && this.task.hifz_progress, this.page, total);
     const localState = hifzNormalizeState(this.readLocal(), this.page, total);
 
@@ -373,6 +414,16 @@ const HifzPage = {
         this.serverReady = false;
         this.dirty = false;
         this.syncState = 'local';
+      } else if (error && error.status === 409 && error.data && error.data.code === 'HIFZ_STATE_VERSION') {
+        // The 40x flow changed to 20x + adjacent pairs. Start this page again
+        // with the new state; the server keeps the old row untouched.
+        this.state = hifzNewState(this.page, this.verses.length);
+        this.clearLocal();
+        this.writeLocal();
+        this.dirty = false;
+        this.syncState = 'local';
+        showToast(hifzT('hifz_state_outdated', {}, 'The memorization flow changed. Recite the remaining verses again.'), true);
+        setTimeout(() => this.paint(), 0);
       } else if (error && error.status === 409) {
         // The page was already completed (for example in another tab); there
         // is nothing left to save.
@@ -438,15 +489,17 @@ const HifzPage = {
 
   headerHtml() {
     const total = this.verses.length;
-    const done = this.doneVerses();
-    const percent = this.state && this.state.complete ? 100 : (total ? Math.round((done / total) * 100) : 0);
+    const stats = hifzStepStats(this.state, total);
+    const percent = this.state && this.state.complete
+      ? 100
+      : (stats.total ? Math.round((stats.done / stats.total) * 100) : 0);
     const taskTitle = (hifzIsEnglish() && this.task.title_en) ? this.task.title_en : (this.task.title_ar || '');
     const rangeHint = (typeof formatPageVerseSummary === 'function')
       ? formatPageVerseSummary(this.page, hifzIsEnglish())
       : '';
     const badge = this.state && this.state.complete
       ? hifzT('hifz_completed_title', {}, 'New memorization completed')
-      : hifzT('hifz_verses_done', { done, total }, `${done} of ${total} verses`);
+      : hifzT('hifz_verses_done', { done: this.doneVerses(), total }, `${this.doneVerses()} of ${total} verses`);
     const rollover = (typeof rolloverNoticeHtml === 'function') ? rolloverNoticeHtml(this.task) : '';
 
     return `
@@ -464,7 +517,7 @@ const HifzPage = {
         <div class="progress-wrap">
           <div class="progress-header">
             <span>${hifzEsc(hifzT('hifz_page_progress', {}, 'Page Memorization Progress'))}</span>
-            <span>${percent}%</span>
+            <span>${percent}% · ${stats.done}/${stats.total}</span>
           </div>
           <div class="progress-bar">
             <div class="progress-fill fill-green" style="width:${percent}%;"></div>
@@ -479,14 +532,14 @@ const HifzPage = {
     const active = this.state.current;
     const chips = this.verses.map((verse, index) => {
       const done = Number(this.state.reps[index]) >= HIFZ_REPS_TARGET;
-      const linked = Number(this.state.links[index]) === 1;
-      const current = index === active;
+      const paired = index > 0 && Number(this.state.links[index]) >= HIFZ_PAIR_TARGET;
+      const current = index === active && this.state.phase !== 'page' && this.state.phase !== 'complete';
       return `
-        <span class="hifz-verse-chip ${done ? 'is-done' : ''} ${linked ? 'is-linked' : ''} ${current ? 'is-active' : ''}"
+        <span class="hifz-verse-chip ${done ? 'is-done' : ''} ${paired ? 'is-linked' : ''} ${current ? 'is-active' : ''}"
               ${current ? 'aria-current="step"' : ''}
               title="${hifzEsc(`${verse.surahName} · ${verse.surah}:${verse.ayah}`)}">
           ${index + 1}
-          ${linked ? '<span class="hifz-chip-check" aria-hidden="true">✓</span>' : ''}
+          ${paired ? '<span class="hifz-chip-check" aria-hidden="true">✓✓</span>' : (done ? '<span class="hifz-chip-check" aria-hidden="true">✓</span>' : '')}
         </span>`;
     }).join('');
 
@@ -494,7 +547,7 @@ const HifzPage = {
       <div class="hifz-rail-wrap">
         <div class="hifz-rail-head">
           <span>${hifzEsc(hifzT('hifz_verse_rail_label', {}, 'Page verses'))}</span>
-          <span>${hifzEsc(hifzT('hifz_verse_of', { current: active + 1, total }, `${active + 1} of ${total}`))}</span>
+          <span>${hifzEsc(hifzT('hifz_verse_of', { current: Math.min(active + 1, total), total }, `${active + 1} of ${total}`))}</span>
         </div>
         <div class="hifz-rail" id="hifz-verse-rail">${chips}</div>
       </div>`;
@@ -522,30 +575,36 @@ const HifzPage = {
       </div>`;
   },
 
+  counterHtml(rep, target, label, hint) {
+    const fill = Math.max(0, Math.min(100, Math.round((rep / target) * 100)));
+    return `
+      <div class="hifz-counter" aria-live="polite">
+        <div class="hifz-counter-num" id="hifz-rep-number">${rep}</div>
+        <div class="hifz-counter-body">
+          <div class="hifz-counter-label">
+            <span>${hifzEsc(label)}</span>
+            <span>${hifzEsc(hifzT('hifz_reps_of', { target }, `of ${target}`))}</span>
+          </div>
+          <div class="hifz-meter"><div class="hifz-meter-fill" id="hifz-rep-fill" style="width:${fill}%;"></div></div>
+          <div class="hifz-counter-meta">${hifzEsc(hint)}</div>
+        </div>
+      </div>`;
+  },
+
   repeatHtml() {
     const verse = this.verses[this.state.current];
     const rep = Number(this.state.reps[this.state.current]) || 0;
-    const total = this.verses.length;
     const text = this.verseText(verse);
-    const fill = Math.max(0, Math.min(100, Math.round((rep / HIFZ_REPS_TARGET) * 100)));
     return `
       <div class="hifz-active">
         ${this.activeHeadHtml(verse, true)}
         <p class="hifz-verse-text ${this.textHidden ? 'is-hidden' : ''}" id="hifz-verse-text" dir="rtl">${hifzEsc(text) || '…'}</p>
-        <div class="hifz-counter" aria-live="polite">
-          <div class="hifz-counter-num" id="hifz-rep-number">${rep}</div>
-          <div class="hifz-counter-body">
-            <div class="hifz-counter-label">
-              <span>${hifzEsc(hifzT('hifz_reps_label', {}, 'Repetitions'))}</span>
-              <span>${hifzEsc(hifzT('hifz_reps_of', { target: HIFZ_REPS_TARGET }, `of ${HIFZ_REPS_TARGET}`))}</span>
-            </div>
-            <div class="hifz-meter"><div class="hifz-meter-fill" id="hifz-rep-fill" style="width:${fill}%;"></div></div>
-            <div class="hifz-counter-meta">
-              ${hifzEsc(hifzT('hifz_verse_of', { current: this.state.current + 1, total }, `${this.state.current + 1} of ${total}`))}
-              · ${hifzEsc(hifzT('hifz_repeat_hint', { target: HIFZ_REPS_TARGET }, ''))}
-            </div>
-          </div>
-        </div>
+        ${this.counterHtml(
+          rep,
+          HIFZ_REPS_TARGET,
+          hifzT('hifz_reps_label', {}, 'Repetitions'),
+          hifzT('hifz_repeat_hint', { target: HIFZ_REPS_TARGET }, '')
+        )}
       </div>`;
   },
 
@@ -557,33 +616,68 @@ const HifzPage = {
     );
   },
 
-  linkHtml() {
+  pairHtml() {
     const index = this.state.current;
-    const final = index >= this.verses.length - 1;
-    const from = 1;
-    const to = index + 1;
-    const heading = final
-      ? hifzT('hifz_final_link_phase', {}, 'Full-Page Recitation')
-      : hifzT('hifz_link_phase', {}, 'Cumulative Linking Recitation');
-    const hint = final
-      ? hifzT('hifz_final_link_hint', {}, 'Recite the whole page from the first verse to the last verse, connected.')
-      : (this.verses.length === 1
-        ? hifzT('hifz_link_single_hint', {}, 'Recite the only verse on this page one final time.')
-        : hifzT('hifz_link_hint', { to }, 'Recite from verse 1 through the current verse, connected.'));
+    const previous = this.verses[index - 1];
+    const current = this.verses[index];
+    if (!previous || !current) return this.repeatHtml();
+    const rep = Number(this.state.links[index]) || 0;
+    const heading = hifzT('hifz_pair_phase', {}, 'Recite the two verses together');
+    const hint = hifzT(
+      'hifz_pair_hint',
+      { from: previous.ayah, to: current.ayah, target: HIFZ_PAIR_TARGET },
+      `Recite verse ${previous.ayah} and verse ${current.ayah} together ${HIFZ_PAIR_TARGET} times.`
+    );
 
-    const list = this.verses.slice(0, index + 1).map((verse) => `
+    const block = (verse, kicker) => `
+      <div class="hifz-link-verse">
+        <span class="hifz-link-ref">${hifzEsc(kicker)} · ${hifzEsc(this.linkRef(verse))}</span>
+        <p dir="rtl">${hifzEsc(this.verseText(verse)) || '…'}</p>
+      </div>`;
+
+    return `
+      <div class="hifz-active hifz-link-panel">
+        <div class="hifz-link-head">
+          <span class="hifz-link-kicker">🔗</span>
+          <div>
+            <strong>${hifzEsc(heading)}</strong>
+            <div class="hifz-link-range">${hifzEsc(hifzT('hifz_verse_of', { current: index + 1, total: this.verses.length }, `${index + 1} of ${this.verses.length}`))}</div>
+          </div>
+        </div>
+        <p class="hifz-link-hint">${hifzEsc(hint)}</p>
+        <div class="hifz-link-list">
+          ${block(previous, hifzT('hifz_pair_previous', {}, 'Previous'))}
+          ${block(current, hifzT('hifz_pair_current', {}, 'Current'))}
+        </div>
+        ${this.counterHtml(
+          rep,
+          HIFZ_PAIR_TARGET,
+          hifzT('hifz_pair_reps_label', {}, 'Joined recitations'),
+          hifzT('hifz_repeat_hint', { target: HIFZ_PAIR_TARGET }, '')
+        )}
+      </div>`;
+  },
+
+  pageHtml() {
+    const heading = hifzT('hifz_page_phase', {}, 'Full-Page Recitation');
+    const hint = hifzT(
+      'hifz_page_hint',
+      { total: this.verses.length },
+      'Recite the whole page from the first verse to the last verse, connected, once.'
+    );
+    const list = this.verses.map((verse) => `
       <div class="hifz-link-verse">
         <span class="hifz-link-ref">${hifzEsc(this.linkRef(verse))}</span>
         <p dir="rtl">${hifzEsc(this.verseText(verse)) || '…'}</p>
       </div>`).join('');
 
     return `
-      <div class="hifz-active hifz-link-panel ${final ? 'is-final' : ''}">
+      <div class="hifz-active hifz-link-panel is-final">
         <div class="hifz-link-head">
-          <span class="hifz-link-kicker">${final ? '📖' : '🔗'}</span>
+          <span class="hifz-link-kicker">📖</span>
           <div>
             <strong>${hifzEsc(heading)}</strong>
-            <div class="hifz-link-range">${hifzEsc(hifzT('hifz_verse_of', { current: to, total: this.verses.length }, `${to} of ${this.verses.length}`))}</div>
+            <div class="hifz-link-range">${hifzEsc(hifzT('hifz_verses_done', { done: this.verses.length, total: this.verses.length }, ''))}</div>
           </div>
         </div>
         <p class="hifz-link-hint">${hifzEsc(hint)}</p>
@@ -595,8 +689,8 @@ const HifzPage = {
     const total = this.verses.length;
     const description = hifzT(
       'hifz_completed_desc',
-      { page: this.page, total, target: HIFZ_REPS_TARGET },
-      `You completed page ${this.page}: ${total} verses, each repeated ${HIFZ_REPS_TARGET} times.`
+      { page: this.page, total, target: HIFZ_REPS_TARGET, pair: HIFZ_PAIR_TARGET },
+      `You completed page ${this.page}: ${total} verses, each repeated ${HIFZ_REPS_TARGET} times, every verse joined with the previous one ${HIFZ_PAIR_TARGET} times, and the full page recited.`
     );
     return `
       <div class="hifz-active hifz-complete-card">
@@ -612,22 +706,23 @@ const HifzPage = {
 
   actionsHtml() {
     const phase = this.state.phase;
-    const final = this.state.current >= this.verses.length - 1;
     let mainAction = '';
 
     if (phase === 'repeat') {
       mainAction = `<button type="button" id="btn-add-rep" class="btn btn-success hifz-main-action">${hifzEsc(hifzT('hifz_add_rep', {}, 'Recite once (+1)'))}</button>`;
     } else if (phase === 'link') {
-      const label = final
-        ? hifzT('hifz_final_link_done', {}, 'Full page recited — Continue')
-        : hifzT('hifz_link_done', {}, 'Recitation done — Continue');
-      mainAction = `<button type="button" id="btn-complete-page" class="btn ${final ? 'btn-success' : 'btn-primary'} hifz-main-action">${hifzEsc(label)}</button>`;
+      mainAction = `<button type="button" id="btn-add-rep" class="btn btn-success hifz-main-action">${hifzEsc(hifzT('hifz_add_pair_rep', {}, 'Recite the pair once (+1)'))}</button>`;
+    } else if (phase === 'page') {
+      mainAction = `<button type="button" id="btn-complete-page" class="btn btn-success hifz-main-action">${hifzEsc(hifzT('hifz_page_done', {}, 'Full page recited — Continue'))}</button>`;
     } else {
       mainAction = `<button type="button" id="btn-complete-page" class="btn btn-success hifz-main-action">${hifzEsc(hifzT('hifz_mark_complete', {}, 'Page recited — Complete memorization'))}</button>`;
     }
 
-    const undo = phase === 'repeat'
-      ? `<button type="button" id="btn-undo-rep" class="btn btn-warning-outline stage-icon-btn" ${Number(this.state.reps[this.state.current]) > 0 ? '' : 'disabled'} title="${hifzEsc(hifzT('hifz_undo_rep', {}, 'Undo (-1)'))}">↩ ${hifzEsc(hifzT('hifz_undo_rep', {}, 'Undo (-1)'))}</button>`
+    const counter = phase === 'repeat'
+      ? Number(this.state.reps[this.state.current]) || 0
+      : (phase === 'link' ? Number(this.state.links[this.state.current]) || 0 : 0);
+    const undo = (phase === 'repeat' || phase === 'link')
+      ? `<button type="button" id="btn-undo-rep" class="btn btn-warning-outline stage-icon-btn" ${counter > 0 ? '' : 'disabled'} title="${hifzEsc(hifzT('hifz_undo_rep', {}, 'Undo (-1)'))}">↩ ${hifzEsc(hifzT('hifz_undo_rep', {}, 'Undo (-1)'))}</button>`
       : '';
 
     return `
@@ -649,9 +744,11 @@ const HifzPage = {
     const container = document.getElementById('task-content');
     if (!container || !this.state) return;
 
-    const body = this.state.phase === 'repeat'
-      ? this.repeatHtml()
-      : (this.state.phase === 'link' ? this.linkHtml() : this.completeHtml());
+    let body;
+    if (this.state.phase === 'repeat') body = this.repeatHtml();
+    else if (this.state.phase === 'link') body = this.pairHtml();
+    else if (this.state.phase === 'page') body = this.pageHtml();
+    else body = this.completeHtml();
 
     container.innerHTML = `
       ${this.headerHtml()}
@@ -673,8 +770,8 @@ const HifzPage = {
     const total = this.verses.length;
     const description = hifzT(
       'hifz_completed_desc',
-      { page: this.page, total, target: HIFZ_REPS_TARGET },
-      `You completed page ${this.page}: ${total} verses, each repeated ${HIFZ_REPS_TARGET} times.`
+      { page: this.page, total, target: HIFZ_REPS_TARGET, pair: HIFZ_PAIR_TARGET },
+      `You completed page ${this.page}: ${total} verses, each repeated ${HIFZ_REPS_TARGET} times, every verse joined with the previous one ${HIFZ_PAIR_TARGET} times, and the full page recited.`
     );
     const taskTitle = (hifzIsEnglish() && this.task.title_en) ? this.task.title_en : (this.task.title_ar || '');
     container.innerHTML = `
@@ -724,8 +821,8 @@ const HifzPage = {
     const completeBtn = document.getElementById('btn-complete-page');
     if (completeBtn) {
       completeBtn.addEventListener('click', () => {
-        if (this.state.phase === 'link') {
-          this.finishLink();
+        if (this.state.phase === 'page') {
+          this.finishPage();
         } else if (this.state.phase === 'complete') {
           this.completeTask();
         }
@@ -790,11 +887,15 @@ const HifzPage = {
 
   updateCounterDom() {
     if (!this.state) return;
-    const rep = Number(this.state.reps[this.state.current]) || 0;
+    const phase = this.state.phase;
+    const target = phase === 'link' ? HIFZ_PAIR_TARGET : HIFZ_REPS_TARGET;
+    const rep = phase === 'link'
+      ? (Number(this.state.links[this.state.current]) || 0)
+      : (Number(this.state.reps[this.state.current]) || 0);
     const number = document.getElementById('hifz-rep-number');
     if (number) number.textContent = String(rep);
     const fill = document.getElementById('hifz-rep-fill');
-    if (fill) fill.style.width = Math.max(0, Math.min(100, Math.round((rep / HIFZ_REPS_TARGET) * 100))) + '%';
+    if (fill) fill.style.width = Math.max(0, Math.min(100, Math.round((rep / target) * 100))) + '%';
     const undo = document.getElementById('btn-undo-rep');
     if (undo) undo.disabled = rep < 1;
     this.updateSyncDom();
@@ -829,62 +930,103 @@ const HifzPage = {
   },
 
   addRep() {
-    if (this.state.phase !== 'repeat') return;
-    const index = this.state.current;
-    if (this.state.reps[index] >= HIFZ_REPS_TARGET) return;
+    if (!this.state) return;
 
-    this.state.reps[index] = Math.min(HIFZ_REPS_TARGET, Number(this.state.reps[index]) + 1);
-    const finished = this.state.reps[index] >= HIFZ_REPS_TARGET;
+    if (this.state.phase === 'repeat') {
+      const index = this.state.current;
+      if (this.state.reps[index] >= HIFZ_REPS_TARGET) return;
 
-    if (!finished) {
+      this.state.reps[index] = Math.min(HIFZ_REPS_TARGET, Number(this.state.reps[index]) + 1);
+      const finished = this.state.reps[index] >= HIFZ_REPS_TARGET;
+
+      if (!finished) {
+        this.writeLocal();
+        this.scheduleSave();
+        this.updateCounterDom();
+        if (window.AudioEngine && typeof AudioEngine.playSuccess === 'function') AudioEngine.playSuccess();
+        return;
+      }
+
+      if (index === 0) {
+        if (this.verses.length === 1) {
+          this.state.phase = 'page';
+        } else {
+          this.state.current = 1;
+          this.state.phase = 'repeat';
+        }
+        showToast(hifzT('hifz_next_verse_toast', { target: HIFZ_REPS_TARGET }, 'Moving to the next verse.'), false);
+      } else {
+        this.state.phase = 'link';
+        showToast(hifzT('hifz_pair_ready_toast', {}, 'Now join the two verses.'), false);
+      }
+
       this.writeLocal();
-      this.scheduleSave();
-      this.updateCounterDom();
+      this.persistNow();
       if (window.AudioEngine && typeof AudioEngine.playSuccess === 'function') AudioEngine.playSuccess();
+      this.paint();
       return;
     }
 
-    if (index === 0 && this.verses.length > 1) {
-      this.state.links[0] = 1;
-      this.state.current = 1;
-      this.state.phase = 'repeat';
-      showToast(hifzT('hifz_next_verse_toast', { target: HIFZ_REPS_TARGET }, 'Moving to the next verse.'), false);
-    } else {
-      this.state.phase = 'link';
-    }
+    if (this.state.phase === 'link') {
+      const index = this.state.current;
+      if (index < 1 || Number(this.state.links[index]) >= HIFZ_PAIR_TARGET) return;
 
-    this.writeLocal();
-    this.persistNow();
-    if (window.AudioEngine && typeof AudioEngine.playSuccess === 'function') AudioEngine.playSuccess();
-    this.paint();
+      this.state.links[index] = Math.min(HIFZ_PAIR_TARGET, Number(this.state.links[index]) + 1);
+      const finished = this.state.links[index] >= HIFZ_PAIR_TARGET;
+
+      if (!finished) {
+        this.writeLocal();
+        this.scheduleSave();
+        this.updateCounterDom();
+        if (window.AudioEngine && typeof AudioEngine.playSuccess === 'function') AudioEngine.playSuccess();
+        return;
+      }
+
+      if (index < this.verses.length - 1) {
+        this.state.current = index + 1;
+        this.state.phase = 'repeat';
+        showToast(hifzT('hifz_link_done_toast', {}, 'Adjacent pair completed ✓'), false);
+      } else {
+        this.state.phase = 'page';
+        showToast(hifzT('hifz_pair_done_toast', {}, 'All pairs completed — recite the whole page.'), false);
+      }
+
+      this.writeLocal();
+      this.persistNow();
+      if (window.AudioEngine && typeof AudioEngine.playSuccess === 'function') AudioEngine.playSuccess();
+      this.paint();
+    }
   },
 
   undoRep() {
-    if (this.state.phase !== 'repeat') return;
-    const index = this.state.current;
-    if (Number(this.state.reps[index]) < 1) return;
-    this.state.reps[index] = Math.max(0, Number(this.state.reps[index]) - 1);
-    this.writeLocal();
-    this.scheduleSave(700);
-    this.updateCounterDom();
-    if (window.AudioEngine && typeof AudioEngine.playUndo === 'function') AudioEngine.playUndo();
-  },
-
-  finishLink() {
-    if (this.state.phase !== 'link') return;
-    const index = this.state.current;
-    this.state.links[index] = 1;
-
-    if (index < this.verses.length - 1) {
-      this.state.current = index + 1;
-      this.state.phase = 'repeat';
-      showToast(hifzT('hifz_link_done_toast', {}, 'Cumulative recitation completed ✓'), false);
-    } else {
-      this.state.complete = true;
-      this.state.phase = 'complete';
-      showToast(hifzT('hifz_final_done_toast', {}, 'The full page is recited.'), false);
+    if (!this.state) return;
+    if (this.state.phase === 'repeat') {
+      const index = this.state.current;
+      if (Number(this.state.reps[index]) < 1) return;
+      this.state.reps[index] = Math.max(0, Number(this.state.reps[index]) - 1);
+      this.writeLocal();
+      this.scheduleSave(700);
+      this.updateCounterDom();
+      if (window.AudioEngine && typeof AudioEngine.playUndo === 'function') AudioEngine.playUndo();
+      return;
     }
 
+    if (this.state.phase === 'link') {
+      const index = this.state.current;
+      if (index < 1 || Number(this.state.links[index]) < 1) return;
+      this.state.links[index] = Math.max(0, Number(this.state.links[index]) - 1);
+      this.writeLocal();
+      this.scheduleSave(700);
+      this.updateCounterDom();
+      if (window.AudioEngine && typeof AudioEngine.playUndo === 'function') AudioEngine.playUndo();
+    }
+  },
+
+  finishPage() {
+    if (this.state.phase !== 'page') return;
+    this.state.page_pass = HIFZ_PAGE_PASS_TARGET;
+    this.state.complete = true;
+    this.state.phase = 'complete';
     this.writeLocal();
     this.persistNow();
     if (window.AudioEngine && typeof AudioEngine.playSuccess === 'function') AudioEngine.playSuccess();

@@ -4591,16 +4591,6 @@ body.focus-mode .stage-actions.is-sticky { top: 0.5rem; }
   color: #fff;
 }
 
-.rub-blur-hint {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  margin: 0.7rem 0 0;
-  font-size: 0.72rem;
-  line-height: 1.6;
-  color: var(--muted);
-}
-
 .rub-hero-actions {
   display: flex;
   flex-wrap: wrap;
@@ -4609,17 +4599,6 @@ body.focus-mode .stage-actions.is-sticky { top: 0.5rem; }
 }
 
 .rub-reset-all { color: var(--muted); }
-
-.rub-reveal-all .rub-eye {
-  width: 14px;
-  height: 14px;
-}
-
-.rub-reveal-all[aria-pressed="true"] {
-  color: var(--task-teal);
-  border-color: var(--task-teal-border);
-  background: var(--task-teal-bg);
-}
 
 /* Legend */
 .rub-legend {
@@ -4672,85 +4651,6 @@ body.focus-mode .stage-actions.is-sticky { top: 0.5rem; }
   font-size: 0.74rem;
   color: var(--muted);
   line-height: 1.7;
-}
-
-/* Verse cards */
-.rub-verses {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  margin-top: 0.5rem;
-}
-
-.rub-verse {
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-}
-
-.rub-verse-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 0.6rem;
-  padding: 0.65rem 0.9rem;
-  background: var(--bg);
-  border-bottom: 1px solid var(--line-subtle);
-}
-
-.rub-verse-title {
-  display: flex;
-  align-items: baseline;
-  gap: 0.5rem;
-}
-
-.rub-verse-surah {
-  font-size: 0.9rem;
-  font-weight: 800;
-  color: var(--ink);
-}
-
-.rub-verse-ayah {
-  font-size: 0.75rem;
-  color: var(--muted);
-  font-weight: 700;
-}
-
-.rub-verse-badges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.3rem;
-}
-
-.rub-vbadge {
-  font-size: 0.66rem;
-  font-weight: 700;
-  color: var(--muted);
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  padding: 0.14rem 0.45rem;
-}
-
-.rub-vbadge-rub {
-  color: var(--task-teal);
-  background: var(--task-teal-bg);
-  border-color: var(--task-teal-border);
-}
-
-.rub-vbadge-sajdah {
-  color: var(--task-amber);
-  background: var(--task-amber-bg);
-  border-color: var(--task-amber-border);
-}
-
-.rub-stations {
-  display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
-  padding: 0.55rem;
 }
 
 /* Per-verse Mukhtasar tafsir */
@@ -4830,174 +4730,384 @@ body.focus-mode .stage-actions.is-sticky { top: 0.5rem; }
   text-align: left;
 }
 
-.rub-station {
-  border: 1px solid transparent;
-  border-radius: var(--radius-md);
-  padding: 0.6rem 0.75rem 0.5rem;
-  cursor: pointer;
-  transition: background var(--duration) var(--ease), border-color var(--duration) var(--ease), opacity var(--duration) var(--ease);
-  -webkit-tap-highlight-color: transparent;
+/* Verse rail and word-arrangement board (v2) */
+.rub-rail-card {
+  margin: 1rem 0 0.75rem;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 0.6rem 0.7rem 0.7rem;
 }
 
-.rub-station:hover { background: var(--bg); }
-
-.rub-station.is-active {
-  border-color: var(--task-teal-border);
-  background: var(--task-teal-bg);
-  box-shadow: 0 0 0 2px var(--task-teal-bg);
-}
-
-.rub-station.is-done {
-  opacity: 0.55;
-}
-
-.rub-station.is-done .rub-station-text {
-  color: var(--muted);
-}
-
-.rub-station-head {
+.rub-rail-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
-  margin-bottom: 0.35rem;
-}
-
-.rub-station-no {
-  font-size: 0.66rem;
+  font-size: 0.74rem;
   font-weight: 800;
-  color: var(--muted);
-  letter-spacing: 0.02em;
+  color: var(--ink-secondary);
 }
 
-.rub-stop-badge {
-  font-size: 0.64rem;
-  font-weight: 700;
-  color: var(--task-amber);
-  background: var(--task-amber-bg);
-  border: 1px solid var(--task-amber-border);
-  border-radius: 999px;
-  padding: 0.12rem 0.45rem;
-  white-space: nowrap;
+.rub-rail-head span:last-child {
+  color: var(--task-teal);
+  font-variant-numeric: tabular-nums;
 }
 
-.rub-stop-badge.rub-stop-lazim {
-  color: var(--danger);
-  background: var(--danger-soft);
-  border-color: var(--danger-border);
-}
-
-.rub-stop-badge.rub-stop-end {
-  color: var(--muted);
-  background: var(--bg);
-  border-color: var(--line);
-}
-
-.rub-station-text {
-  margin: 0;
-  font-family: 'Amiri Quran', 'Amiri', 'Traditional Arabic', 'Cairo', serif;
-  font-size: 1.45rem;
-  line-height: 2.15;
-  text-align: right;
-  color: var(--ink);
-  word-spacing: 0.06em;
-  transition: filter 180ms ease, opacity 180ms ease;
-}
-
-.rub-station-text.is-blurred {
-  filter: blur(7px);
-  -webkit-filter: blur(7px);
-  opacity: 0.9;
-  user-select: none;
-  -webkit-user-select: none;
-}
-
-.rub-station-tools {
+.rub-rail {
   display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  flex-wrap: wrap;
-  gap: 0.35rem;
+  gap: 0.4rem;
+  overflow-x: auto;
+  padding: 0.55rem 0.1rem 0.1rem;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
 }
 
-.rub-reveal-btn {
+.rub-rail-chip {
+  flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
-  gap: 0.22rem;
+  gap: 0.32rem;
   border: 1px solid var(--line);
-  background: var(--card);
+  background: var(--bg);
   color: var(--muted);
-  font-family: inherit;
-  font-size: 0.68rem;
-  font-weight: 700;
-  line-height: 1.2;
-  min-height: 30px;
-  padding: 0.28rem 0.55rem;
   border-radius: 999px;
+  padding: 0.3rem 0.55rem;
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1.2;
   cursor: pointer;
-  white-space: nowrap;
-  transition: color var(--duration) var(--ease), border-color var(--duration) var(--ease), background var(--duration) var(--ease);
+  transition: color var(--duration) var(--ease), border-color var(--duration) var(--ease),
+              background var(--duration) var(--ease), transform var(--duration) var(--ease);
+  -webkit-tap-highlight-color: transparent;
 }
 
-.rub-reveal-btn:hover,
-.rub-reveal-btn[aria-pressed="true"] {
+.rub-rail-chip:hover { border-color: var(--task-teal-border); }
+
+.rub-rail-chip.is-done {
   color: var(--task-teal);
   background: var(--task-teal-bg);
   border-color: var(--task-teal-border);
 }
 
-.rub-eye {
-  width: 12px;
-  height: 12px;
-  flex: none;
-}
-
-.rub-station-foot {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-top: 0.35rem;
-}
-
-.rub-dots {
-  display: flex;
-  gap: 0.25rem;
-}
-
-.rub-dot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: var(--line);
-  transition: background var(--duration) var(--ease), transform var(--duration) var(--ease);
-}
-
-.rub-dot.is-on {
+.rub-rail-chip.is-active {
+  color: #fff;
   background: var(--task-teal);
-  transform: scale(1.05);
+  border-color: var(--task-teal);
+  box-shadow: 0 0 0 3px var(--task-teal-bg);
 }
 
-.rub-rep-count {
-  font-size: 0.68rem;
-  font-weight: 800;
-  color: var(--muted);
+.rub-rail-no {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: rgba(15, 23, 42, 0.06);
+  color: inherit;
+  font-size: 0.62rem;
 }
 
-.rub-reset-btn {
-  margin-inline-start: auto;
-  border: none;
-  background: transparent;
-  color: var(--muted);
-  font-size: 1rem;
+.rub-rail-chip.is-active .rub-rail-no {
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+}
+
+.rub-rail-ayah { white-space: nowrap; }
+
+.rub-rail-check {
+  display: inline-grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: var(--task-teal);
+  color: #fff;
+  font-size: 0.58rem;
   line-height: 1;
-  padding: 0.15rem 0.3rem;
+}
+
+.rub-stage { margin-top: 0.35rem; }
+
+.rub-stage-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 0.9rem;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
+}
+
+.rub-stage-card.is-done {
+  border-color: var(--task-teal-border);
+}
+
+.rub-stage-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--line-subtle);
+}
+
+.rub-stage-title {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.rub-stage-surah {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.rub-stage-ref {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.rub-stage-page {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--muted);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.1rem 0.45rem;
+}
+
+.rub-stage-nav {
+  display: flex;
+  gap: 0.35rem;
+  margin-inline-start: auto;
+}
+
+.rub-nav-btn {
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink-secondary);
+  font-family: inherit;
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 0.3rem 0.55rem;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: color var(--duration) var(--ease), border-color var(--duration) var(--ease),
+              background var(--duration) var(--ease);
+}
+
+.rub-nav-btn:hover:not(:disabled) {
+  color: var(--task-teal);
+  border-color: var(--task-teal-border);
+  background: var(--task-teal-bg);
+}
+
+.rub-nav-btn:disabled { opacity: 0.4; cursor: default; }
+
+.rub-stage-success {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  margin-top: 0.7rem;
+  padding: 0.6rem 0.7rem;
+  border-radius: var(--radius-md);
+  background: var(--task-teal-bg);
+  border: 1px solid var(--task-teal-border);
+}
+
+.rub-stage-success-icon {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--task-teal);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.rub-stage-success strong {
+  display: block;
+  font-size: 0.84rem;
+  color: var(--ink);
+}
+
+.rub-stage-success p {
+  margin: 0.15rem 0 0;
+  font-size: 0.73rem;
+  line-height: 1.55;
+  color: var(--ink-secondary);
+}
+
+.rub-board { margin-top: 0.8rem; }
+
+.rub-board-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.6rem;
+  margin-bottom: 0.55rem;
+}
+
+.rub-board-head strong {
+  font-size: 0.86rem;
+  color: var(--ink);
+}
+
+.rub-board-hint {
+  margin: 0.2rem 0 0;
+  font-size: 0.72rem;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.rub-board-hint.is-wrong {
+  color: var(--danger);
+  font-weight: 800;
+}
+
+.rub-word-count {
+  flex: none;
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: var(--task-teal);
+  background: var(--task-teal-bg);
+  border: 1px solid var(--task-teal-border);
+  border-radius: 999px;
+  padding: 0.16rem 0.48rem;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.rub-answer {
+  min-height: 4.3rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.28rem 0.35rem;
+  padding: 0.6rem 0.65rem;
+  background: var(--bg);
+  border: 1.5px dashed var(--line);
+  border-radius: var(--radius-md);
+  font-family: 'Amiri Quran', 'Amiri', 'Traditional Arabic', 'Cairo', serif;
+  font-size: 1.35rem;
+  line-height: 1.9;
+  text-align: right;
+  transition: border-color var(--duration) var(--ease), background var(--duration) var(--ease);
+}
+
+.rub-board.is-done .rub-answer {
+  border-style: solid;
+  border-color: var(--task-teal-border);
+  background: var(--task-teal-bg);
+}
+
+.rub-answer-placeholder {
+  font-family: 'Cairo', sans-serif;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.rub-placed-word {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.12rem;
+  padding: 0.04rem 0.4rem;
+  border: 1px solid var(--line);
   border-radius: var(--radius-sm);
+  background: var(--card);
+  color: var(--ink);
   cursor: pointer;
 }
 
-.rub-reset-btn:hover {
+.rub-placed-word.is-final {
+  padding: 0 0.08rem;
+  border-color: transparent;
+  background: transparent;
+  cursor: default;
+}
+
+.rub-placed-x {
+  font-family: 'Cairo', sans-serif;
+  font-size: 0.58rem;
+  color: var(--muted);
+  opacity: 0.6;
+}
+
+.rub-placed-word:hover .rub-placed-x {
+  color: var(--danger);
+  opacity: 1;
+}
+
+.rub-bank {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.65rem;
+}
+
+.rub-token {
+  font-family: 'Amiri Quran', 'Amiri', 'Traditional Arabic', 'Cairo', serif;
+  font-size: 1.15rem;
+  line-height: 1.6;
+  color: var(--ink);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 0.18rem 0.55rem;
+  cursor: pointer;
+  transition: transform 120ms ease, background var(--duration) var(--ease),
+              border-color var(--duration) var(--ease), color var(--duration) var(--ease);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.rub-token:hover {
+  border-color: var(--task-teal-border);
+  background: var(--task-teal-bg);
+}
+
+.rub-token:active { transform: scale(0.96); }
+
+.rub-token.is-wrong {
   color: var(--danger);
   background: var(--danger-soft);
+  border-color: var(--danger-border);
+  animation: rub-shake 0.45s ease;
+}
+
+@keyframes rub-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-4px); }
+  40% { transform: translateX(4px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(3px); }
+}
+
+.rub-board-foot {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.6rem;
+}
+
+.rub-board-btn {
+  font-size: 0.72rem;
+  padding: 0.35rem 0.6rem;
+}
+
+.rub-board-btn:disabled { opacity: 0.4; cursor: default; }
+
+.rub-stage-card .rub-tafsir {
+  margin: 0.75rem 0 0;
 }
 
 /* Completion card */
@@ -5098,12 +5208,15 @@ body.focus-mode .stage-actions.is-sticky { top: 0.5rem; }
 
 body.focus-mode .rub-dock { bottom: 0; }
 body.focus-mode .rub-hero,
-body.focus-mode .rub-legend { display: none; }
-body.focus-mode .rub-station-text {
-  font-size: 1.75rem;
-  line-height: 2.25;
+body.focus-mode .rub-legend,
+body.focus-mode .rub-mic-card { display: none; }
+body.focus-mode .rub-stage-card {
+  border: none;
+  box-shadow: none;
+  padding: 0;
 }
-body.focus-mode .rub-verse-head { background: transparent; }
+body.focus-mode .rub-answer { font-size: 1.7rem; line-height: 2.1; }
+body.focus-mode .rub-token { font-size: 1.35rem; }
 
 @media (max-width: 640px) {
   .rub-dock {
@@ -5114,7 +5227,8 @@ body.focus-mode .rub-verse-head { background: transparent; }
   }
   .rub-title { font-size: 1.3rem; }
   .rub-ring { width: 64px; height: 64px; }
-  .rub-station-text { font-size: 1.32rem; line-height: 2.05; }
+  .rub-answer { font-size: 1.22rem; line-height: 1.95; }
+  .rub-token { font-size: 1.05rem; }
   .rub-main-btn { min-width: 128px; }
   .rub-dock-status span { max-width: 42vw; }
 }
@@ -6666,282 +6780,4 @@ html[dir="ltr"] .rub-mic-note {
   font-size: 0.75rem;
   color: var(--muted);
   text-align: center;
-}
-
-/* --------------------------------------------------------------------------
-   Flagged waqf stations (Rub' Consolidation + entry gate)
-   -------------------------------------------------------------------------- */
-.rub-flag-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  padding: 0.28rem 0.55rem;
-  border: 1px solid var(--line, #e2e8f0);
-  border-radius: 999px;
-  background: var(--surface, #fff);
-  color: var(--muted, #64748b);
-  font: inherit;
-  font-size: 0.76rem;
-  line-height: 1;
-  cursor: pointer;
-  transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease;
-}
-
-.rub-flag-btn svg {
-  width: 15px;
-  height: 15px;
-  flex: 0 0 auto;
-}
-
-.rub-flag-btn:hover {
-  color: var(--danger, #dc2626);
-  border-color: var(--danger, #dc2626);
-  background: var(--danger-soft, #fef2f2);
-}
-
-.rub-flag-btn.is-flagged {
-  color: var(--danger, #b91c1c);
-  border-color: var(--danger, #dc2626);
-  background: var(--danger-soft, #fef2f2);
-}
-
-.rub-station.is-flagged {
-  border-color: var(--danger, #dc2626);
-  box-shadow: inset 3px 0 0 var(--danger, #dc2626), 0 0 0 1px rgba(220, 38, 38, 0.08);
-}
-
-.rub-station.is-flagged .rub-station-no {
-  color: var(--danger, #b91c1c);
-}
-
-.rub-flags-panel,
-.rub-legend {
-  background: var(--surface, #fff);
-  border: 1px solid var(--line, #e2e8f0);
-  border-radius: 1rem;
-  padding: 0.85rem 1rem;
-  margin: 1rem 0;
-}
-
-.rub-flags-panel > summary {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  cursor: pointer;
-  font-weight: 700;
-  color: var(--text, #0f172a);
-  list-style: none;
-}
-
-.rub-flags-panel > summary::-webkit-details-marker {
-  display: none;
-}
-
-.rub-flags-panel > summary::after {
-  content: '⌄';
-  margin-inline-start: auto;
-  color: var(--muted, #64748b);
-  transition: transform 0.18s ease;
-}
-
-.rub-flags-panel[open] > summary::after {
-  transform: rotate(180deg);
-}
-
-.rub-flags-count {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 1.5rem;
-  height: 1.5rem;
-  padding: 0 0.35rem;
-  border-radius: 999px;
-  background: var(--surface-2, #f1f5f9);
-  color: var(--muted, #475569);
-  font-size: 0.74rem;
-}
-
-.rub-flags-hint,
-.rub-flags-empty {
-  margin: 0.65rem 0 0;
-  color: var(--muted, #64748b);
-  font-size: 0.84rem;
-  line-height: 1.7;
-}
-
-.rub-flags-list {
-  display: grid;
-  gap: 0.65rem;
-  margin-top: 0.75rem;
-}
-
-.rub-flag-row {
-  border: 1px solid var(--line, #e2e8f0);
-  border-radius: 0.85rem;
-  padding: 0.7rem 0.8rem;
-  background: var(--surface, #fff);
-}
-
-.rub-flag-row.is-complete {
-  border-color: rgba(16, 185, 129, 0.45);
-  background: rgba(16, 185, 129, 0.05);
-}
-
-.rub-flag-row-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.rub-flag-row-head strong {
-  color: var(--text, #0f172a);
-  font-size: 0.9rem;
-}
-
-.rub-flag-row-head span {
-  color: var(--muted, #64748b);
-  font-size: 0.74rem;
-}
-
-.rub-flag-preview {
-  margin: 0.45rem 0;
-  color: var(--text, #334155);
-  font-family: 'Amiri Quran', 'Cairo', serif;
-  font-size: 1.02rem;
-  line-height: 1.9;
-}
-
-.rub-flag-row-foot {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.rub-flag-progress {
-  color: var(--muted, #475569);
-  font-size: 0.76rem;
-  white-space: nowrap;
-}
-
-.rub-flag-track {
-  flex: 1 1 90px;
-  height: 6px;
-  border-radius: 999px;
-  background: var(--line-subtle, rgba(0, 0, 0, 0.07));
-  overflow: hidden;
-}
-
-.rub-flag-track > span {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: #0f766e;
-  transition: width 0.25s ease;
-}
-
-.rub-flag-done-badge {
-  color: #047857;
-  font-size: 0.72rem;
-  font-weight: 700;
-}
-
-.rub-flag-delete {
-  margin-inline-start: auto;
-  padding: 0.28rem 0.65rem;
-  border: 1px solid var(--line, #e2e8f0);
-  border-radius: 999px;
-  background: transparent;
-  color: var(--danger, #b91c1c);
-  font: inherit;
-  font-size: 0.74rem;
-  cursor: pointer;
-}
-
-.rub-flag-delete:disabled {
-  color: var(--muted, #94a3b8);
-  cursor: not-allowed;
-  border-style: dashed;
-}
-
-/* Entry gate: whole ayah with only the flagged waqf painted red. */
-.entry-gate-waqf-card {
-  border: 1px solid var(--line, #e2e8f0);
-  border-radius: 1rem;
-  padding: 0.9rem;
-  background: var(--surface, #fff);
-  margin: 0.75rem 0;
-}
-
-.entry-gate-waqf-ref {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  flex-wrap: wrap;
-  color: var(--muted, #64748b);
-  font-size: 0.76rem;
-  margin-bottom: 0.65rem;
-}
-
-.entry-gate-waqf-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.2rem 0.55rem;
-  border-radius: 999px;
-  background: var(--danger-soft, #fef2f2);
-  color: var(--danger, #b91c1c);
-  font-weight: 700;
-}
-
-.entry-gate-waqf-verse {
-  font-family: 'Amiri Quran', 'Cairo', serif;
-  font-size: 1.35rem;
-  line-height: 2.25;
-  color: var(--text, #0f172a);
-  padding: 0.35rem 0;
-}
-
-.entry-gate-waqf-mark {
-  background: #fee2e2;
-  color: #b91c1c;
-  border-radius: 0.3rem;
-  padding: 0 0.12em;
-  font-weight: 700;
-  box-decoration-break: clone;
-  -webkit-box-decoration-break: clone;
-}
-
-.entry-gate-waqf-fallback {
-  margin-top: 0.65rem;
-  padding: 0.55rem 0.7rem;
-  border-radius: 0.65rem;
-  background: #fee2e2;
-  color: #b91c1c;
-  font-weight: 700;
-}
-
-.entry-gate-waqf-stop {
-  margin-top: 0.45rem;
-  color: var(--muted, #64748b);
-  font-size: 0.78rem;
-}
-
-.entry-gate-waqf-stop strong {
-  color: var(--text, #334155);
-}
-
-@media (max-width: 640px) {
-  .rub-flag-label {
-    display: none;
-  }
-
-  .rub-flag-btn {
-    padding: 0.32rem;
-  }
-
-  .entry-gate-waqf-verse {
-    font-size: 1.2rem;
-  }
 }

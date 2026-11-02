@@ -2,11 +2,11 @@
 declare(strict_types=1);
 
 /**
- * Rafeequl Hifz — admin one-off page: reset unfinished Rub' station progress.
+ * Rafeequl Hifz — admin one-off page: reset unfinished Rub' verse progress.
  *
- * Required after the waqf-splitting change because station indices are derived
- * from the splitter. Only *unfinished* RUB_TAMKIN tasks are cleared; completed
- * tasks and rub_history are preserved.
+ * Useful after the Rub' page changed from waqf stations to whole-verse word
+ * arrangement. Only *unfinished* RUB_TAMKIN tasks are cleared; completed tasks
+ * and rub_history are preserved.
  *
  * Security:
  *   - Only a signed-in ADMIN / SUPER_ADMIN may open it.
@@ -43,7 +43,7 @@ function rr_page_start(): void
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
-<title>رفيق الحفظ — تصفير تقدّم المواقف</title>
+<title>رفيق الحفظ — تصفير تقدّم الآيات</title>
 <style>
   :root { color-scheme: light dark; --accent:#0f766e; --line:#d8e3e1; --soft:#f2f8f7; --warn:#9a5b00; --warn-soft:#fff5e6; --ok:#166534; --ok-soft:#ecfdf3; --err:#9f1239; --err-soft:#fff1f2; }
   body { font-family: system-ui, "Segoe UI", Tahoma, sans-serif; margin:0; background:#f6faf9; color:#13302d; line-height:1.9; }
@@ -84,7 +84,7 @@ if (!$user) {
     http_response_code(401);
     rr_page_start();
     ?>
-    <span class="badge">تصفير تقدّم المواقف</span>
+    <span class="badge">تصفير تقدّم الآيات</span>
     <h1>يلزم تسجيل الدخول</h1>
     <div class="card">
       <p>هذه الصفحة مخصصة للمشرف. سجّل الدخول أولاً ثم أعد فتحها.</p>
@@ -102,7 +102,7 @@ if (!$active || ($hasRole && !rh_is_admin($user))) {
     http_response_code(403);
     rr_page_start();
     ?>
-    <span class="badge">تصفير تقدّم المواقف</span>
+    <span class="badge">تصفير تقدّم الآيات</span>
     <h1>صلاحية غير كافية</h1>
     <div class="card">
       <p>يجب تسجيل الدخول بحساب مشرف (<code>ADMIN</code> أو <code>SUPER_ADMIN</code>) لتشغيل هذا الإجراء.</p>
@@ -146,12 +146,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 rr_page_start();
 ?>
 <span class="badge">صيانة لمرة واحدة</span>
-<h1>تصفير تقدّم المواقف لأرباع قيد الإنجاز</h1>
+<h1>تصفير تقدّم الآيات لأرباع قيد الإنجاز</h1>
 
 <div class="card">
   <p>
-    بعد تغيير تقسيم الآية على علامات الوقف، تغيّر ترتيب المواقف داخل الآية.
-    هذا الإجراء يمسح تقدّم المواقف فقط للمهام <strong>غير المكتملة</strong> من نوع
+    بعد تغيير صفحة تثبيت الربع إلى ترتيب كلمات الآية كاملة، تغيّر شكل التقدّم المحفوظ.
+    هذا الإجراء يمسح تقدّم الآيات فقط للمهام <strong>غير المكتملة</strong> من نوع
     <code>RUB_TAMKIN</code>، ويُبقي الربع المختار وحالة الترجيل كما هي.
   </p>
   <p class="muted">
@@ -178,7 +178,7 @@ rr_page_start();
 <?php endif; ?>
 
 <div class="card">
-  <form method="post" action="reset_rub_progress.php" onsubmit="return confirm('هل تريد مسح تقدّم المواقف للمهام غير المكتملة؟ لا يمكن التراجع.');">
+  <form method="post" action="reset_rub_progress.php" onsubmit="return confirm('هل تريد مسح تقدّم الآيات للمهام غير المكتملة؟ لا يمكن التراجع.');">
     <input type="hidden" name="csrf" value="<?= rr_h($csrf) ?>">
     <input type="hidden" name="action" value="reset">
     <button type="submit">تشغيل التصفير الآن</button>

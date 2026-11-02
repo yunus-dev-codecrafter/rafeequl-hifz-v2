@@ -69,6 +69,14 @@ try {
         json_out(400, ['success' => false, 'error' => 'progress must be a JSON object.']);
     }
 
+    if (rh_hifz_state_version($progressInput) !== RH_HIFZ_STATE_VERSION) {
+        json_out(409, [
+            'success' => false,
+            'code'    => 'HIFZ_STATE_VERSION',
+            'error'   => 'The memorization flow changed. Reload the page and recite the remaining verses again.',
+        ]);
+    }
+
     if (!rh_task_has_hifz_progress($pdo)) {
         json_out(503, [
             'success'            => false,

@@ -169,20 +169,20 @@ const ReviewHub = {
       const to = formatAyahRefLabel(task.end_ref);
       range = this.esc(label + ' · ' + from + ' — ' + to);
 
-      const total = task.segments_total || task.total_pages || 1;
+      const total = task.verses_total || task.verse_count || task.total_pages || 1;
       const count = task.is_completed ? total : (task.completed_count || 0);
       const percent = task.progress_percent || 0;
 
-      const stationPill = window.I18N
-        ? I18N.t('rub_station_pill', { count, total })
-        : (count + ' / ' + total + ' موقف');
+      const versePill = window.I18N
+        ? I18N.t('rub_verse_pill', { count, total })
+        : (count + ' / ' + total + ' آية');
 
       status = task.is_completed
         ? `<span class="task-status done">${this.esc(this.t('task_status_done_today', '✓ مكتمل اليوم'))}</span>`
-        : `<span class="task-status">${this.esc(stationPill)}</span>`;
+        : `<span class="task-status">${this.esc(versePill)}</span>`;
 
       progress = this.progressHtml(
-        this.t('rub_progress_title', 'المواقف المثبتة'),
+        this.t('rub_progress_title', 'الآيات المثبتة'),
         count + ' / ' + total + ' (' + percent + '%)',
         percent,
         item.fill

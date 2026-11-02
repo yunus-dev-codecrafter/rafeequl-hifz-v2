@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 /**
- * Rafeequl Hifz — sanity checks for the rub' catalog + station splitter.
+ * Rafeequl Hifz — sanity checks for the rub' catalog and verse-word payload.
  *
  * Run: php config/verify_rub.php
  * Exits non-zero if anything is inconsistent.
@@ -41,7 +41,7 @@ if ($quran && $pageMap) {
 
 $seenVerses = [];
 $tafsirMissing = [];
-$totalStations = 0;
+$totalWords = 0;
 $totalVerses = 0;
 
 for ($id = 1; $id <= 240; $id++) {
@@ -51,14 +51,13 @@ for ($id = 1; $id <= 240; $id++) {
         continue;
     }
 
-    $payload = rh_rub_verses($id);
+    $payload = rh_rub_verse_list($id);
     if ($payload['rub'] === null) {
         $fail('could not expand rub ' . $id);
         continue;
     }
 
     $count = count($payload['verses']);
-    $stations = 0;
     $tafsir = rh_rub_tafsir($id);
 
     foreach ($payload['verses'] as $verse) {
@@ -72,38 +71,29 @@ for ($id = 1; $id <= 240; $id++) {
             $tafsirMissing[] = $key;
         }
 
-        if ($verse['segments_total'] < 1) {
-            $fail('verse ' . $key . ' has no segment');
+        if (trim((string) $verse['text']) === '') {
+            $fail('verse ' . $key . ' has empty display text');
         }
-        if ($verse['segments_total'] !== count($verse['segments'])) {
-            $fail('verse ' . $key . ' segments_total does not match its segment list');
+        if (!is_array($verse['words']) || !$verse['words']) {
+            $fail('verse ' . $key . ' has no words');
+            continue;
         }
-        foreach ($verse['segments'] as $i => $segment) {
-            if (trim((string) $segment['text']) === '') {
-                $fail('verse ' . $key . ' has an empty station #' . $i);
+        foreach ($verse['words'] as $i => $word) {
+            if (trim((string) $word) === '') {
+                $fail('verse ' . $key . ' has an empty word #' . $i);
             }
-            if (!rh_has_recitable_content(rh_codepoints((string) $segment['text']))) {
-                $fail('verse ' . $key . ' has a mark-only station #' . $i);
-            }
-            if ((int) $segment['index'] !== $i) {
-                $fail('verse ' . $key . ' station #' . $i . ' has index ' . $segment['index']);
-            }
-            if ($segment['stop'] !== null && !in_array($segment['stop'], ['salli', 'qala', 'lazim', 'jaiz', 'muanaqah', 'saktah'], true)) {
-                $fail('verse ' . $key . ' has unknown stop type ' . $segment['stop']);
+            if (!rh_has_recitable_content(rh_codepoints((string) $word))) {
+                $fail('verse ' . $key . ' has a mark-only word #' . $i);
             }
         }
-        $stations += $verse['segments_total'];
+        $totalWords += count($verse['words']);
     }
 
     if ($count !== (int) $rub['verse_count']) {
         $fail('rub ' . $id . ' verse_count mismatch (' . $count . ' vs ' . $rub['verse_count'] . ')');
     }
-    if ($stations !== (int) $rub['segments_total']) {
-        $fail('rub ' . $id . ' segments_total mismatch (' . $stations . ' vs ' . $rub['segments_total'] . ')');
-    }
 
     $totalVerses += $count;
-    $totalStations += $stations;
 }
 
 if (count($seenVerses) === 6236) {
@@ -118,7 +108,7 @@ if ($totalVerses === 6236) {
     $fail('verse total is ' . $totalVerses);
 }
 
-$ok('stop stations: ' . $totalStations . ' (avg ' . round($totalStations / 240, 1) . ' / rub)');
+$ok('word tokens: ' . $totalWords . ' (avg ' . round($totalWords / 240, 1) . ' / rub)');
 
 if (!$tafsirMissing) {
     $ok('Mukhtasar tafsir covers all 6236 verses in Arabic and English');
@@ -144,69 +134,43 @@ foreach ($checks as $id => $expect) {
     }
 }
 
-// Splitter behaviour on a few known verses.
-echo "\n== Stop-station splitter spot checks ==\n";
-$samples = [[2, 26], [2, 44], [1, 1], [36, 52], [114, 6]];
-foreach ($samples as [$s, $a]) {
-    $text = rh_verse_text($quran, $s, $a);
-    $split = rh_split_verse($text);
-    $stops = array_map(static function (array $seg): string {
-        return $seg['stop'] ?? 'end';
-    }, $split['segments']);
-    echo '  ' . $s . ':' . $a . ' → ' . count($split['segments']) . ' station(s) [' . implode(', ', $stops) . "]\n";
-    foreach ($split['segments'] as $i => $seg) {
-        if (trim($seg['text']) === '') {
-            $fail($s . ':' . $a . ' empty station #' . $i);
+// Whole-Qur'an decoy words: deterministic, non-empty, and never one of the
+// verse's own words.
+echo "\n== Word-arrangement payload spot checks ==\n";
+$sample = rh_rub_verse_list(1);
+$checked = 0;
+foreach ($sample['verses'] as $verse) {
+    if ($checked >= 10) {
+        break;
+    }
+    $checked++;
+    $key = $verse['surah'] . ':' . $verse['ayah'];
+    $first = rh_rub_distractors(1, $verse, 3);
+    $second = rh_rub_distractors(1, $verse, 3);
+
+    if ($first !== $second) {
+        $fail($key . ' distractors are not deterministic');
+    }
+    if (count($first) !== 3) {
+        $fail($key . ' returned ' . count($first) . ' distractors (expected 3)');
+    }
+
+    $own = [];
+    foreach ($verse['words'] as $word) {
+        $own[rh_strip_arabic_marks((string) $word)] = true;
+    }
+    foreach ($first as $decoy) {
+        if (trim((string) $decoy) === '') {
+            $fail($key . ' has an empty distractor');
+        }
+        if (isset($own[rh_strip_arabic_marks((string) $decoy)])) {
+            $fail($key . ' uses one of its own words as a distractor: ' . $decoy);
         }
     }
+    echo '  ' . $key . ' → ' . implode(' · ', $first) . "\n";
 }
-
-// Every waqf sign except "لا" must always split.
-$mustSplit = ["\u{06D6}", "\u{06D7}", "\u{06D8}", "\u{06DA}", "\u{06DB}", "\u{06DC}"];
-foreach ($mustSplit as $mark) {
-    $sample = 'بِسْمِ اللَّهِ ' . $mark . ' الرَّحْمَٰنِ الرَّحِيمِ';
-    $split = rh_split_verse($sample);
-    if (count($split['segments']) === 2) {
-        $ok('mark ' . $mark . ' splits into 2 stations');
-    } else {
-        $fail('mark ' . $mark . ' produced ' . count($split['segments']) . ' station(s)');
-    }
-}
-
-// Mu'anaqah pair: only the first sign stops.
-$pair = 'الأول ' . "\u{06DB}" . ' الثاني ' . "\u{06DB}" . ' الثالث';
-$split = rh_split_verse($pair);
-if (count($split['segments']) === 2) {
-    $ok('mu‘anaqah pair splits once');
-} else {
-    $fail('mu‘anaqah pair produced ' . count($split['segments']) . ' stations');
-}
-
-// Consecutive stop signs with no words between them must not create a
-// station made only of marks.
-$adjacent = 'الأول ' . "\u{06DC} \u{06D7}" . ' الثاني';
-$split = rh_split_verse($adjacent);
-$markOnly = false;
-foreach ($split['segments'] as $seg) {
-    if (!rh_has_recitable_content(rh_codepoints($seg['text']))) {
-        $markOnly = true;
-    }
-}
-if (count($split['segments']) === 2 && !$markOnly) {
-    $ok('adjacent stop signs merge into one station');
-} else {
-    $fail('adjacent stop signs produced ' . count($split['segments']) . ' station(s)');
-}
-
-// The "لا" (do not stop) sign must NOT split.
-foreach (["\u{06D9}"] as $mark) {
-    $sample = 'كلمة ' . $mark . ' أخرى';
-    $split = rh_split_verse($sample);
-    if (count($split['segments']) === 1) {
-        $ok('mark ' . $mark . ' stays inside one station');
-    } else {
-        $fail('mark ' . $mark . ' wrongly split');
-    }
+if ($checked > 0) {
+    $ok('checked distractors for ' . $checked . ' verse(s)');
 }
 
 echo "\n";

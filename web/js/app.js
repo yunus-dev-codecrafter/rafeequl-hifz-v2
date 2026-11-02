@@ -1346,13 +1346,13 @@ function renderDashboardUI() {
       } else if (type === 'RUB_TAMKIN') {
         statusPill = task.is_completed
           ? `<span class="task-status done">${window.I18N ? I18N.t('task_status_done_today') : '✓ مكتمل اليوم'}</span>`
-          : `<span class="task-status">${window.I18N ? I18N.t('rub_station_pill', { count, total }) : `${count} / ${total} موقف`}</span>`;
+          : `<span class="task-status">${window.I18N ? I18N.t('rub_verse_pill', { count, total }) : `${count} / ${total} آية`}</span>`;
 
         progressHtml = `
           <div class="progress-wrap">
             <div class="progress-header">
-              <span>${window.I18N ? I18N.t('rub_progress_title') : 'المواقف المثبتة'}</span>
-              <span><strong>${count}</strong> ${window.I18N ? I18N.t('rub_of_total', { total, percent }) : `من ${total} (${percent}%)`}</span>
+              <span>${window.I18N ? I18N.t('rub_progress_title') : 'الآيات المثبتة'}</span>
+              <span><strong>${count}</strong> / ${total} (${percent}%)</span>
             </div>
             <div class="progress-bar"><div class="progress-fill fill-teal" style="width:${percent}%"></div></div>
           </div>`;

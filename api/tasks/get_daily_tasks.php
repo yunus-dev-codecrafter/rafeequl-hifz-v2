@@ -186,7 +186,8 @@ function formatTask(array $row, string $today): array
     $hifzProgress = null;
     if ($type === 'HIFZ_JADID' && $start !== null) {
         $decodedHifz = rh_hifz_decode(isset($row['hifz_progress']) ? (string) $row['hifz_progress'] : null);
-        $hifzProgress = rh_hifz_sanitize($decodedHifz, $start);
+        // Legacy completed pages (40x flow) are converted for read-only display.
+        $hifzProgress = rh_hifz_sanitize($decodedHifz, $start, true);
     }
 
     $completedPages = [];
@@ -212,21 +213,29 @@ function formatTask(array $row, string $today): array
         $rubId = isset($row['rub_id']) ? (int) $row['rub_id'] : 0;
         $rub = $rubId > 0 ? rh_rub_by_id($rubId) : null;
 
-        $doneStations = [];
+        $doneVerses = [];
         if (!empty($row['completed_stations'])) {
             $decoded = json_decode((string) $row['completed_stations'], true);
             if (is_array($decoded)) {
+                $seen = [];
                 foreach ($decoded as $key) {
-                    if (is_string($key) && $key !== '') {
-                        $doneStations[] = $key;
+                    // Verse keys are "surah:ayah"; old station keys have a third
+                    // part and are silently ignored.
+                    if (!is_string($key) || $key === '' || substr_count($key, ':') !== 1) {
+                        continue;
                     }
+                    if (isset($seen[$key])) {
+                        continue;
+                    }
+                    $seen[$key] = true;
+                    $doneVerses[] = $key;
                 }
             }
         }
 
-        $segmentsTotal = $rub !== null ? (int) $rub['segments_total'] : 0;
-        $doneCount = $segmentsTotal > 0 ? min(count($doneStations), $segmentsTotal) : 0;
-        $percent = $segmentsTotal > 0 ? (int) round(($doneCount / $segmentsTotal) * 100) : 0;
+        $versesTotal = $rub !== null ? (int) $rub['verse_count'] : 0;
+        $doneCount = $versesTotal > 0 ? min(count($doneVerses), $versesTotal) : 0;
+        $percent = $versesTotal > 0 ? (int) round(($doneCount / $versesTotal) * 100) : 0;
 
         return [
             'id'                 => isset($row['id']) ? (int) $row['id'] : null,
@@ -238,8 +247,8 @@ function formatTask(array $row, string $today): array
             'task_date'          => (string) $row['task_date'],
             'is_completed'       => $isCompleted,
             'completed_pages'    => [],
-            'completed_count'    => $isCompleted ? $segmentsTotal : $doneCount,
-            'total_pages'        => $segmentsTotal,
+            'completed_count'    => $isCompleted ? $versesTotal : $doneCount,
+            'total_pages'        => $versesTotal,
             'progress_percent'   => $isCompleted ? 100 : min(100, $percent),
             'carried_over'       => $carriedOver,
             'rollover_count'     => $rolloverCount,
@@ -251,8 +260,8 @@ function formatTask(array $row, string $today): array
             'start_ref'          => $rub !== null ? $rub['start']['surah'] . ':' . $rub['start']['ayah'] : null,
             'end_ref'            => $rub !== null ? $rub['end']['surah'] . ':' . $rub['end']['ayah'] : null,
             'verse_count'        => $rub['verse_count'] ?? 0,
-            'segments_total'     => $segmentsTotal,
-            'completed_stations' => $doneStations,
+            'verses_total'       => $versesTotal,
+            'completed_verses'   => $doneVerses,
         ];
     }
 
@@ -301,6 +310,7 @@ function formatTask(array $row, string $today): array
         'last_rollover_date' => $row['last_rollover_date'] ?? null,
         'hifz_progress'     => $hifzProgress,
         'hifz_target_reps'  => RH_HIFZ_TARGET_REPS,
+        'hifz_pair_target_reps' => RH_HIFZ_PAIR_REPS,
     ];
 }
 

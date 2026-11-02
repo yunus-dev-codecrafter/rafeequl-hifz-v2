@@ -4,16 +4,14 @@ declare(strict_types=1);
 /**
  * Rafeequl Hifz - Entry gate state.
  *
- * Returns the one word, the one mistake card, and the one flagged waqf that
- * must be practised before the app opens. Every lock is created lazily and is
- * stable across sessions until its target is reached (1000 for kalimaat, 40 for
- * mistakes, 10 for flagged waqf).
+ * Returns the one word and the one mistake card that must be practised before
+ * the app opens. Every lock is created lazily and is stable across sessions
+ * until its target is reached (1000 for kalimaat, 40 for mistakes).
  */
 
 require __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../config/auth.php';
 require_once __DIR__ . '/_catalog.php';
-require_once __DIR__ . '/../waqf/_waqf.php';
 
 try {
     $authUser = rh_require_login($pdo);
@@ -77,13 +75,6 @@ try {
 
     $mustChange = (bool) ($authUser['must_change_password'] ?? false);
 
-    $waqfRow = null;
-    try {
-        $waqfRow = waqf_ensure_gate($pdo, $userId);
-    } catch (Throwable $e) {
-        error_log('[Waqf gate get_entry] ' . $e->getMessage());
-    }
-
     $kalimaat = [
         'available' => !$mustChange && $catalogOk && $locked !== null,
         'catalog_ok' => $catalogOk,
@@ -105,20 +96,12 @@ try {
         'card' => kal_mistake_payload($mistakeRow),
     ];
 
-    $waqf = [
-        'available' => !$mustChange && $waqfRow !== null,
-        'entry_min' => 10,
-        'target' => WAQF_PRACTICE_TARGET,
-        'card' => waqf_payload($waqfRow, true),
-    ];
-
     kal_json_out(200, [
         'success' => true,
         'must_change_password' => $mustChange,
         'zone' => $zone,
         'kalimaat' => $kalimaat,
         'mistake' => $mistake,
-        'waqf' => $waqf,
         'time' => date('c'),
     ]);
 } catch (Throwable $e) {

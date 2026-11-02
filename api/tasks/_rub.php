@@ -6,7 +6,7 @@ declare(strict_types=1);
  *
  * Pure helpers shared by:
  *   - api/tasks/get_daily_tasks.php  (selection + task payload)
- *   - api/tasks/get_rub_verses.php   (segmented verse payload)
+ *   - api/tasks/get_rub_verses.php   (verse + word-arrangement payload)
  *   - api/tasks/update_rub.php       (server-side validation + completion)
  *   - config/build_rub_quarters.php  (one-off catalog builder)
  *
@@ -18,11 +18,10 @@ declare(strict_types=1);
 /* -------------------------------------------------------------------------
  * Waqf (stop) signs in the Uthmani text.
  *
- * Every waqf sign splits a verse into separately repeated stations — each one
- * is recited three times so the user understands the verse at that stop —
- * except "لا" (do not stop), which must stay inside the station it forbids
- * stopping at. All signs remain in the text and are explained by the UI
- * legend.
+ * These definitions are used only by the one-off catalog builder. Runtime
+ * practice is verse-based word arrangement: stop signs remain in the text and
+ * are explained by the UI legend, but they no longer split a verse into
+ * separately repeated stations or affect progress.
  * ---------------------------------------------------------------------- */
 function rh_waqf_marks(): array
 {
@@ -383,7 +382,9 @@ function rh_verse_text(array $quran, int $surah, int $ayah): string
 }
 
 /**
- * Expand a rub' in mushaf order into verses with segmented stations.
+ * Legacy catalog helper: expand a rub' into verses and stop-sign segments.
+ * Runtime APIs use rh_rub_verse_list() instead; segments_total is kept in the
+ * committed catalog only.
  *
  * @return array{rub:?array, verses:array, segments_total:int}
  */
@@ -450,6 +451,270 @@ function rh_rub_verses(int $rubId): array
     }
 
     return ['rub' => $rub, 'verses' => $verses, 'segments_total' => $total];
+}
+
+/* -------------------------------------------------------------------------
+ * Verse-by-verse payload (v2 Rub' Consolidation)
+ *
+ * The station splitter above is kept for the catalog builder and the
+ * verification script, but the recitation page no longer repeats stations.
+ * It works on whole verses and a word-arrangement board instead.
+ * ---------------------------------------------------------------------- */
+
+/** Remove the decorative rub' marker (۞) from a verse before splitting words. */
+function rh_verse_display_text(string $text): string
+{
+    $rubCp = rh_rub_mark_cp();
+    $filtered = array_values(array_filter(
+        rh_codepoints($text),
+        static function (int $cp) use ($rubCp): bool {
+            return $cp !== $rubCp;
+        }
+    ));
+    return trim(rh_from_codepoints($filtered));
+}
+
+/**
+ * Split a verse into display words, dropping mark-only tokens.
+ *
+ * @return string[]
+ */
+function rh_split_words(string $text): array
+{
+    $parts = preg_split('/\s+/u', trim($text), -1, PREG_SPLIT_NO_EMPTY);
+    if (!is_array($parts)) {
+        return [];
+    }
+
+    $words = [];
+    foreach ($parts as $part) {
+        $part = trim((string) $part);
+        if ($part === '') {
+            continue;
+        }
+        // A lone waqf/sajdah mark is not a word.
+        if (!rh_has_recitable_content(rh_codepoints($part))) {
+            continue;
+        }
+        $words[] = $part;
+    }
+    return $words;
+}
+
+/** Strip harakat and Quranic marks so two spellings compare reliably. */
+function rh_strip_arabic_marks(string $word): string
+{
+    $stripped = preg_replace(
+        '/[\x{0610}-\x{061A}\x{064B}-\x{065F}\x{0670}\x{06D6}-\x{06ED}\x{0640}]/u',
+        '',
+        $word
+    );
+    return $stripped === null ? $word : $stripped;
+}
+
+/**
+ * Expand a rub' into whole verses with their display text and word list.
+ *
+ * @return array{rub:?array, verses:array}
+ */
+function rh_rub_verse_list(int $rubId): array
+{
+    $rub = rh_rub_by_id($rubId);
+    if ($rub === null) {
+        return ['rub' => null, 'verses' => []];
+    }
+
+    $quran = rh_load_quran();
+    $pageMap = rh_verse_page_map();
+
+    $s = (int) $rub['start']['surah'];
+    $a = (int) $rub['start']['ayah'];
+    $es = (int) $rub['end']['surah'];
+    $ea = (int) $rub['end']['ayah'];
+
+    $rubCp = rh_rub_mark_cp();
+    $sajdahCp = rh_sajdah_cp();
+
+    $verses = [];
+    $guard = 0;
+
+    while ($guard++ < 20000) {
+        if ($s > $es || ($s === $es && $a > $ea)) {
+            break;
+        }
+
+        $text = rh_verse_text($quran, $s, $a);
+        if ($text === '') {
+            $arr = $quran[(string) $s] ?? [];
+            $len = is_array($arr) ? count($arr) : 0;
+            if ($a >= $len) {
+                $s++;
+                $a = 1;
+            } else {
+                $a++;
+            }
+            continue;
+        }
+
+        $cps = rh_codepoints($text);
+        $display = rh_verse_display_text($text);
+
+        $verses[] = [
+            'surah'        => $s,
+            'ayah'         => $a,
+            'page'         => $pageMap[$s . ':' . $a] ?? null,
+            'text'         => $display,
+            'has_rub_mark' => in_array($rubCp, $cps, true),
+            'has_sajdah'   => in_array($sajdahCp, $cps, true),
+            'words'        => rh_split_words($display),
+        ];
+
+        $arr = $quran[(string) $s] ?? [];
+        $len = is_array($arr) ? count($arr) : 0;
+        if ($a >= $len) {
+            $s++;
+            $a = 1;
+        } else {
+            $a++;
+        }
+    }
+
+    return ['rub' => $rub, 'verses' => $verses];
+}
+
+/**
+ * Pick plausible decoy words from the WHOLE Qur'an for one verse.
+ *
+ * Deterministic per rub/verse so reloads and offline replays show the same
+ * board. Short words are preferred so the decoys look like the verse's own
+ * words without being predictable.
+ *
+ * @param array<string,mixed> $verse
+ * @return string[]
+ */
+function rh_rub_distractors(int $rubId, array $verse, int $count = 3): array
+{
+    $targetWords = is_array($verse['words'] ?? null) ? $verse['words'] : [];
+    if (!$targetWords || $count < 1) {
+        return [];
+    }
+
+    $excluded = [];
+    $lengths = [];
+    foreach ($targetWords as $word) {
+        $norm = rh_strip_arabic_marks((string) $word);
+        if ($norm === '') {
+            continue;
+        }
+        $excluded[$norm] = true;
+        $lengths[] = mb_strlen($norm, 'UTF-8');
+    }
+    if (!$lengths) {
+        return [];
+    }
+    $average = array_sum($lengths) / count($lengths);
+
+    $quran = rh_load_quran();
+    $surahs = [];
+    foreach ($quran as $surahNumber => $ayat) {
+        if (is_array($ayat) && $ayat) {
+            $surahs[] = (int) $surahNumber;
+        }
+    }
+    if (!$surahs) {
+        return [];
+    }
+    sort($surahs);
+
+    // Small deterministic LCG: stable output without touching global mt_rand.
+    $seed = crc32($rubId . ':' . (int) ($verse['surah'] ?? 0) . ':' . (int) ($verse['ayah'] ?? 0));
+    $rand = static function () use (&$seed): int {
+        $seed = (int) ((1103515245 * $seed + 12345) & 0x7fffffff);
+        return $seed;
+    };
+
+    $near = [];
+    $far = [];
+    $seen = [];
+    $samples = 0;
+    $surahCount = count($surahs);
+
+    while ($samples < 180 && (count($near) < $count * 4 || count($far) < $count * 2)) {
+        $samples++;
+        $surah = $surahs[$rand() % $surahCount];
+        $ayat = $quran[(string) $surah] ?? [];
+        if (!is_array($ayat) || !$ayat) {
+            continue;
+        }
+        $ayah = 1 + ($rand() % count($ayat));
+        $text = (string) ($ayat[$ayah - 1] ?? '');
+        if ($text === '') {
+            continue;
+        }
+
+        foreach (rh_split_words(rh_verse_display_text($text)) as $word) {
+            $norm = rh_strip_arabic_marks($word);
+            if ($norm === '' || isset($excluded[$norm]) || isset($seen[$norm])) {
+                continue;
+            }
+            $seen[$norm] = true;
+            $item = ['text' => $word, 'norm' => $norm];
+            if (abs(mb_strlen($norm, 'UTF-8') - $average) <= 2) {
+                $near[] = $item;
+            } else {
+                $far[] = $item;
+            }
+        }
+    }
+
+    // Extremely rare fallback: a very short verse can theoretically keep
+    // hitting its own words in the random sample. Walk the whole Qur'an once so
+    // every verse still receives three decoys.
+    if (count($near) + count($far) < $count) {
+        foreach ($quran as $ayat) {
+            if (!is_array($ayat)) {
+                continue;
+            }
+            foreach ($ayat as $text) {
+                foreach (rh_split_words(rh_verse_display_text((string) $text)) as $word) {
+                    $norm = rh_strip_arabic_marks($word);
+                    if ($norm === '' || isset($excluded[$norm]) || isset($seen[$norm])) {
+                        continue;
+                    }
+                    $seen[$norm] = true;
+                    $item = ['text' => $word, 'norm' => $norm];
+                    if (abs(mb_strlen($norm, 'UTF-8') - $average) <= 2) {
+                        $near[] = $item;
+                    } else {
+                        $far[] = $item;
+                    }
+                    if (count($near) + count($far) >= $count) {
+                        break 2;
+                    }
+                }
+            }
+        }
+    }
+
+    $shuffle = static function (array $items) use ($rand): array {
+        for ($i = count($items) - 1; $i > 0; $i--) {
+            $j = $rand() % ($i + 1);
+            $tmp = $items[$i];
+            $items[$i] = $items[$j];
+            $items[$j] = $tmp;
+        }
+        return $items;
+    };
+
+    $pool = array_merge($shuffle($near), $shuffle($far));
+    $out = [];
+    foreach ($pool as $item) {
+        $out[] = $item['text'];
+        if (count($out) >= $count) {
+            break;
+        }
+    }
+    return $out;
 }
 
 /* -------------------------------------------------------------------------

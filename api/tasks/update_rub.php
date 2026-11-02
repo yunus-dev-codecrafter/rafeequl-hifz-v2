@@ -6,11 +6,13 @@ declare(strict_types=1);
  *
  * POST JSON:
  *   task_id   int       required
- *   completed string[]  full list of completed station keys ("s:a:i")
+ *   completed string[]  full list of completed verse keys ("surah:ayah")
  *   action    string    optional: "RESET"
  *
  * The client sends its whole local state, so retries are idempotent and the
- * page keeps working offline (queued calls are replayed in order).
+ * page keeps working offline (queued calls are replayed in order). The existing
+ * `completed_stations` TEXT column now stores verse keys; old station keys are
+ * silently ignored and need no schema migration.
  */
 
 require __DIR__ . '/../../config/database.php';
@@ -54,7 +56,7 @@ if ($taskId <= 0) {
 $action = strtoupper(trim((string) ($input['action'] ?? '')));
 $hasCompleted = array_key_exists('completed', $input);
 if ($action !== 'RESET' && !$hasCompleted) {
-    json_out(400, ['success' => false, 'errors' => ['completed' => 'completed must be an array of station keys.']]);
+    json_out(400, ['success' => false, 'errors' => ['completed' => 'completed must be an array of verse keys.']]);
 }
 
 $submitted = [];
@@ -85,24 +87,23 @@ try {
     $task = rh_apply_rollover($pdo, $task, date('Y-m-d'));
 
     $rubId = (int) $task['rub_id'];
-    $payload = rh_rub_verses($rubId);
+    $payload = rh_rub_verse_list($rubId);
     if ($payload['rub'] === null) {
         json_out(404, ['success' => false, 'error' => 'Rub catalog is not available on this server.']);
     }
 
-    // Build the allow-list of valid station keys, in mushaf order.
+    // Allow-list of valid verse keys, in mushaf order.
     $allowed = [];
+    $allowedLookup = [];
     foreach ($payload['verses'] as $verse) {
-        foreach ($verse['segments'] as $segment) {
-            $allowed[] = $verse['surah'] . ':' . $verse['ayah'] . ':' . (int) $segment['index'];
-        }
+        $key = $verse['surah'] . ':' . $verse['ayah'];
+        $allowed[] = $key;
+        $allowedLookup[$key] = true;
     }
-    $allowedLookup = array_fill_keys($allowed, true);
-    $segmentsTotal = count($allowed);
+    $versesTotal = count($allowed);
 
     $completed = [];
     if ($action !== 'RESET') {
-        // Keep only valid keys, drop duplicates, and restore mushaf order.
         $set = [];
         foreach ($submitted as $key) {
             if (isset($allowedLookup[$key])) {
@@ -117,7 +118,7 @@ try {
     }
 
     $wasCompleted = (int) $task['is_completed'] === 1;
-    $isCompleted = $segmentsTotal > 0 && count($completed) >= $segmentsTotal;
+    $isCompleted = $versesTotal > 0 && count($completed) >= $versesTotal;
 
     $pdo->beginTransaction();
 
@@ -142,16 +143,16 @@ try {
     $pdo->commit();
 
     json_out(200, [
-        'success'            => true,
-        'task_id'            => $taskId,
-        'rub_id'             => $rubId,
-        'completed_stations' => $completed,
-        'completed_count'    => count($completed),
-        'segments_total'     => $segmentsTotal,
-        'progress_percent'   => $segmentsTotal > 0 ? (int) round((count($completed) / $segmentsTotal) * 100) : 0,
-        'is_completed'       => $isCompleted,
-        'task_date'          => (string) $task['task_date'],
-        'rollover_count'     => (int) ($task['rollover_count'] ?? 0),
+        'success'          => true,
+        'task_id'          => $taskId,
+        'rub_id'           => $rubId,
+        'completed_verses' => $completed,
+        'completed_count'  => count($completed),
+        'verses_total'     => $versesTotal,
+        'progress_percent' => $versesTotal > 0 ? (int) round((count($completed) / $versesTotal) * 100) : 0,
+        'is_completed'     => $isCompleted,
+        'task_date'        => (string) $task['task_date'],
+        'rollover_count'   => (int) ($task['rollover_count'] ?? 0),
         'last_rollover_date' => $task['last_rollover_date'] ?? null,
     ]);
 } catch (PDOException $e) {

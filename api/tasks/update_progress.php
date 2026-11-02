@@ -99,7 +99,7 @@ function formatLogRow(array $row): array
     $hifzProgress = null;
     if ($type === 'HIFZ_JADID') {
         $decodedHifz = rh_hifz_decode(isset($row['hifz_progress']) ? (string) $row['hifz_progress'] : null);
-        $hifzProgress = rh_hifz_sanitize($decodedHifz, $start);
+        $hifzProgress = rh_hifz_sanitize($decodedHifz, $start, true);
     }
 
     if ($type === 'TIKRAR_AMS') {
@@ -154,6 +154,7 @@ function formatLogRow(array $row): array
         'last_rollover_date' => $row['last_rollover_date'] ?? null,
         'hifz_progress'     => $hifzProgress,
         'hifz_target_reps'  => RH_HIFZ_TARGET_REPS,
+        'hifz_pair_target_reps' => RH_HIFZ_PAIR_REPS,
     ];
 }
 
@@ -269,10 +270,11 @@ try {
             $newCurrent = $completedPage;
 
             // The new-memorization task is only complete after every verse has
-            // reached 40 repetitions and every cumulative link has been read.
-            // Accept the state from this request, or fall back to the copy that
-            // was already saved by the incremental progress endpoint (useful
-            // when a completion request is retried).
+            // reached 20 repetitions, every adjacent pair has been joined 20
+            // times, and the full-page pass is done. Accept the state from this
+            // request, or fall back to the copy that was already saved by the
+            // incremental progress endpoint (useful when a completion request
+            // is retried).
             $incomingHifz = array_key_exists('hifz_progress', $input) ? $input['hifz_progress'] : null;
             $hifzState = null;
             if ($incomingHifz !== null) {
@@ -281,6 +283,14 @@ try {
                     json_out(400, [
                         'success' => false,
                         'error'   => 'hifz_progress must be a JSON object.',
+                    ]);
+                }
+                if (rh_hifz_state_version($incomingHifz) !== RH_HIFZ_STATE_VERSION) {
+                    $pdo->rollBack();
+                    json_out(409, [
+                        'success' => false,
+                        'code'    => 'HIFZ_STATE_VERSION',
+                        'error'   => 'The memorization flow changed. Reload the page and recite the remaining verses again.',
                     ]);
                 }
                 $hifzState = rh_hifz_sanitize($incomingHifz, $newCurrent);
@@ -301,7 +311,7 @@ try {
                 json_out(409, [
                     'success' => false,
                     'code'    => 'HIFZ_INCOMPLETE',
-                    'error'   => 'Complete all 40 repetitions for every verse and the cumulative recitation before finishing this page.',
+                    'error'   => 'Complete 20 repetitions for every verse, 20 for every adjacent pair, and the full-page pass before finishing this page.',
                 ]);
             }
 

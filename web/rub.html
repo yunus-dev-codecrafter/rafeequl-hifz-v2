@@ -137,20 +137,14 @@
 
         <ol class="rub-steps" aria-hidden="true">
           <li id="rub-step-1"><span>١</span><em data-i18n="rub_step_1">استمع لنفسك</em></li>
-          <li id="rub-step-2"><span>٢</span><em data-i18n="rub_step_2">كرّر كل موقف ٣ مرات</em></li>
+          <li id="rub-step-2"><span>٢</span><em data-i18n="rub_step_2">رتّب كلمات كل آية</em></li>
           <li id="rub-step-3"><span>٣</span><em data-i18n="rub_step_3">أتمم الربع بهدوء</em></li>
         </ol>
-
-        <p class="rub-blur-hint"><span aria-hidden="true">👁</span><span data-i18n="rub_blur_hint">الآيات مغطاة افتراضيًا — اكشف الموقف عند الحاجة بعد التسميع.</span></p>
 
         <div class="rub-hero-actions">
           <button type="button" class="btn btn-primary js-rub-mic-open" title="تسميع الربع كاملاً بالمايك" data-i18n-title="rub_mic_title">
             <span aria-hidden="true">🎙️</span>
             <span data-i18n="rub_mic_open_short">تسميع كامل</span>
-          </button>
-          <button type="button" id="btn-toggle-all-reveal" class="btn btn-ghost rub-reveal-all" aria-pressed="false" title="إظهار الكل" data-i18n-title="rub_show_all">
-            <svg class="rub-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-            <span id="rub-reveal-all-label" data-i18n="rub_show_all">إظهار الكل</span>
           </button>
           <button type="button" id="btn-focus" class="btn btn-ghost btn-focus-toggle" title="وضع التركيز">
             <span aria-hidden="true">⛶</span>
@@ -175,11 +169,11 @@
         <button type="button" class="btn btn-primary js-rub-mic-open" data-i18n="rub_mic_open">ابدأ التسميع</button>
       </section>
 
-      <!-- Stop-sign legend -->
+      <!-- Stop-sign reference (understanding only; the board works on whole verses) -->
       <details class="rub-legend">
         <summary>
           <span aria-hidden="true">ۘ</span>
-          <span data-i18n="rub_legend_title">دليل علامات الوقف المستخدمة</span>
+          <span data-i18n="rub_legend_title">دليل علامات الوقف</span>
         </summary>
         <div class="rub-legend-grid">
           <div class="rub-legend-item"><b class="rub-stop-mark">ۘ</b><span data-i18n="rub_legend_lazim">لازم: الوقف لازم</span></div>
@@ -190,27 +184,25 @@
           <div class="rub-legend-item rub-legend-soft"><b class="rub-stop-mark">ۙ</b><span data-i18n="rub_legend_la">لا: لا تقف</span></div>
           <div class="rub-legend-item"><b class="rub-stop-mark">ۚ</b><span data-i18n="rub_legend_jaiz">ج: الوقف جائز</span></div>
         </div>
-        <p class="rub-legend-foot" data-i18n="rub_legend_foot">نقسم الآية عند كل علامات الوقف ما عدا (لا) التي تمنع الوقف، ونكرّر كل موقف ثلاث مرات بخشوع وترتيل.</p>
+        <p class="rub-legend-foot" data-i18n="rub_legend_foot">تعرّف على علامات الوقف أثناء تلاوتك. في هذه المرحلة تُرتّب كلمات الآية كاملة، ثم تُثبّتها بالتلاوة المتصلة.</p>
       </details>
 
-      <!-- Flagged waqf stations (each one is the third step of the entry gate) -->
-      <details class="rub-flags-panel" id="rub-flags-panel">
-        <summary>
-          <span aria-hidden="true">⚑</span>
-          <span data-i18n="rub_flags_title">المواقف المعلّمة</span>
-          <span class="rub-flags-count" id="rub-flags-count">0</span>
-        </summary>
-        <p class="rub-flags-hint" data-i18n="rub_flags_hint">كل موقف تعلّمه هنا يُمارس ١٠ مرات في بوابة الدخول، ثم يمكنك حذفه.</p>
-        <div class="rub-flags-list" id="rub-flags-list"></div>
-      </details>
+      <!-- Verse rail -->
+      <section class="rub-rail-card">
+        <div class="rub-rail-head">
+          <span data-i18n="rub_rail_title">آيات الربع</span>
+          <span id="rub-rail-count">0 / 0</span>
+        </div>
+        <div class="rub-rail" id="rub-verse-rail" role="list"></div>
+      </section>
 
-      <!-- Verses -->
-      <section id="rub-verses" class="rub-verses" aria-live="polite"></section>
+      <!-- One active verse at a time -->
+      <section id="rub-stage" class="rub-stage" aria-live="polite"></section>
 
       <div class="rub-end-card hidden" id="rub-end-card">
         <div class="rub-end-icon" aria-hidden="true">✓</div>
         <h3 data-i18n="rub_end_title">تم تثبيت الربع بحمد الله</h3>
-        <p data-i18n="rub_end_desc">أتممت تكرار كل مواقف الربع ثلاث مرات. ستُختار لك أرباع أخرى في الأيام القادمة.</p>
+        <p data-i18n="rub_end_desc">رتّبت كلمات كل آية في الربع، وثبّتتها بالتلاوة. ستُختار لك أرباع أخرى في الأيام القادمة.</p>
         <button type="button" class="btn btn-primary rub-mic-end-cta js-rub-mic-open">
           <span aria-hidden="true">🎙️</span>
           <span data-i18n="rub_mic_end_cta">اختبر حفظك: سمّع الربع كاملاً بالمايك</span>
@@ -219,19 +211,15 @@
     </div>
   </main>
 
-  <!-- Sticky recitation dock -->
+  <!-- Sticky verse dock -->
   <div id="rub-dock" class="rub-dock hidden">
     <div class="rub-dock-inner">
       <div class="rub-dock-status">
         <strong id="rub-dock-count">0 / 0</strong>
-        <span id="rub-dock-next">الموقف التالي</span>
+        <span id="rub-dock-next">الآية التالية</span>
       </div>
-      <button type="button" id="btn-add-rep" class="btn btn-primary rub-main-btn">
-        <span class="rub-main-label" data-i18n="rub_repeat_btn">كرّر الموقف</span>
-        <span class="rub-main-count" id="rub-main-count">١ / ٣</span>
-      </button>
-      <button type="button" id="btn-undo-rep" class="btn btn-ghost rub-undo-btn" title="تراجع عن آخر تكرار" aria-label="تراجع عن آخر تكرار">
-        <span aria-hidden="true">↶</span>
+      <button type="button" id="btn-dock-next" class="btn btn-primary rub-main-btn">
+        <span id="rub-dock-action" data-i18n="rub_next_verse">الآية التالية</span>
       </button>
     </div>
   </div>
@@ -243,7 +231,6 @@
       <h3 id="rub-complete-title" data-i18n="rub_complete_title">بارك الله فيك، تم تثبيت الربع</h3>
       <p id="rub-complete-desc"></p>
       <div class="rub-complete-stats">
-        <div><strong id="rub-complete-stations">0</strong><span data-i18n="rub_stations_unit">موقفًا</span></div>
         <div><strong id="rub-complete-verses">0</strong><span data-i18n="rub_verses_unit">آية</span></div>
       </div>
       <div class="modal-actions">

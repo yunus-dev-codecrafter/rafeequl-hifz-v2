@@ -6,16 +6,15 @@ declare(strict_types=1);
  *
  * GET/POST: task_id (preferred) or rub_id.
  *
- * Returns the rub' in mushaf order, each verse split at every waqf sign
- * except "لا" (do not stop) into stations. Every station is repeated 3 times
- * by the client. Each verse also carries its Arabic and English Mukhtasar
- * tafsir, so switching the interface language needs no second request.
+ * The rub' is returned verse by verse in mushaf order. Every verse carries its
+ * display text, a stable word list for the arrangement exercise, three decoy
+ * words sampled from the whole Qur'an, and its Arabic/English Mukhtasar tafsir.
+ * The client consolidates one verse at a time; no waqf stations are involved.
  */
 
 require __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/_rub.php';
 require_once __DIR__ . '/_rollover.php';
-require_once __DIR__ . '/../waqf/_waqf.php';
 
 function json_out(int $code, array $payload): void
 {
@@ -79,92 +78,82 @@ if ($rubId < 1 || $rubId > 240) {
     json_out(400, ['success' => false, 'errors' => ['rub_id' => 'rub_id must be between 1 and 240.']]);
 }
 
-$payload = rh_rub_verses($rubId);
+$payload = rh_rub_verse_list($rubId);
 if ($payload['rub'] === null) {
     json_out(404, ['success' => false, 'error' => 'Rub catalog is not available on this server.']);
 }
 
+$rub = $payload['rub'];
+$today = date('Y-m-d');
+$tafsir = rh_rub_tafsir($rubId);
+
+$verses = [];
+$allowedLookup = [];
+foreach ($payload['verses'] as $verse) {
+    $key = $verse['surah'] . ':' . $verse['ayah'];
+    $allowedLookup[$key] = true;
+
+    $words = [];
+    foreach ($verse['words'] as $index => $word) {
+        $words[] = ['i' => (int) $index, 'text' => (string) $word];
+    }
+
+    $verse['key'] = $key;
+    // Compute decoys while `words` is still the plain string list.
+    $verse['distractors'] = rh_rub_distractors($rubId, $verse, 3);
+    $verse['words'] = $words;
+    $verse['tafsir_ar'] = (string) ($tafsir[$key]['ar'] ?? '');
+    $verse['tafsir_en'] = (string) ($tafsir[$key]['en'] ?? '');
+    unset($verse['has_rub_mark'], $verse['has_sajdah']);
+    $verses[] = $verse;
+}
+
+// completed_stations now holds verse keys ("surah:ayah"). Old station keys
+// ("surah:ayah:index") are ignored, so legacy progress starts clean.
 $completed = [];
 if ($task !== null && !empty($task['completed_stations'])) {
     $decoded = json_decode((string) $task['completed_stations'], true);
     if (is_array($decoded)) {
+        $seen = [];
         foreach ($decoded as $key) {
-            if (is_string($key) && $key !== '') {
-                $completed[] = $key;
+            if (!is_string($key) || !isset($allowedLookup[$key]) || isset($seen[$key])) {
+                continue;
             }
+            $seen[$key] = true;
+            $completed[] = $key;
         }
+        $order = array_keys($allowedLookup);
+        usort($completed, static function (string $a, string $b) use ($order): int {
+            return array_search($a, $order, true) <=> array_search($b, $order, true);
+        });
     }
-}
-$completed = array_values(array_unique($completed));
-
-$rub = $payload['rub'];
-$today = date('Y-m-d');
-
-$tafsir = rh_rub_tafsir($rubId);
-
-// Flags belong to the exact station key, so they survive a page reload and can
-// be painted red on the rub' page without a second request.
-$waqfFlags = [];
-try {
-    $stmt = $pdo->prepare(
-        'SELECT * FROM `waqf_flags` WHERE `user_id` = :u AND `rub_id` = :r ORDER BY `segment_index` ASC, `id` ASC'
-    );
-    $stmt->execute([':u' => $userId, ':r' => $rubId]);
-    foreach ($stmt->fetchAll() as $row) {
-        $flag = waqf_payload($row);
-        if ($flag !== null) {
-            $waqfFlags[(string) $row['station_key']] = $flag;
-        }
-    }
-} catch (Throwable $e) {
-    // The rub' page must keep working if the migration has not been applied yet.
-    error_log('[Rub waqf flags] ' . $e->getMessage());
-    $waqfFlags = [];
-}
-
-// Add a stable station key to every segment so the client never has to build one.
-$verses = [];
-foreach ($payload['verses'] as $verse) {
-    $segments = [];
-    foreach ($verse['segments'] as $segment) {
-        $segment['key'] = $verse['surah'] . ':' . $verse['ayah'] . ':' . (int) $segment['index'];
-        $segments[] = $segment;
-    }
-    $verse['segments'] = $segments;
-
-    $verseKey = $verse['surah'] . ':' . $verse['ayah'];
-    $verse['tafsir_ar'] = (string) ($tafsir[$verseKey]['ar'] ?? '');
-    $verse['tafsir_en'] = (string) ($tafsir[$verseKey]['en'] ?? '');
-    $verses[] = $verse;
 }
 
 json_out(200, [
-    'success'            => true,
-    'today'              => $today,
-    'task'               => $task === null ? null : [
-        'id'                 => (int) $task['id'],
-        'task_date'          => (string) $task['task_date'],
-        'is_today'           => (string) $task['task_date'] === $today,
-        'is_completed'       => (int) $task['is_completed'] === 1,
-        'rub_id'             => (int) $task['rub_id'],
-        'completed_stations' => $completed,
-        'carried_over'       => (int) ($task['rollover_count'] ?? 0) > 0
+    'success' => true,
+    'today'   => $today,
+    'task'    => $task === null ? null : [
+        'id'               => (int) $task['id'],
+        'task_date'        => (string) $task['task_date'],
+        'is_today'         => (string) $task['task_date'] === $today,
+        'is_completed'     => (int) $task['is_completed'] === 1,
+        'rub_id'           => (int) $task['rub_id'],
+        'completed_verses' => $completed,
+        'carried_over'     => (int) ($task['rollover_count'] ?? 0) > 0
             || (string) $task['task_date'] !== $today,
-        'rollover_count'     => (int) ($task['rollover_count'] ?? 0),
+        'rollover_count'   => (int) ($task['rollover_count'] ?? 0),
         'last_rollover_date' => $task['last_rollover_date'] ?? null,
     ],
-    'rub'                => [
-        'id'             => (int) $rub['id'],
-        'juz'            => (int) $rub['juz'],
-        'hizb'           => (int) $rub['hizb'],
-        'start'          => $rub['start'],
-        'end'            => $rub['end'],
-        'start_page'     => (int) $rub['start_page'],
-        'end_page'       => (int) $rub['end_page'],
-        'verse_count'    => (int) $rub['verse_count'],
-        'segments_total' => (int) $payload['segments_total'],
+    'rub' => [
+        'id'          => (int) $rub['id'],
+        'juz'         => (int) $rub['juz'],
+        'hizb'        => (int) $rub['hizb'],
+        'start'       => $rub['start'],
+        'end'         => $rub['end'],
+        'start_page'  => (int) $rub['start_page'],
+        'end_page'    => (int) $rub['end_page'],
+        'verse_count' => count($verses),
     ],
-    'completed_stations' => $completed,
-    'waqf_flags'         => $waqfFlags,
-    'verses'             => $verses,
+    'completed_verses' => $completed,
+    'verses'           => $verses,
 ]);
