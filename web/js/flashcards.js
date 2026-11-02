@@ -4,7 +4,7 @@
    Rafeequl Hifz (رفيق الحفظ) — 40-Repetition Mistake Practice Engine
    - Every ACTIVE mistake is in the deck (no due-date scheduling)
    - CORRECT adds +1 to practice_count; SLIP adds nothing
-   - At practice_target (40) the card is archived automatically
+   - At practice_target (40) the card is hard-deleted automatically
    - Ayah text on the card back (offline bundle) + recitation audio
    - Swipe / tap to flip, undo, session summary
    ========================================================================== */
@@ -477,7 +477,9 @@ async function fcPractice(result) {
       FC.stats.completed++;
       FC.counts.active = Math.max(0, FC.counts.active - 1);
       FC.counts.completed++;
-      FC.lastAction.wasCompleted = true;
+      // The card was hard-deleted on the server, so there is nothing to undo.
+      FC.lastAction = null;
+      if (fcEl('btn-fc-undo')) fcEl('btn-fc-undo').disabled = true;
       fcUpdateCounters();
 
       await fcAnimateExit('left');

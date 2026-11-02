@@ -5,7 +5,7 @@ declare(strict_types=1);
  * Lightweight health check for monitoring and for distinguishing a code/API
  * problem from a host-level 502. It never exposes credentials or user data.
  *
- * 200 = PHP + database + v10 schema ready
+ * 200 = PHP + database + v11 schema ready
  * 503 = database or schema not ready
  *
  * The per-rub' tafsir bundle and the kalimaat catalog are reported separately
@@ -23,6 +23,7 @@ $required = [
         'role', 'status', 'must_change_password',
         'murajaah_days', 'rabt_extra_pages', 'last_tikrar_page',
         'gate_mistake_id', 'gate_mistake_locked_at',
+        'gate_waqf_id', 'gate_waqf_locked_at',
     ],
     'daily_task_logs' => [
         'completed_pages', 'repetition_count', 'rub_id', 'completed_stations',
@@ -32,6 +33,7 @@ $required = [
     'mistakes' => ['id', 'status', 'due_at', 'practice_count', 'practice_target'],
     'rub_history' => ['id', 'user_id', 'rub_id'],
     'kalimaat_progress' => ['id', 'user_id', 'word_key', 'repeat_count', 'status', 'last_test_session'],
+    'waqf_flags' => ['id', 'user_id', 'station_key', 'segment_text', 'practice_count', 'practice_target', 'status'],
 ];
 
 $missing = [];

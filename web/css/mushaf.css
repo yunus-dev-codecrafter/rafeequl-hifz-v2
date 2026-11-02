@@ -1,0 +1,688 @@
+/* ==========================================================================
+   Rafeequl Hifz — Native Mushaf Reader (المصحف)
+   Page-accurate text reader built from web/data/quran-uthmani.json and the
+   604-page Madinah map. Loaded only by web/mushaf.html.
+   ========================================================================== */
+
+:root {
+  --mushaf-paper: #fdfbf7;
+  --mushaf-paper-edge: #f4efe4;
+  --mushaf-ink: #1f2937;
+  --mushaf-border: #e7e0d3;
+  --mushaf-accent: #0f766e;
+  --mushaf-accent-soft: rgba(15, 118, 110, 0.08);
+  --mushaf-font-scale: 1;
+  --mushaf-topbar-h: 0px;
+}
+
+[data-theme="dark"] {
+  --mushaf-paper: #111721;
+  --mushaf-paper-edge: #0d131b;
+  --mushaf-ink: #f1ece2;
+  --mushaf-border: rgba(255, 255, 255, 0.1);
+  --mushaf-accent: #14b8a6;
+  --mushaf-accent-soft: rgba(20, 184, 166, 0.12);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+body.mushaf-body {
+  min-height: 100vh;
+  background: var(--bg);
+  background-image: var(--bg-gradient);
+  color: var(--ink);
+  overscroll-behavior-y: contain;
+}
+
+/* ---------------- Top bar ---------------- */
+
+.mushaf-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  background: var(--card);
+  border-bottom: 1px solid var(--line);
+  box-shadow: var(--shadow-sm);
+  padding: 0.5rem 0.75rem calc(0.5rem + env(safe-area-inset-bottom, 0px) * 0);
+  backdrop-filter: blur(10px);
+}
+
+.mushaf-topbar-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.mushaf-topbar-row + .mushaf-topbar-row {
+  margin-top: 0.5rem;
+}
+
+.mushaf-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.mushaf-topbar-actions {
+  margin-inline-start: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.mushaf-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  transition: background var(--duration) var(--ease), border-color var(--duration) var(--ease);
+}
+
+.mushaf-icon-btn:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent-soft-border);
+  color: var(--accent);
+}
+
+.mushaf-chip-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  min-height: 2.25rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink-secondary);
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--duration) var(--ease), color var(--duration) var(--ease);
+}
+
+.mushaf-chip-btn:hover,
+.mushaf-chip-btn.is-active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+
+.mushaf-controls {
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.mushaf-nav-btn {
+  flex: 0 0 auto;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.mushaf-nav-btn:hover:not(:disabled) {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.mushaf-nav-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.mushaf-page-jump {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.55rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--card);
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.mushaf-page-jump input {
+  width: 3.6rem;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 800;
+  text-align: center;
+  padding: 0.15rem 0;
+  -moz-appearance: textfield;
+}
+
+.mushaf-page-jump input::-webkit-outer-spin-button,
+.mushaf-page-jump input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.mushaf-page-jump input:focus {
+  outline: none;
+}
+
+.mushaf-page-total {
+  white-space: nowrap;
+}
+
+.mushaf-selects {
+  display: flex;
+  gap: 0.35rem;
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+.mushaf-selects select {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 0.42rem 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--card);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.mushaf-font-controls {
+  display: inline-flex;
+  gap: 0.25rem;
+}
+
+.mushaf-font-btn {
+  min-width: 2.1rem;
+  height: 2.1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--card);
+  color: var(--ink-secondary);
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.mushaf-font-btn:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.mushaf-play-btn {
+  margin-inline-start: auto;
+}
+
+.mushaf-play-btn.is-playing {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #fff;
+}
+
+/* ---------------- Page ---------------- */
+
+.mushaf-main {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 1rem 0.85rem calc(6rem + env(safe-area-inset-bottom, 0px));
+}
+
+.mushaf-status,
+.mushaf-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  text-align: center;
+  padding: 3.5rem 1rem;
+  color: var(--muted);
+}
+
+.mushaf-error h2 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 1.1rem;
+}
+
+.mushaf-error p {
+  margin: 0;
+  max-width: 34rem;
+  line-height: 1.8;
+}
+
+.mushaf-spinner {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  border: 3px solid var(--line);
+  border-top-color: var(--accent);
+  animation: mushaf-spin 0.8s linear infinite;
+}
+
+@keyframes mushaf-spin {
+  to { transform: rotate(360deg); }
+}
+
+.mushaf-page {
+  background: var(--mushaf-paper);
+  color: var(--mushaf-ink);
+  border: 1px solid var(--mushaf-border);
+  border-radius: var(--radius-xl);
+  box-shadow:
+    0 0 0 5px var(--mushaf-paper),
+    0 0 0 6px var(--mushaf-border),
+    var(--shadow-lg);
+  padding: 1rem 1rem 0.85rem;
+  overflow-wrap: break-word;
+  animation: mushaf-page-in 0.22s var(--ease);
+}
+
+@keyframes mushaf-page-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.mushaf-page-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-bottom: 0.55rem;
+  border-bottom: 1px solid var(--mushaf-border);
+  font-family: var(--font);
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.mushaf-page-head .mushaf-page-no {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  height: 2rem;
+  padding: 0 0.35rem;
+  border: 1px solid var(--mushaf-border);
+  border-radius: var(--radius-full);
+  font-weight: 800;
+  color: var(--mushaf-accent);
+  background: var(--mushaf-paper-edge);
+}
+
+.mushaf-page-surahs {
+  flex: 1;
+  text-align: center;
+  font-weight: 700;
+  color: var(--ink-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mushaf-page-meta {
+  white-space: nowrap;
+  font-weight: 700;
+  color: var(--mushaf-accent);
+}
+
+.mushaf-page-body {
+  padding-top: 0.35rem;
+}
+
+.mushaf-surah {
+  margin: 0;
+}
+
+.mushaf-surah-band {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin: 1rem 0 0.7rem;
+  padding: 0.45rem 0.75rem;
+  border-top: 1px solid var(--mushaf-border);
+  border-bottom: 1px solid var(--mushaf-border);
+  background: linear-gradient(180deg, var(--mushaf-paper-edge), transparent);
+  font-family: var(--font);
+  color: var(--mushaf-accent);
+}
+
+.mushaf-surah-name {
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.mushaf-surah-meta {
+  font-size: 0.68rem;
+  color: var(--muted);
+}
+
+.mushaf-basmala {
+  margin: 0.55rem 0 0.8rem;
+  text-align: center;
+  font-family: 'Amiri Quran', 'Amiri', 'Traditional Arabic', serif;
+  font-size: calc(1.12rem * var(--mushaf-font-scale));
+  color: var(--mushaf-accent);
+  line-height: 1.9;
+}
+
+.mushaf-ayat {
+  margin: 0;
+  font-family: 'Amiri Quran', 'Amiri', 'Traditional Arabic', serif;
+  font-size: calc(1.42rem * var(--mushaf-font-scale));
+  line-height: 2.25;
+  text-align: justify;
+  text-align-last: center;
+  word-spacing: 0.02em;
+}
+
+.mushaf-ayah {
+  cursor: pointer;
+  border-radius: 5px;
+  padding: 0.02em 0.03em;
+  transition: background var(--duration) var(--ease), box-shadow var(--duration) var(--ease);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mushaf-ayah:hover {
+  background: var(--mushaf-accent-soft);
+}
+
+.mushaf-ayah.is-active {
+  background: var(--mushaf-accent-soft);
+  box-shadow: 0 0 0 3px var(--mushaf-accent-soft);
+}
+
+.mushaf-ayah-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.55em;
+  height: 1.55em;
+  padding: 0 0.12em;
+  margin: 0 0.18em;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  font-family: var(--font);
+  font-size: 0.42em;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--mushaf-accent);
+  vertical-align: middle;
+}
+
+.mushaf-rub-mark,
+.mushaf-sajdah {
+  color: var(--mushaf-accent);
+  font-size: 0.9em;
+}
+
+.mushaf-page-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding-top: 0.55rem;
+  border-top: 1px solid var(--mushaf-border);
+  font-family: var(--font);
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.mushaf-foot-page {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.8rem;
+  height: 1.8rem;
+  padding: 0 0.3rem;
+  border: 1px solid var(--mushaf-border);
+  border-radius: var(--radius-full);
+  font-weight: 800;
+  color: var(--mushaf-accent);
+  background: var(--mushaf-paper-edge);
+}
+
+/* ---------------- Page note ---------------- */
+
+.mushaf-note {
+  margin-top: 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--card);
+  overflow: hidden;
+}
+
+.mushaf-note-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 0.5rem;
+  padding: 0.7rem 0.9rem;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: start;
+}
+
+.mushaf-note-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.mushaf-note-caret {
+  color: var(--muted);
+  transition: transform var(--duration) var(--ease);
+}
+
+.mushaf-note.is-open .mushaf-note-caret {
+  transform: rotate(180deg);
+}
+
+.mushaf-note-body {
+  display: none;
+  padding: 0 0.9rem 0.85rem;
+  color: var(--ink-secondary);
+  font-size: 0.88rem;
+  line-height: 1.9;
+  white-space: pre-wrap;
+}
+
+.mushaf-note.is-open .mushaf-note-body {
+  display: block;
+}
+
+/* ---------------- Ayah action bar ---------------- */
+
+.mushaf-ayah-bar {
+  position: fixed;
+  inset-inline: 0.75rem;
+  bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: 34rem;
+  margin: 0 auto;
+  padding: 0.45rem 0.55rem 0.45rem 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-full);
+  background: var(--card-elevated);
+  box-shadow: var(--shadow-lg);
+  animation: mushaf-bar-in 0.18s var(--ease);
+}
+
+@keyframes mushaf-bar-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.mushaf-ayah-ref {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--ink-secondary);
+}
+
+.mushaf-ayah-actions {
+  display: inline-flex;
+  gap: 0.25rem;
+}
+
+.mushaf-ayah-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-full);
+  background: var(--card);
+  color: var(--ink);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.mushaf-ayah-action:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent-soft-border);
+  color: var(--accent);
+}
+
+.mushaf-ayah-mistake:hover {
+  background: var(--danger-soft);
+  border-color: var(--danger-border);
+  color: var(--danger);
+}
+
+/* ---------------- Responsive ---------------- */
+
+@media (max-width: 680px) {
+  .mushaf-topbar {
+    padding: 0.45rem 0.55rem;
+  }
+
+  .mushaf-title {
+    font-size: 0.95rem;
+  }
+
+  .mushaf-main {
+    padding: 0.65rem 0.5rem calc(6rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .mushaf-page {
+    border-radius: var(--radius-lg);
+    padding: 0.8rem 0.7rem 0.7rem;
+  }
+
+  .mushaf-ayat {
+    font-size: calc(1.28rem * var(--mushaf-font-scale));
+    line-height: 2.15;
+  }
+
+  .mushaf-basmala {
+    font-size: calc(1.02rem * var(--mushaf-font-scale));
+  }
+
+  .mushaf-selects {
+    order: 5;
+    flex-basis: 100%;
+  }
+
+  .mushaf-play-btn {
+    order: 6;
+    margin-inline-start: 0;
+    flex: 1 1 auto;
+  }
+
+  .mushaf-page-head {
+    font-size: 0.65rem;
+  }
+}
+
+@media (max-width: 420px) {
+  .mushaf-my-page,
+  .mushaf-chip-btn.hidden {
+    display: none;
+  }
+
+  .mushaf-ayah-ref {
+    font-size: 0.72rem;
+  }
+}
+
+/* ---------------- Print ---------------- */
+
+@media print {
+  body.mushaf-body {
+    background: #fff;
+  }
+
+  .mushaf-topbar,
+  .mushaf-ayah-bar,
+  .mushaf-note,
+  #mistake-modal,
+  .toast {
+    display: none !important;
+  }
+
+  .mushaf-main {
+    max-width: none;
+    padding: 0;
+  }
+
+  .mushaf-page {
+    border: 0;
+    box-shadow: none;
+    padding: 0;
+  }
+
+  .mushaf-ayat {
+    font-size: 1.45rem;
+    line-height: 2.3;
+  }
+}

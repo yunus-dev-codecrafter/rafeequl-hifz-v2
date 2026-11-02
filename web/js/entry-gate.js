@@ -2,17 +2,18 @@
 
 /* ==========================================================================
    Rafeequl Hifz - entry gate
-   A single blocking overlay with two sequential steps:
+   A single blocking overlay with three sequential steps:
      1. معاني كلمات القرآن (10 repetitions per entry, 1000 lifetime)
      2. بطاقة خطأ واحدة (10 repetitions per entry, 40 lifetime)
+     3. موقف وقف معلّم (10 repetitions per flag)
    The gate is re-armed once per browser app-session. It fails open only when
    the API or the optional catalog is unavailable, so a server problem never
    locks the user out of the app.
    ========================================================================== */
 
 (function () {
-  const SESSION_KEY = 'rh_entry_gate_done_v2';
-  try { sessionStorage.removeItem('rh_entry_gate_done'); } catch (e) {}
+  const SESSION_KEY = 'rh_entry_gate_done_v3';
+  try { sessionStorage.removeItem('rh_entry_gate_done'); sessionStorage.removeItem('rh_entry_gate_done_v2'); } catch (e) {}
   let alreadyDone = false;
   try { alreadyDone = sessionStorage.getItem(SESSION_KEY) === '1'; } catch (e) {}
   if (alreadyDone) return;
@@ -24,6 +25,7 @@
     step: 'kalimaat',
     kalimaat: null,
     mistake: null,
+    waqf: null,
     overlay: null,
     busy: false,
   };
@@ -105,7 +107,8 @@
       const active = step === state.step;
       el.classList.toggle('is-active', active);
       const done = (step === 'kalimaat' && state.kalimaat && state.kalimaat.done)
-        || (step === 'mistake' && state.mistake && state.mistake.done);
+        || (step === 'mistake' && state.mistake && state.mistake.done)
+        || (step === 'waqf' && state.waqf && state.waqf.done);
       el.classList.toggle('is-done', !!done);
     });
   }
@@ -118,6 +121,7 @@
           <div class="entry-gate-steps" aria-label="${esc(t('entry_gate_steps', 'خطوات الدخول'))}">
             <span class="entry-gate-step" data-entry-step="kalimaat">${esc(t('entry_gate_step_kalimaat', 'معاني الكلمات'))}</span>
             <span class="entry-gate-step" data-entry-step="mistake">${esc(t('entry_gate_step_mistake', 'بطاقة الخطأ'))}</span>
+            <span class="entry-gate-step" data-entry-step="waqf">${esc(t('entry_gate_step_waqf', 'موقف الوقف'))}</span>
           </div>
         </div>
         <span class="entry-gate-lock" aria-hidden="true">🔒</span>
@@ -341,7 +345,7 @@
     const payload = state.data && state.data.mistake;
     const card = payload && payload.card;
     if (!payload || !payload.available || !card) {
-      finish();
+      startWaqf();
       return;
     }
 
@@ -473,7 +477,7 @@
 
         if (result === 'CORRECT') {
           m.done += 1;
-          if (m.done >= m.target || data.completed || data.status === 'ARCHIVED' || m.card.remaining <= 0) {
+          if (m.done >= m.target || data.completed || data.deleted || data.status === 'ARCHIVED' || data.status === 'DELETED' || m.card.remaining <= 0) {
             showMistakeDone();
             return;
           }
@@ -482,7 +486,7 @@
           m.lastResult = 'slip';
         }
         renderMistake();
-      } else if (data && /already completed/i.test(String(data.error || ''))) {
+      } else if (data && /already completed|mistake not found/i.test(String(data.error || ''))) {
         showMistakeDone();
       } else {
         m.lastResult = result === 'CORRECT' ? '' : 'slip';
@@ -496,6 +500,12 @@
       if (slipBtn) slipBtn.disabled = false;
     } finally {
       state.busy = false;
+      if (state.step === 'mistake' && state.mistake && !state.mistake.done) {
+        const correctBtn = document.getElementById('entry-gate-correct');
+        const slipBtn = document.getElementById('entry-gate-slip');
+        if (correctBtn) correctBtn.disabled = false;
+        if (slipBtn) slipBtn.disabled = false;
+      }
     }
   }
 
@@ -503,12 +513,15 @@
     const m = state.mistake;
     if (!m) return;
     m.done = true;
+    const finished = Number(m.card.practice_count) >= Number(m.card.practice_target);
     const body = `
       <div class="entry-gate-success" role="status">
         <span class="entry-gate-success-icon" aria-hidden="true">✓</span>
         <div>
           <strong>${esc(t('entry_gate_mistake_done_title', 'أتممت بطاقة الخطأ'))}</strong>
-          <p>${esc(t('entry_gate_mistake_done_desc', 'ستعود البطاقة في دخول قادم حتى تصل إلى 40 تكرارًا، أو تُؤرشف تلقائيًا عند اكتمالها.'))}</p>
+          <p>${esc(finished
+            ? t('entry_gate_mistake_deleted_desc', 'أكملت ٤٠ تكرارًا، فحُذفت البطاقة تلقائيًا. إن تكرر الخطأ لاحقًا فسجّله من جديد.')
+            : t('entry_gate_mistake_done_desc', 'ستعود البطاقة في دخول قادم حتى تصل إلى 40 تكرارًا، ثم تُحذف تلقائيًا.'))}</p>
         </div>
       </div>
       <div class="entry-gate-lifetime">
@@ -527,7 +540,243 @@
       body
     ));
     const enter = document.getElementById('entry-gate-enter');
+    if (enter) enter.addEventListener('click', () => {
+      const waqf = state.data && state.data.waqf;
+      if (waqf && waqf.available && waqf.card) startWaqf();
+      else finish();
+    });
+  }
+
+  /* ---------------- Flagged waqf (third step) ---------------- */
+
+  function waqfStopLabel(card) {
+    if (window.I18N && I18N.lang === 'en' && card.stop_en) return card.stop_en;
+    return card.stop_ar || card.stop_sign || '';
+  }
+
+  function waqfVerseHtml(card) {
+    if (card.highlight_found && card.flag) {
+      return `${esc(card.before)}<mark class="entry-gate-waqf-mark">${esc(card.flag)}</mark>${esc(card.after)}`;
+    }
+    const verse = card.verse_text ? esc(card.verse_text) : esc(t('entry_gate_loading_ayah', 'جارٍ تحميل الآية...'));
+    const fallback = card.segment_text
+      ? `<div class="entry-gate-waqf-fallback" dir="rtl">${esc(card.segment_text)}</div>`
+      : '';
+    return verse + fallback;
+  }
+
+  function waqfCardHtml(card) {
+    const count = Number(card.practice_count) || 0;
+    const target = Math.max(1, Number(card.practice_target) || 10);
+    return `
+      <div class="entry-gate-waqf-card" dir="rtl">
+        <div class="entry-gate-waqf-ref">
+          <span class="entry-gate-waqf-badge">${esc(t('entry_gate_waqf_badge', 'موقف وقف معلّم'))}</span>
+          <span>${esc(surahName(card.surah_number))} • ${esc(t('entry_gate_ayah', 'الآية'))} ${Number(card.ayah_number) || ''}</span>
+          <span>${esc(t('entry_gate_page', 'صفحة'))} ${Number(card.page_number) || ''}</span>
+          <span>${esc(t('entry_gate_waqf_station', 'الموقف'))} ${(Number(card.segment_index) || 0) + 1}</span>
+        </div>
+        <div class="entry-gate-waqf-verse">${waqfVerseHtml(card)}</div>
+        ${card.stop_ar || card.stop_en || card.stop_sign
+          ? `<div class="entry-gate-waqf-stop">${esc(t('entry_gate_waqf_stop', 'علامة الوقف'))}: <strong>${esc(waqfStopLabel(card))}</strong></div>`
+          : ''}
+        ${card.notes ? `<p class="entry-gate-note">${esc(card.notes)}</p>` : ''}
+        <div class="entry-gate-lifetime">
+          <span>${esc(t('entry_gate_waqf_lifetime', 'تكرار الموقف'))}</span>
+          <strong>${count} / ${target}</strong>
+        </div>
+      </div>`;
+  }
+
+  function startWaqf() {
+    const payload = state.data && state.data.waqf;
+    const card = payload && payload.card;
+    if (!payload || !payload.available || !card) {
+      finish();
+      return;
+    }
+
+    const remaining = Math.max(0, Number(card.remaining) || 0);
+    const target = Math.max(1, Math.min(10, remaining || 1));
+    state.step = 'waqf';
+    state.waqf = {
+      done: 0,
+      target,
+      card,
+      lastResult: '',
+      deleted: false,
+    };
+    renderWaqf();
+  }
+
+  function renderWaqf() {
+    const m = state.waqf;
+    if (!m) return;
+    const card = m.card;
+    const body = `
+      ${progressHtml(m.done, m.target, t('entry_gate_this_entry', 'هذا الدخول'))}
+      ${waqfCardHtml(card)}
+      <div class="entry-gate-actions entry-gate-actions-split">
+        <button type="button" class="btn btn-success entry-gate-main-btn" id="entry-gate-waqf-correct">
+          ${esc(t('entry_gate_correct', 'أعدت صحيحًا'))} ✓
+        </button>
+        <button type="button" class="btn btn-ghost entry-gate-main-btn" id="entry-gate-waqf-slip">
+          ${esc(t('entry_gate_slip', 'تعثرت'))}
+        </button>
+      </div>
+      <p class="entry-gate-hint" id="entry-gate-waqf-status">
+        ${esc(m.lastResult === 'slip'
+          ? t('entry_gate_slip_hint', 'التعثر لا يُحسب. أعد المحاولة حتى تصل إلى العدد المطلوب.')
+          : t('entry_gate_waqf_hint', 'أعد الموقف الملوّن بالأحمر داخل الآية، ثم اختر النتيجة. تُحسب المحاولة الصحيحة فقط.'))}
+      </p>`;
+
+    render(shell(
+      t('entry_gate_kicker', 'بوابة الدخول'),
+      t('entry_gate_waqf_title', 'موقف وقف معلّم'),
+      t('entry_gate_waqf_sub', 'ثبّت هذا الوقف قبل بدء المهام'),
+      body
+    ));
+
+    const correct = document.getElementById('entry-gate-waqf-correct');
+    const slip = document.getElementById('entry-gate-waqf-slip');
+    if (correct) correct.addEventListener('click', () => reviewWaqf('CORRECT'));
+    if (slip) slip.addEventListener('click', () => reviewWaqf('SLIP'));
+  }
+
+  async function reviewWaqf(result) {
+    if (state.busy || !state.waqf) return;
+    const m = state.waqf;
+    state.busy = true;
+    const correctBtn = document.getElementById('entry-gate-waqf-correct');
+    const slipBtn = document.getElementById('entry-gate-waqf-slip');
+    if (correctBtn) correctBtn.disabled = true;
+    if (slipBtn) slipBtn.disabled = true;
+    const status = document.getElementById('entry-gate-waqf-status');
+    if (status) status.textContent = t('entry_gate_saving', 'جارٍ الحفظ...');
+
+    try {
+      const { ok, data } = await api('../api/waqf/review.php', {
+        method: 'POST',
+        body: { waqf_id: m.card.waqf_id, result },
+      });
+
+      if (ok && data && data.success) {
+        const flag = data.flag || {};
+        m.card.practice_count = Number(data.practice_count) || m.card.practice_count;
+        m.card.practice_target = Number(data.practice_target) || m.card.practice_target;
+        m.card.remaining = Math.max(0, m.card.practice_target - m.card.practice_count);
+        m.card.status = data.status || m.card.status;
+        if (flag.segment_text) m.card.segment_text = flag.segment_text;
+        if (flag.before !== undefined) {
+          m.card.before = flag.before;
+          m.card.flag = flag.flag;
+          m.card.after = flag.after;
+          m.card.highlight_found = !!flag.highlight_found;
+        }
+
+        if (result === 'CORRECT') {
+          m.done += 1;
+          if (m.done >= m.target || data.completed || m.card.remaining <= 0) {
+            showWaqfDone();
+            return;
+          }
+          m.lastResult = 'correct';
+        } else {
+          m.lastResult = 'slip';
+        }
+        renderWaqf();
+      } else if (data && /already complete/i.test(String(data.error || ''))) {
+        m.card.practice_count = m.card.practice_target;
+        m.card.remaining = 0;
+        showWaqfDone();
+      } else {
+        m.lastResult = result === 'CORRECT' ? '' : 'slip';
+        if (status) status.textContent = (data && data.error) || t('entry_gate_error', 'تعذر الحفظ. أعد المحاولة.');
+        if (correctBtn) correctBtn.disabled = false;
+        if (slipBtn) slipBtn.disabled = false;
+      }
+    } catch (e) {
+      if (status) status.textContent = t('entry_gate_network_error', 'تعذر الاتصال بالخادم. أعد المحاولة.');
+      if (correctBtn) correctBtn.disabled = false;
+      if (slipBtn) slipBtn.disabled = false;
+    } finally {
+      state.busy = false;
+      if (state.step === 'waqf' && state.waqf && !state.waqf.done) {
+        const correctBtn = document.getElementById('entry-gate-waqf-correct');
+        const slipBtn = document.getElementById('entry-gate-waqf-slip');
+        if (correctBtn) correctBtn.disabled = false;
+        if (slipBtn) slipBtn.disabled = false;
+      }
+    }
+  }
+
+  function showWaqfDone() {
+    const m = state.waqf;
+    if (!m) return;
+    m.done = true;
+    const complete = Number(m.card.practice_count) >= Number(m.card.practice_target);
+    const body = `
+      <div class="entry-gate-success" role="status">
+        <span class="entry-gate-success-icon" aria-hidden="true">✓</span>
+        <div>
+          <strong>${esc(t('entry_gate_waqf_done_title', 'أتممت موقف الوقف'))}</strong>
+          <p>${esc(t('entry_gate_waqf_done_desc', 'أكملت ١٠ تكرارات لهذا الموقف. يمكنك حذف العلامة الآن أو إبقاؤها في قائمة المواقف المعلّمة.'))}</p>
+        </div>
+      </div>
+      ${waqfCardHtml(m.card)}
+      <div class="entry-gate-actions entry-gate-actions-split">
+        ${complete && !m.deleted ? `
+          <button type="button" class="btn btn-ghost entry-gate-main-btn" id="entry-gate-waqf-delete">
+            ${esc(t('entry_gate_waqf_delete', 'حذف العلامة'))}
+          </button>` : ''}
+        <button type="button" class="btn btn-primary entry-gate-main-btn" id="entry-gate-enter">
+          ${esc(t('entry_gate_enter', 'ادخل إلى التطبيق'))} ←
+        </button>
+      </div>
+      <p class="entry-gate-hint" id="entry-gate-waqf-status"></p>`;
+
+    render(shell(
+      t('entry_gate_kicker', 'بوابة الدخول'),
+      t('entry_gate_waqf_title', 'موقف وقف معلّم'),
+      t('entry_gate_step_done_third', 'تمت الخطوة الثالثة'),
+      body
+    ));
+
+    const del = document.getElementById('entry-gate-waqf-delete');
+    if (del) del.addEventListener('click', deleteWaqf);
+    const enter = document.getElementById('entry-gate-enter');
     if (enter) enter.addEventListener('click', finish);
+  }
+
+  async function deleteWaqf() {
+    if (state.busy || !state.waqf) return;
+    const m = state.waqf;
+    state.busy = true;
+    const btn = document.getElementById('entry-gate-waqf-delete');
+    if (btn) btn.disabled = true;
+    const status = document.getElementById('entry-gate-waqf-status');
+    try {
+      const { ok, data } = await api('../api/waqf/delete.php', {
+        method: 'POST',
+        body: { waqf_id: m.card.waqf_id },
+      });
+      if (ok && data && data.success) {
+        m.deleted = true;
+        if (btn) {
+          btn.disabled = true;
+          btn.textContent = t('entry_gate_waqf_deleted', 'تم حذف العلامة');
+        }
+        if (status) status.textContent = t('entry_gate_waqf_deleted', 'تم حذف العلامة');
+      } else {
+        if (btn) btn.disabled = false;
+        if (status) status.textContent = (data && data.error) || t('entry_gate_error', 'تعذر الحفظ. أعد المحاولة.');
+      }
+    } catch (e) {
+      if (btn) btn.disabled = false;
+      if (status) status.textContent = t('entry_gate_network_error', 'تعذر الاتصال بالخادم. أعد المحاولة.');
+    } finally {
+      state.busy = false;
+    }
   }
 
   function finish() {
@@ -545,6 +794,7 @@
       <div class="entry-gate-summary">
         <div><span>${esc(t('entry_gate_step_kalimaat', 'معاني الكلمات'))}</span><strong>${state.kalimaat ? '✓' : '—'}</strong></div>
         <div><span>${esc(t('entry_gate_step_mistake', 'بطاقة الخطأ'))}</span><strong>${state.mistake ? '✓' : '—'}</strong></div>
+        <div><span>${esc(t('entry_gate_step_waqf', 'موقف الوقف'))}</span><strong>${state.waqf ? '✓' : '—'}</strong></div>
       </div>
       <div class="entry-gate-actions">
         <button type="button" class="btn btn-primary entry-gate-main-btn" id="entry-gate-close">
@@ -606,14 +856,16 @@
       state.data = data;
       const hasKalimaat = !!(data.kalimaat && data.kalimaat.available);
       const hasMistake = !!(data.mistake && data.mistake.available);
-      if (!hasKalimaat && !hasMistake) {
+      const hasWaqf = !!(data.waqf && data.waqf.available && data.waqf.card);
+      if (!hasKalimaat && !hasMistake && !hasWaqf) {
         markDone();
         return;
       }
 
       showOverlay();
       if (hasKalimaat) startKalimaat();
-      else startMistake();
+      else if (hasMistake) startMistake();
+      else startWaqf();
     } catch (e) {
       markDone();
     }

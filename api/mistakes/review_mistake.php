@@ -8,8 +8,9 @@ declare(strict_types=1);
  *            (legacy) action ('MASTERED' -> CORRECT, 'KEEP_PRACTICING' -> SLIP)
  *
  * CORRECT adds one repetition; when the counter reaches `practice_target` (40)
- * the card is archived automatically and leaves the practice deck.
- * SLIP records the stumble but does not add a repetition.
+ * the card is hard-deleted and leaves the practice deck. SLIP records the
+ * stumble but does not add a repetition. Logging the same mistake later starts
+ * a fresh card.
  */
 
 require __DIR__ . '/../../config/database.php';
@@ -94,17 +95,47 @@ try {
     $target   = (int) $m['practice_target'];
     $next     = practice_apply($count, $target, $result);
 
-    $newStatus   = $next['completed'] ? 'ARCHIVED' : 'ACTIVE';
-    $graduatedAt = $next['completed'] ? date('Y-m-d H:i:s') : $m['graduated_at'];
-    $mastery     = (int) $m['mastery_count'] + ($result === 'CORRECT' ? 1 : 0);
-    $lapses      = (int) $m['lapses'] + ($result === 'SLIP' ? 1 : 0);
+    $mastery = (int) $m['mastery_count'] + ($result === 'CORRECT' ? 1 : 0);
+    $lapses  = (int) $m['lapses'] + ($result === 'SLIP' ? 1 : 0);
+
+    if ($next['completed']) {
+        // A completed mistake is intentionally not kept. The append-only event
+        // log keeps the day's practice streak, but the card itself is gone.
+        practice_log_event(
+            $pdo, $userId, $mistakeId, 'MASTERED',
+            $result === 'CORRECT' ? 2 : 0, $count, $next['count'], $prev
+        );
+
+        $stmt = $pdo->prepare('DELETE FROM `mistakes` WHERE `id` = :id AND `user_id` = :u');
+        $stmt->execute([':id' => $mistakeId, ':u' => $userId]);
+
+        json_out(200, [
+            'success'        => true,
+            'result'         => $result,
+            'completed'      => true,
+            'deleted'        => true,
+            'practice_count' => $next['count'],
+            'practice_target' => $next['target'],
+            'remaining'      => 0,
+            'status'         => 'DELETED',
+            'mistake'        => [
+                'id'              => $mistakeId,
+                'status'          => 'DELETED',
+                'practice_count'  => $next['count'],
+                'practice_target' => $next['target'],
+                'remaining'       => 0,
+                'mastery_count'   => $mastery,
+                'lapses'          => $lapses,
+                'graduated_at'    => date('Y-m-d H:i:s'),
+            ],
+        ]);
+    }
 
     $stmt = $pdo->prepare(
         "UPDATE `mistakes`
          SET `practice_count`   = :pc,
              `practice_target`  = :pt,
-             `status`           = :status,
-             `graduated_at`     = :grad,
+             `status`           = 'ACTIVE',
              `mastery_count`    = :mc,
              `lapses`           = :lp,
              `last_reviewed_at` = NOW(),
@@ -114,17 +145,14 @@ try {
     $stmt->execute([
         ':pc'     => $next['count'],
         ':pt'     => $next['target'],
-        ':status' => $newStatus,
-        ':grad'   => $graduatedAt,
         ':mc'     => $mastery,
         ':lp'     => $lapses,
         ':id'     => $mistakeId,
         ':u'      => $userId,
     ]);
 
-    // Reuse the existing audit enum: GOOD = correct repetition, AGAIN = slip,
-    // MASTERED = the repetition that completed the card.
-    $eventType = $next['completed'] ? 'MASTERED' : ($result === 'CORRECT' ? 'GOOD' : 'AGAIN');
+    // Reuse the existing audit enum: GOOD = correct repetition, AGAIN = slip.
+    $eventType = $result === 'CORRECT' ? 'GOOD' : 'AGAIN';
     $grade     = $result === 'CORRECT' ? 2 : 0;
     practice_log_event(
         $pdo, $userId, $mistakeId, $eventType,
@@ -134,20 +162,21 @@ try {
     json_out(200, [
         'success'        => true,
         'result'         => $result,
-        'completed'      => $next['completed'],
+        'completed'      => false,
+        'deleted'        => false,
         'practice_count' => $next['count'],
         'practice_target' => $next['target'],
         'remaining'      => $next['remaining'],
-        'status'         => $newStatus,
+        'status'         => 'ACTIVE',
         'mistake'        => [
             'id'              => $mistakeId,
-            'status'          => $newStatus,
+            'status'          => 'ACTIVE',
             'practice_count'  => $next['count'],
             'practice_target' => $next['target'],
             'remaining'       => $next['remaining'],
             'mastery_count'   => $mastery,
             'lapses'          => $lapses,
-            'graduated_at'    => $graduatedAt,
+            'graduated_at'    => null,
         ],
     ], JSON_UNESCAPED_UNICODE);
 } catch (PDOException $e) {

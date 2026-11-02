@@ -5,10 +5,12 @@ declare(strict_types=1);
  * Rafeequl Hifz - Clear / Manage Flashcard (History actions)
  * POST JSON: mistake_id, action ('MASTERED' | 'KEEP_PRACTICING' | 'REACTIVATE' | 'DELETE')
  *
- * MASTERED        -> archives the card, sets the counter to 40, records MASTERED
- * REACTIVATE      -> returns it to the active deck with a fresh 40-counter
- * DELETE          -> hard-deletes the row, keeps a DELETED audit event
- * KEEP_PRACTICING -> one extra correct repetition (legacy shortcut)
+ * MASTERED        -> marks the completed mistake and hard-deletes the card row,
+ *                   keeping a MASTERED audit event.
+ * REACTIVATE      -> returns a kept mistake to the active deck with a fresh 40-counter.
+ * DELETE          -> hard-deletes the row, keeping a DELETED audit event.
+ * KEEP_PRACTICING -> one extra correct repetition (legacy shortcut); hard-deletes
+ *                   the card once the 40-repetition target is reached.
  *
  * Graded practice should use review_mistake.php; this endpoint powers the
  * history page's management buttons.
@@ -98,7 +100,7 @@ try {
         } else {
             $stmt = $pdo->prepare(
                 "UPDATE `mistakes`
-                 SET `status` = 'ARCHIVED', `practice_count` = `practice_target`,
+                 SET `practice_count` = `practice_target`,
                      `mastery_count` = `mastery_count` + 1,
                      `graduated_at` = NOW()
                  WHERE `id` = :id AND `user_id` = :u AND `status` = 'ACTIVE'"
@@ -107,9 +109,12 @@ try {
             practice_log_event($pdo, $userId, $mistakeId, 'MASTERED',
                 2, (int) $mistake['practice_count'], (int) $mistake['practice_target'],
                 practice_prev_state($mistake));
-            $mistake['status']        = 'ARCHIVED';
             $mistake['practice_count'] = (int) $mistake['practice_target'];
             $mistake['mastery_count'] = (int) $mistake['mastery_count'] + 1;
+
+            $stmt = $pdo->prepare('DELETE FROM `mistakes` WHERE `id` = :id AND `user_id` = :u');
+            $stmt->execute([':id' => $mistakeId, ':u' => $userId]);
+            $mistake['status'] = 'DELETED';
         }
     } elseif ($action === 'REACTIVATE') {
         $stmt = $pdo->prepare(
@@ -133,7 +138,31 @@ try {
             (int) $mistake['practice_target'],
             'CORRECT'
         );
-        $newStatus = $next['completed'] ? 'ARCHIVED' : 'ACTIVE';
+        if ($next['completed']) {
+            practice_log_event(
+                $pdo, $userId, $mistakeId, 'MASTERED',
+                2, (int) $mistake['practice_count'], $next['count'], practice_prev_state($mistake)
+            );
+            $stmt = $pdo->prepare('DELETE FROM `mistakes` WHERE `id` = :id AND `user_id` = :u');
+            $stmt->execute([':id' => $mistakeId, ':u' => $userId]);
+
+            json_out(200, [
+                'success'           => true,
+                'message'           => 'Mistake completed and deleted.',
+                'deleted_id'        => $mistakeId,
+                'action'            => $action,
+                'already_processed' => false,
+                'mistake'           => [
+                    'id'             => (int) $mistake['id'],
+                    'status'         => 'DELETED',
+                    'practice_count' => (int) $next['count'],
+                    'practice_target' => (int) $next['target'],
+                    'mastery_count'  => (int) $mistake['mastery_count'] + 1,
+                ],
+            ]);
+        }
+
+        $newStatus = 'ACTIVE';
         $stmt = $pdo->prepare(
             "UPDATE `mistakes`
              SET `practice_count` = :pc,
@@ -160,11 +189,18 @@ try {
         $mistake['mastery_count']  = (int) $mistake['mastery_count'] + 1;
     }
 
+    $finalMessage = 'Card kept in the active practice queue.';
+    if ($action === 'MASTERED') {
+        $finalMessage = $alreadyProcessed
+            ? 'Mistake is already completed.'
+            : 'Mistake marked completed and deleted.';
+    } elseif ($action === 'REACTIVATE') {
+        $finalMessage = 'Mistake reactivated for practice.';
+    }
+
     json_out(200, [
         'success'           => true,
-        'message'           => $action === 'MASTERED'
-            ? 'Mistake archived. Row preserved in history.'
-            : 'Card kept in the active practice queue.',
+        'message'           => $finalMessage,
         'already_processed' => $alreadyProcessed,
         'mistake'           => [
             'id'            => (int) $mistake['id'],

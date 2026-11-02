@@ -15,6 +15,7 @@ declare(strict_types=1);
 require __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/_rub.php';
 require_once __DIR__ . '/_rollover.php';
+require_once __DIR__ . '/../waqf/_waqf.php';
 
 function json_out(int $code, array $payload): void
 {
@@ -101,6 +102,26 @@ $today = date('Y-m-d');
 
 $tafsir = rh_rub_tafsir($rubId);
 
+// Flags belong to the exact station key, so they survive a page reload and can
+// be painted red on the rub' page without a second request.
+$waqfFlags = [];
+try {
+    $stmt = $pdo->prepare(
+        'SELECT * FROM `waqf_flags` WHERE `user_id` = :u AND `rub_id` = :r ORDER BY `segment_index` ASC, `id` ASC'
+    );
+    $stmt->execute([':u' => $userId, ':r' => $rubId]);
+    foreach ($stmt->fetchAll() as $row) {
+        $flag = waqf_payload($row);
+        if ($flag !== null) {
+            $waqfFlags[(string) $row['station_key']] = $flag;
+        }
+    }
+} catch (Throwable $e) {
+    // The rub' page must keep working if the migration has not been applied yet.
+    error_log('[Rub waqf flags] ' . $e->getMessage());
+    $waqfFlags = [];
+}
+
 // Add a stable station key to every segment so the client never has to build one.
 $verses = [];
 foreach ($payload['verses'] as $verse) {
@@ -144,5 +165,6 @@ json_out(200, [
         'segments_total' => (int) $payload['segments_total'],
     ],
     'completed_stations' => $completed,
+    'waqf_flags'         => $waqfFlags,
     'verses'             => $verses,
 ]);

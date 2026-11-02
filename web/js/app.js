@@ -3376,13 +3376,18 @@ function initMistakeModal() {
         }
         closeMistakeModal();
 
-        // Refresh shared data and re-render current view
-        await loadSharedData();
+        // Refresh shared data and re-render the current view. The standalone
+        // Mushaf reader also hosts this modal but has neither a task type nor
+        // a dashboard grid, and calling loadSharedData() there would redirect
+        // logged-out readers to the login page.
         const activeType = document.body.dataset.taskType;
-        if (activeType) {
-          renderTaskPage(activeType);
-        } else if (document.getElementById('tasks-grid')) {
-          renderDashboardUI();
+        if (activeType || document.getElementById('tasks-grid')) {
+          await loadSharedData();
+          if (activeType) {
+            renderTaskPage(activeType);
+          } else {
+            renderDashboardUI();
+          }
         }
       } catch (err) {
         showToast(err.message, true);
@@ -3508,52 +3513,21 @@ function closeMistakeModal() {
   if (modal) modal.classList.add('hidden');
 }
 
-/* ---------------- 8b. Mushaf Page Viewer Modal ---------------- */
+/* ---------------- 8b. Native Mushaf Reader Entry Point ---------------- */
 
+/**
+ * Open the full-screen Mushaf reader at a given page.
+ *
+ * The old implementation opened a modal that loaded
+ * https://images.quran.com/page/{page}.png. That endpoint now returns 404 for
+ * every page, so the modal always fell back to an external Quran.com link.
+ * The reader is a real page (web/mushaf.html) built from the project's own
+ * Qur'an text and 604-page map, so it works offline and keeps the user in-app.
+ */
 function openMushafModal(pageNumber) {
-  let modal = document.getElementById('mushaf-modal');
-  if (!modal) {
-    modal = document.createElement('div');
-    modal.id = 'mushaf-modal';
-    modal.className = 'mushaf-modal';
-    document.body.appendChild(modal);
-  }
-
-  const imgUrl = `https://images.quran.com/page/${pageNumber}.png`;
-  const quranComUrl = `https://quran.com/page/${pageNumber}`;
-  const modalTitle = window.I18N ? I18N.t('mushaf_modal_title', { page: pageNumber }) : `📖 مصحف المدينة — صفحة ${pageNumber}`;
-  const openExternalText = window.I18N ? I18N.t('mushaf_open_external') : 'فتح على Quran.com ↗';
-  const offlineErr = window.I18N ? I18N.t('mushaf_offline_error') : 'تعذر تحميل صورة الصفحة في وضع عدم الاتصال';
-  const offlineHint = window.I18N ? I18N.t('mushaf_offline_hint') : 'يمكنك تلاوة الصفحة مباشرة من مصحفك أو النقر أدناه لفتحها على الويب:';
-  const offlineBtn = window.I18N ? I18N.t('mushaf_open_btn') : 'فتح الصفحة على Quran.com';
-
-  modal.innerHTML = `
-    <div class="mushaf-modal-content" role="dialog" aria-modal="true">
-      <div class="mushaf-modal-head">
-        <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
-          <h3 style="font-size:1.1rem;">${modalTitle}</h3>
-          <a href="${quranComUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-ghost" style="padding:0.25rem 0.6rem; font-size:0.75rem;">
-            ${openExternalText}
-          </a>
-        </div>
-        <button type="button" id="btn-close-mushaf" class="btn btn-ghost" style="padding:0.35rem 0.65rem; font-size:1.1rem;" aria-label="إغلاق">✕</button>
-      </div>
-      <div class="mushaf-img-frame">
-        <img src="${imgUrl}" alt="${modalTitle}" class="mushaf-img" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'mushaf-fallback-box\\'><h3>${offlineErr}</h3><p class=\\'hint\\'>${offlineHint}</p><a href=\\'${quranComUrl}\\' target=\\'_blank\\' class=\\'btn btn-primary\\'>${offlineBtn}</a></div>';">
-      </div>
-    </div>
-  `;
-
-  modal.classList.remove('hidden');
-  document.getElementById('btn-close-mushaf').addEventListener('click', closeMushafModal);
-  modal.addEventListener('click', (e) => {
-    if (e.target === modal) closeMushafModal();
-  });
-}
-
-function closeMushafModal() {
-  const modal = document.getElementById('mushaf-modal');
-  if (modal) modal.classList.add('hidden');
+  const page = parseInt(pageNumber, 10);
+  const target = (Number.isFinite(page) && page >= 1 && page <= 604) ? page : 1;
+  location.href = 'mushaf.html?page=' + target;
 }
 
 /* ---------------- 8c. Keyboard Navigation Engine ---------------- */
@@ -3563,15 +3537,13 @@ function initKeyboardShortcuts() {
     if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
 
     const mistakeModal = document.getElementById('mistake-modal');
-    const mushafModal = document.getElementById('mushaf-modal');
 
     if (e.key === 'Escape') {
       if (mistakeModal && !mistakeModal.classList.contains('hidden')) closeMistakeModal();
-      if (mushafModal && !mushafModal.classList.contains('hidden')) closeMushafModal();
       return;
     }
 
-    if ((mistakeModal && !mistakeModal.classList.contains('hidden')) || (mushafModal && !mushafModal.classList.contains('hidden'))) {
+    if (mistakeModal && !mistakeModal.classList.contains('hidden')) {
       return;
     }
 

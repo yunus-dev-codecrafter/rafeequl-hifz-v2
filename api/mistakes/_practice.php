@@ -6,9 +6,8 @@ declare(strict_types=1);
  *
  * A mistake card is practiced a fixed number of times (default 40). Each
  * correct recitation increments `practice_count`; a slip does not. When the
- * counter reaches `practice_target` the card is archived automatically and
- * leaves the practice deck. Logging the same mistake again resets the counter
- * and brings the card back.
+ * counter reaches `practice_target` the card is hard-deleted and leaves the
+ * practice deck. Logging the same mistake again starts a fresh card.
  *
  * The old SM-2 columns (`interval_days`, `ease`, `lapses`, `streak_correct`,
  * `due_at`) are kept in the table for history/undo compatibility, but they no

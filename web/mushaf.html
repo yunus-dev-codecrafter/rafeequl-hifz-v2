@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0f766e">
+  <meta name="description" content="المصحف — تصفح صفحات المصحف داخل رفيق الحفظ">
+  <script src="js/pwa-manifest.js"></script>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="رفيق الحفظ">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <title data-i18n="app_title_mushaf">المصحف — رفيق الحفظ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Amiri+Quran&family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/mushaf.css">
+  <script src="js/i18n.js"></script>
+</head>
+<body class="mushaf-body">
+
+  <header class="mushaf-topbar">
+    <div class="mushaf-topbar-row">
+      <button type="button" id="mushaf-back" class="mushaf-icon-btn" data-i18n-title="mushaf_back" aria-label="رجوع">
+        <span aria-hidden="true">→</span>
+      </button>
+
+      <h1 class="mushaf-title" data-i18n="mushaf_title">المصحف</h1>
+
+      <div class="mushaf-topbar-actions">
+        <button type="button" id="mushaf-my-page" class="mushaf-chip-btn hidden" data-i18n="mushaf_my_page" data-i18n-title="mushaf_my_page_title" title="صفحة الحفظ الحالية">
+          صفحتي
+        </button>
+        <button type="button" class="theme-toggle-btn mushaf-icon-btn" title="تبديل المظهر" aria-label="تبديل المظهر">
+          <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="4.5" fill="currentColor"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+          <svg class="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+        </button>
+        <button type="button" class="lang-toggle-btn mushaf-icon-btn" data-i18n-title="mushaf_language" title="English / العربية" aria-label="تبديل اللغة">
+          <span class="lang-code-text">EN</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="mushaf-topbar-row mushaf-controls">
+      <button type="button" id="mushaf-prev" class="mushaf-nav-btn" data-i18n-title="mushaf_prev_page" aria-label="الصفحة السابقة">‹</button>
+
+      <label class="mushaf-page-jump" for="mushaf-page-input">
+        <span class="sr-only" data-i18n="mushaf_page_label">صفحة</span>
+        <input id="mushaf-page-input" type="number" inputmode="numeric" min="1" max="604" value="1" aria-label="رقم الصفحة">
+        <span class="mushaf-page-total">/ 604</span>
+      </label>
+
+      <button type="button" id="mushaf-next" class="mushaf-nav-btn" data-i18n-title="mushaf_next_page" aria-label="الصفحة التالية">›</button>
+
+      <div class="mushaf-selects">
+        <select id="mushaf-surah-jump" aria-label="الانتقال إلى سورة" data-i18n-title="mushaf_jump_surah">
+          <option value="" data-i18n="mushaf_jump_surah">السورة…</option>
+        </select>
+        <select id="mushaf-juz-jump" aria-label="الانتقال إلى جزء" data-i18n-title="mushaf_jump_juz">
+          <option value="" data-i18n="mushaf_jump_juz">الجزء…</option>
+        </select>
+      </div>
+
+      <div class="mushaf-font-controls" role="group" aria-label="حجم الخط" data-i18n-title="mushaf_font_size">
+        <button type="button" id="mushaf-font-dec" class="mushaf-font-btn" data-i18n-title="mushaf_font_smaller" aria-label="تصغير الخط">A−</button>
+        <button type="button" id="mushaf-font-inc" class="mushaf-font-btn" data-i18n-title="mushaf_font_larger" aria-label="تكبير الخط">A+</button>
+      </div>
+
+      <button type="button" id="mushaf-play-page" class="mushaf-chip-btn mushaf-play-btn" data-i18n="mushaf_play_page" data-i18n-title="mushaf_play_page">
+        ▶ تلاوة الصفحة
+      </button>
+    </div>
+  </header>
+
+  <main class="mushaf-main">
+    <div id="mushaf-status" class="mushaf-status" role="status">
+      <span class="mushaf-spinner" aria-hidden="true"></span>
+      <span data-i18n="mushaf_loading">جاري تحميل الصفحة…</span>
+    </div>
+
+    <article id="mushaf-page" class="mushaf-page hidden" dir="rtl" lang="ar" aria-live="polite"></article>
+
+    <div id="mushaf-error" class="mushaf-error hidden" role="alert">
+      <h2 data-i18n="mushaf_load_error_title">تعذر تحميل نص المصحف</h2>
+      <p data-i18n="mushaf_load_error">تحقق من اتصالك بالإنترنت ثم حاول مرة أخرى. بعد أول زيارة تُحفظ الصفحة للاستخدام دون اتصال.</p>
+      <button type="button" id="mushaf-retry" class="btn btn-primary" data-i18n="mushaf_retry">إعادة المحاولة</button>
+    </div>
+
+    <aside id="mushaf-note" class="mushaf-note hidden" aria-live="polite">
+      <button type="button" id="mushaf-note-toggle" class="mushaf-note-head" aria-expanded="false">
+        <span class="mushaf-note-title">📝 <span data-i18n="mushaf_page_note">ملاحظة هذه الصفحة</span></span>
+        <span class="mushaf-note-caret" aria-hidden="true">▾</span>
+      </button>
+      <div id="mushaf-note-body" class="mushaf-note-body" dir="auto"></div>
+    </aside>
+  </main>
+
+  <div id="mushaf-ayah-bar" class="mushaf-ayah-bar hidden" role="toolbar" aria-label="أدوات الآية">
+    <span id="mushaf-ayah-ref" class="mushaf-ayah-ref"></span>
+    <div class="mushaf-ayah-actions">
+      <button type="button" id="mushaf-ayah-play" class="mushaf-ayah-action" data-i18n-title="mushaf_play_ayah" aria-label="تلاوة الآية">▶</button>
+      <button type="button" id="mushaf-ayah-copy" class="mushaf-ayah-action" data-i18n-title="mushaf_copy_ayah" aria-label="نسخ الآية">📋</button>
+      <button type="button" id="mushaf-ayah-mistake" class="mushaf-ayah-action mushaf-ayah-mistake" data-i18n-title="mushaf_log_mistake" aria-label="تسجيل خطأ">🔴</button>
+      <button type="button" id="mushaf-ayah-close" class="mushaf-ayah-action" data-i18n-title="mushaf_close" aria-label="إغلاق">✕</button>
+    </div>
+  </div>
+
+  <!-- Mistake Logging Modal (shared with the task pages) -->
+  <div id="mistake-modal" class="modal-overlay hidden">
+    <div class="modal" role="dialog" aria-modal="true">
+      <div class="modal-head">
+        <div>
+          <h3 data-i18n="mistake_modal_title">سجل خطأ أثناء التلاوة</h3>
+          <div id="modal-page-verses" class="modal-page-verses hidden"></div>
+        </div>
+        <span id="modal-page" class="task-page-badge red">صفحة —</span>
+      </div>
+
+      <div class="field">
+        <label for="mistake-surah" data-i18n="mistake_select_surah">السورة</label>
+        <select id="mistake-surah">
+          <option value="" data-i18n="mistake_surah_placeholder">— اختر السورة —</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.35rem;">
+          <label for="mistake-ayah" style="margin-bottom:0;" data-i18n="mistake_select_ayah">رقم الآية</label>
+          <button type="button" id="btn-toggle-all-ayahs" class="btn-toggle-all-ayahs hidden"></button>
+        </div>
+        <select id="mistake-ayah">
+          <option value="" data-i18n="mistake_ayah_placeholder">— اختر الآية —</option>
+        </select>
+        <div id="ayah-chips-wrap" class="ayah-chips-wrap hidden">
+          <div class="ayah-chips-head">
+            <span class="ayah-chips-label" data-i18n="ayah_chips_label">آيات هذه الصفحة (انقر للاختيار المباشر):</span>
+          </div>
+          <div id="ayah-chips-group" class="ayah-chips-group"></div>
+        </div>
+      </div>
+
+      <div class="field">
+        <span class="field-label" data-i18n="mistake_type_label">نوع الخطأ</span>
+        <div class="tag-group" id="mistake-tags">
+          <button type="button" class="tag-btn active" data-type="AYAH_MISTAKE" data-i18n="tag_ayah_mistake">خطأ في آية</button>
+          <button type="button" class="tag-btn" data-type="TRANSITION_FAILURE" data-i18n="tag_transition">نسيان الآية التالية</button>
+          <button type="button" class="tag-btn" data-type="MUTASHABIHAT" data-i18n="tag_mutashabihat">آيات متشابهة</button>
+        </div>
+        <p class="hint" id="mistake-type-hint" style="margin-top:0.45rem;"></p>
+      </div>
+
+      <div class="field">
+        <span class="field-label" data-i18n="mistake_severity_label">درجة الخطأ</span>
+        <div class="tag-group" id="mistake-severity">
+          <button type="button" class="tag-btn active" data-sev="1" data-i18n="sev_light">بسيط</button>
+          <button type="button" class="tag-btn" data-sev="2" data-i18n="sev_medium">متوسط</button>
+          <button type="button" class="tag-btn" data-sev="3" data-i18n="sev_severe">شديد</button>
+        </div>
+      </div>
+
+      <div class="field hidden" id="mistake-confused-wrap">
+        <label data-i18n="mistake_confused_label">الالتباس مع آية أخرى (للمتشابهات)</label>
+        <div id="mistake-suggest-wrap" class="hidden">
+          <div class="ayah-chips-head">
+            <span class="ayah-chips-label" data-i18n="mistake_suggest_label">آيات تشبهها (انقر للاختيار):</span>
+          </div>
+          <div id="mistake-suggest-chips" class="ayah-chips-group mistake-suggest-chips"></div>
+          <p class="hint" id="mistake-suggest-hint" style="margin:0.35rem 0;"></p>
+        </div>
+        <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+          <select id="mistake-confused-surah" style="flex:1; min-width:140px;"></select>
+          <select id="mistake-confused-ayah" style="flex:1; min-width:110px;"></select>
+        </div>
+        <div id="mistake-pair-preview" class="mistake-pair-preview hidden"></div>
+        <p class="hint" style="margin-top:0.35rem;" data-i18n="mistake_confused_hint">اختياري، ومفيد جداً لأخطاء المتشابهات</p>
+      </div>
+
+      <div class="field">
+        <label for="mistake-note" data-i18n="mistake_notes_label">ملاحظة مساعدة للتذكر (اختياري)</label>
+        <textarea id="mistake-note" rows="2" maxlength="5000" placeholder="مثال: نسيت بداية الآية، خلطت مع سورة أخرى..." data-i18n-placeholder="mistake_notes_ph"></textarea>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" id="modal-cancel" class="btn btn-ghost" data-i18n="btn_cancel">إلغاء</button>
+        <button type="button" id="modal-save" class="btn btn-danger" data-i18n="btn_save_mistake">تسجيل الخطأ</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/mutashabihat.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/mushaf.js"></script>
+</body>
+</html>

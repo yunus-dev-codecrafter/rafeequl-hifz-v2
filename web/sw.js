@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'rafeequl-hifz-v25';
+const CACHE_NAME = 'rafeequl-hifz-v27';
 const AUDIO_CACHE = 'rafeequl-hifz-audio-v1';
 const PRECACHE_TIMEOUT_MS = 12000;
 
@@ -16,12 +16,15 @@ const STATIC_ASSETS = [
   'flashcards.html',
   'kalimaat.html',
   'history.html',
+  'mushaf.html',
   'admin.html',
   'change-password.html',
   'css/style.css',
+  'css/mushaf.css',
   'css/kalimaat.css',
   'js/i18n.js',
   'js/app.js',
+  'js/mushaf.js',
   'js/entry-gate.js',
   'js/kalimaat.js',
   'js/hifz.js',
@@ -36,6 +39,7 @@ const STATIC_ASSETS = [
   'js/admin.js',
   'js/change-password.js',
   'js/madinah_page_verses.json',
+  'data/mushaf_meta.json',
   'data/mutashabihat.json',
   'icons/icon-192.png',
   'icons/icon-512.png',

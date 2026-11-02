@@ -22,6 +22,10 @@ const RubPage = {
   tafsirOpen: {},
   activeKey: null,
   history: [],
+  flagged: {},
+  flagList: [],
+  flagsLoading: false,
+  flagBusy: false,
   saving: false,
   saveTimer: null,
   queued: false,
@@ -177,6 +181,13 @@ const RubPage = {
     this.verseByKey = {};
     this.tafsirOpen = {};
     this.history = [];
+    this.flagged = {};
+    this.flagList = [];
+
+    const serverFlags = data.waqf_flags && typeof data.waqf_flags === 'object' ? data.waqf_flags : {};
+    Object.keys(serverFlags).forEach((key) => {
+      if (serverFlags[key]) this.flagged[key] = serverFlags[key];
+    });
 
     this.verses.forEach((verse) => {
       verse.segments.forEach((segment) => {
@@ -294,6 +305,7 @@ const RubPage = {
 
     this.renderVerses();
     this.updateProgress();
+    this.loadFlags();
     // Resume at the first unfinished station instead of the top of the rub'.
     this.refreshActive(true);
 
@@ -363,6 +375,11 @@ const RubPage = {
       const stations = verse.segments.map((segment, index) => {
         const isLast = index === stationCount - 1;
         const revealed = !!this.revealed[segment.key];
+        const flag = this.flagged[segment.key];
+        const isFlagged = !!flag;
+        const flagTitle = isFlagged
+          ? this.t('rub_flag_already', 'هذا الموقف معلّم — ستجده في بوابة الدخول')
+          : this.t('rub_flag_station', 'علّم هذا الموقف كخطأ');
         const revealLabel = revealed ? this.t('rub_hide_text', 'إخفاء') : this.t('rub_show_text', 'إظهار');
         const revealTitle = revealed
           ? this.t('rub_hide_station', 'إخفاء نص الموقف')
@@ -374,11 +391,15 @@ const RubPage = {
               : '');
 
         return `
-          <div class="rub-station" data-key="${this.esc(segment.key)}" data-verse="${verseIndex}">
+          <div class="rub-station${isFlagged ? ' is-flagged' : ''}" data-key="${this.esc(segment.key)}" data-verse="${verseIndex}">
             <div class="rub-station-head">
               <span class="rub-station-no">${this.esc(this.t('rub_station', 'الموقف'))} ${index + 1}</span>
               <span class="rub-station-tools">
                 ${stop}
+                <button type="button" class="rub-flag-btn${isFlagged ? ' is-flagged' : ''}" data-act="flag" aria-pressed="${isFlagged ? 'true' : 'false'}" title="${this.esc(flagTitle)}" aria-label="${this.esc(flagTitle)}">
+                  <svg viewBox="0 0 24 24" fill="${isFlagged ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line></svg>
+                  <span class="rub-flag-label">${this.esc(isFlagged ? this.t('rub_flag_added', 'معلّم') : this.t('rub_flag_btn', 'علّم'))}</span>
+                </button>
                 <button type="button" class="rub-reveal-btn" data-act="reveal" aria-pressed="${revealed ? 'true' : 'false'}" title="${this.esc(revealTitle)}" aria-label="${this.esc(revealTitle)}">
                   <svg class="rub-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                   <span class="rub-reveal-label">${this.esc(revealLabel)}</span>
@@ -500,6 +521,23 @@ const RubPage = {
 
     el.classList.toggle('is-done', done);
     el.classList.toggle('is-active', key === this.activeKey);
+    const flag = this.flagged[key];
+    el.classList.toggle('is-flagged', !!flag);
+
+    const flagBtn = el.querySelector('.rub-flag-btn');
+    if (flagBtn) {
+      const title = flag
+        ? this.t('rub_flag_already', 'هذا الموقف معلّم — ستجده في بوابة الدخول')
+        : this.t('rub_flag_station', 'علّم هذا الموقف كخطأ');
+      flagBtn.classList.toggle('is-flagged', !!flag);
+      flagBtn.setAttribute('aria-pressed', flag ? 'true' : 'false');
+      flagBtn.title = title;
+      flagBtn.setAttribute('aria-label', title);
+      const path = flagBtn.querySelector('path');
+      if (path) path.setAttribute('fill', flag ? 'currentColor' : 'none');
+      const label = flagBtn.querySelector('.rub-flag-label');
+      if (label) label.textContent = flag ? this.t('rub_flag_added', 'معلّم') : this.t('rub_flag_btn', 'علّم');
+    }
 
     el.querySelectorAll('.rub-dot').forEach((dot, index) => {
       dot.classList.toggle('is-on', index < reps);
@@ -555,6 +593,138 @@ const RubPage = {
     btn.setAttribute('aria-label', label);
     const labelEl = document.getElementById('rub-reveal-all-label');
     if (labelEl) labelEl.textContent = label;
+  },
+
+  /* ---------------- Flagged waqf stations ---------------- */
+
+  async flagStation(key) {
+    if (this.flagBusy || !this.rub) return;
+    const meta = this.stationMeta[key];
+    if (!meta) return;
+    if (this.flagged[key]) {
+      showToast(this.t('rub_flag_already', 'هذا الموقف معلّم — ستجده في بوابة الدخول'));
+      return;
+    }
+
+    this.flagBusy = true;
+    try {
+      const res = await API.call('waqf/flag.php', {
+        method: 'POST',
+        body: {
+          rub_id: this.rub.id,
+          surah_number: meta.verse.surah,
+          ayah_number: meta.verse.ayah,
+          segment_index: meta.segment.index,
+        },
+        redirectOn401: true,
+      });
+      if (!res || !res.success || !res.flag) {
+        throw new Error((res && res.error) || this.t('rub_flag_error', 'تعذر حفظ العلامة. أعد المحاولة.'));
+      }
+      this.flagged[key] = res.flag;
+      this.paintStation(key);
+      this.loadFlags();
+      showToast(this.t('rub_flag_saved', 'تم تعليم الموقف — سيظهر في بوابة الدخول القادمة'));
+    } catch (err) {
+      if (err && err.status === 401) return;
+      showToast((err && err.message) || this.t('rub_flag_error', 'تعذر حفظ العلامة. أعد المحاولة.'), true);
+    } finally {
+      this.flagBusy = false;
+    }
+  },
+
+  async loadFlags() {
+    if (this.flagsLoading) return;
+    this.flagsLoading = true;
+    try {
+      const res = await API.call('waqf/list.php', { redirectOn401: true });
+      this.flagList = res && Array.isArray(res.flags) ? res.flags : [];
+      this.renderFlags();
+    } catch (err) {
+      if (err && err.status === 401) return;
+      this.flagList = [];
+      this.renderFlags(true);
+    } finally {
+      this.flagsLoading = false;
+    }
+  },
+
+  renderFlags(failed) {
+    const panel = document.getElementById('rub-flags-panel');
+    const list = document.getElementById('rub-flags-list');
+    const countEl = document.getElementById('rub-flags-count');
+    if (!panel || !list) return;
+
+    const flags = Array.isArray(this.flagList) ? this.flagList : [];
+    if (countEl) countEl.textContent = String(flags.length);
+    panel.classList.remove('hidden');
+
+    if (!flags.length) {
+      list.innerHTML = `<p class="rub-flags-empty">${this.esc(
+        failed
+          ? this.t('rub_flags_load_error', 'تعذر تحميل المواقف المعلّمة الآن.')
+          : this.t('rub_flags_empty', 'لم تعلّم أي موقف بعد. اضغط أيقونة العلم بجانب الموقف عند الخطأ.')
+      )}</p>`;
+      return;
+    }
+
+    list.innerHTML = flags.map((flag) => {
+      const count = Number(flag.practice_count) || 0;
+      const target = Math.max(1, Number(flag.practice_target) || 10);
+      const complete = count >= target;
+      const canDelete = count === 0 || complete;
+      const stationNo = (Number(flag.segment_index) || 0) + 1;
+      const percent = Math.min(100, Math.round((count / target) * 100));
+      const preview = String(flag.segment_text || '');
+      const shortPreview = preview.length > 110 ? preview.slice(0, 110) + '…' : preview;
+      return `
+        <div class="rub-flag-row${complete ? ' is-complete' : ''}">
+          <div class="rub-flag-row-head">
+            <strong>${this.esc(this.refLabel(flag.surah_number, flag.ayah_number))}</strong>
+            <span>${this.esc(this.t('rub_quarter_label', 'الربع'))} ${Number(flag.rub_id) || ''} · ${this.esc(this.t('rub_station', 'الموقف'))} ${stationNo}</span>
+          </div>
+          <p class="rub-flag-preview" lang="ar" dir="rtl">${this.esc(shortPreview)}</p>
+          <div class="rub-flag-row-foot">
+            <span class="rub-flag-progress">${count} / ${target}</span>
+            <span class="rub-flag-track" aria-hidden="true"><span style="width:${percent}%"></span></span>
+            ${complete ? `<span class="rub-flag-done-badge">${this.esc(this.t('rub_flag_complete', 'مكتمل'))}</span>` : ''}
+            <button type="button" class="rub-flag-delete" data-waqf-id="${Number(flag.waqf_id) || 0}"${canDelete ? '' : ' disabled'} title="${this.esc(canDelete ? this.t('rub_flag_delete', 'حذف العلامة') : this.t('rub_flag_delete_locked', 'أكمل ١٠ تكرارات أولًا'))}">
+              ${this.esc(this.t('rub_flag_delete', 'حذف العلامة'))}
+            </button>
+          </div>
+        </div>`;
+    }).join('');
+  },
+
+  async deleteFlag(waqfId) {
+    const id = Number(waqfId) || 0;
+    if (!id) return;
+    const flag = (this.flagList || []).find((item) => Number(item.waqf_id) === id)
+      || Object.values(this.flagged).find((item) => Number(item.waqf_id) === id);
+    if (!flag) return;
+
+    const ok = window.confirm(this.t('rub_flag_delete_confirm', 'حذف هذه العلامة نهائيًا؟'));
+    if (!ok) return;
+
+    try {
+      const res = await API.call('waqf/delete.php', {
+        method: 'POST',
+        body: { waqf_id: id },
+        redirectOn401: true,
+      });
+      if (!res || !res.success) {
+        throw new Error((res && res.error) || this.t('rub_flag_delete_error', 'تعذر حذف العلامة. أعد المحاولة.'));
+      }
+      const key = String(flag.station_key || '');
+      if (key && this.flagged[key]) delete this.flagged[key];
+      this.flagList = (this.flagList || []).filter((item) => Number(item.waqf_id) !== id);
+      if (key) this.paintStation(key);
+      this.renderFlags();
+      showToast(this.t('rub_flag_deleted', 'تم حذف العلامة'));
+    } catch (err) {
+      if (err && err.status === 401) return;
+      showToast((err && err.message) || this.t('rub_flag_delete_error', 'تعذر حذف العلامة. أعد المحاولة.'), true);
+    }
   },
 
   firstIncomplete() {
@@ -913,6 +1083,25 @@ const RubPage = {
 
   bindUI() {
     document.addEventListener('click', (event) => {
+      const flagBtn = event.target.closest ? event.target.closest('.rub-flag-btn') : null;
+      if (flagBtn) {
+        const station = flagBtn.closest('.rub-station');
+        if (station) {
+          event.preventDefault();
+          event.stopPropagation();
+          this.flagStation(station.dataset.key);
+        }
+        return;
+      }
+
+      const deleteBtn = event.target.closest ? event.target.closest('.rub-flag-delete') : null;
+      if (deleteBtn) {
+        event.preventDefault();
+        event.stopPropagation();
+        this.deleteFlag(deleteBtn.dataset.waqfId);
+        return;
+      }
+
       const revealBtn = event.target.closest ? event.target.closest('.rub-reveal-btn') : null;
       if (revealBtn) {
         const station = revealBtn.closest('.rub-station');

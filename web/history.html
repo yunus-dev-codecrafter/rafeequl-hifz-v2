@@ -264,8 +264,8 @@
     <!-- Filter & Search Controls -->
     <div class="history-filters">
       <div class="filter-tabs" id="status-filter-tabs">
-        <button type="button" class="filter-btn active" data-filter="ARCHIVED" data-i18n="history_tab_archived">الأخطاء المتقنة (المعالجة)</button>
-        <button type="button" class="filter-btn" data-filter="ACTIVE" data-i18n="history_tab_active">الأخطاء النشطة حالياً</button>
+        <button type="button" class="filter-btn" data-filter="ARCHIVED" data-i18n="history_tab_archived">الأخطاء المتقنة (المعالجة)</button>
+        <button type="button" class="filter-btn active" data-filter="ACTIVE" data-i18n="history_tab_active">الأخطاء النشطة حالياً</button>
         <button type="button" class="filter-btn" data-filter="ALL" data-i18n="history_tab_all">جميع السجلات</button>
       </div>
 
@@ -329,7 +329,7 @@
     'use strict';
 
     let historyRecords = [];
-    let currentStatusFilter = 'ARCHIVED';
+    let currentStatusFilter = 'ACTIVE';
     let searchQuery = '';
     let lastAnalyticsData = { topAyahs: [], topSurahs: [] };
 

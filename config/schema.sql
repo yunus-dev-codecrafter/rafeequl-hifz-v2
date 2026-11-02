@@ -5,7 +5,7 @@
 -- hosts pre-create the database and usually forbid CREATE DATABASE.
 --
 -- Fresh installs: create the database, select it in phpMyAdmin, then import
--- this file. Upgrades: run config/migrate_v9.php (CLI) or use setup.php.
+-- this file. Upgrades: run config/migrate_v11.php (CLI) or use setup.php.
 
 -- 1. users table
 CREATE TABLE IF NOT EXISTS `users` (
@@ -29,6 +29,8 @@ CREATE TABLE IF NOT EXISTS `users` (
     `last_tikrar_page` INT NOT NULL DEFAULT 0,
     `gate_mistake_id` INT NULL,
     `gate_mistake_locked_at` DATETIME NULL,
+    `gate_waqf_id` INT NULL,
+    `gate_waqf_locked_at` DATETIME NULL,
     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_users_email` (`email`),
@@ -120,6 +122,36 @@ CREATE TABLE IF NOT EXISTS `mistakes` (
     KEY `idx_mistakes_user_due` (`user_id`, `status`, `due_at`),
     KEY `idx_mistakes_user_status_practice` (`user_id`, `status`, `practice_count`),
     CONSTRAINT `fk_mistakes_user`
+        FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
+        ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 4b. waqf_flags table (exact stop-station flagged from Rub' Consolidation)
+CREATE TABLE IF NOT EXISTS `waqf_flags` (
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `user_id` INT NOT NULL,
+    `rub_id` INT NOT NULL,
+    `surah_number` SMALLINT UNSIGNED NOT NULL,
+    `ayah_number` SMALLINT UNSIGNED NOT NULL,
+    `page_number` SMALLINT UNSIGNED NOT NULL,
+    `segment_index` SMALLINT UNSIGNED NOT NULL,
+    `station_key` VARCHAR(32) NOT NULL,
+    `segment_text` TEXT NOT NULL,
+    `stop_sign` VARCHAR(16) NULL,
+    `notes` TEXT NULL,
+    `status` ENUM('ACTIVE', 'ARCHIVED') NOT NULL DEFAULT 'ACTIVE',
+    `practice_count` INT NOT NULL DEFAULT 0,
+    `practice_target` INT NOT NULL DEFAULT 10,
+    `occurrence_count` INT NOT NULL DEFAULT 1,
+    `last_reviewed_at` DATETIME NULL,
+    `graduated_at` DATETIME NULL,
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_waqf_flags_user_station` (`user_id`, `station_key`),
+    KEY `idx_waqf_flags_user_status_practice` (`user_id`, `status`, `practice_count`),
+    KEY `idx_waqf_flags_user_rub` (`user_id`, `rub_id`),
+    CONSTRAINT `fk_waqf_flags_user`
         FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
         ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

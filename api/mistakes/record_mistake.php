@@ -12,8 +12,9 @@ declare(strict_types=1);
  *   MUTASHABIHAT        - confused with a similar verse (pair = twin verse)
  *
  * Deduplicates by (user, page, surah, ayah, type). Logging the same mistake
- * again never creates a duplicate row: it bumps `occurrence_count`, resets the
- * 40-practice counter to 0 and reactivates the card if it had been archived.
+ * again while a card is active bumps `occurrence_count` and resets the
+ * 40-practice counter to 0. Once the card is hard-deleted at 40/40, logging the
+ * same mistake again creates a fresh card.
  */
 
 require __DIR__ . '/../../config/database.php';

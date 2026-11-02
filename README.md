@@ -21,7 +21,7 @@ Quran memorization daily logbook: PHP 8 + MySQL backend (`api/`), RTL web fronte
 4. Open `https://your-host/setup.php` and follow the three steps:
    database connection → fresh install → admin account.
 5. The installer writes `config/database.local.php`, imports the schema, seeds
-   all 604 Madinah pages, applies migration v10 (which includes v7-v9),
+   all 604 Madinah pages, applies migration v11 (which includes v7-v10),
    creates the `SUPER_ADMIN` account, then writes `config/installed.lock` and
    removes the enable marker.
 6. **Delete `setup.php` from the server.** Check `api/health.php` returns 200,
@@ -51,42 +51,44 @@ location ~ ^/(config|api/data)/ { deny all; return 404; }
 
 ## Upgrading an existing database
 
-The current release needs **migration v10**. It runs v7, v8, and v9 first, then:
+The current release needs **migration v11**. It runs v7–v10 first, then:
 
-- creates `kalimaat_progress` for per-user Qur’anic word meanings;
-- adds `users.gate_mistake_id` / `users.gate_mistake_locked_at` for the entry gate;
-- adds `kalimaat_progress.last_test_session` so a word needs three correct
-  answers in three separate app sessions before it is mastered.
+- creates `waqf_flags` for exact stop-stations flagged from Rub' Consolidation;
+- adds `users.gate_waqf_id` / `users.gate_waqf_locked_at` for the third entry-gate step;
+- hard-deletes existing `ARCHIVED` mistakes, because completed mistakes are no
+  longer kept (they are deleted automatically at 40/40).
+
+Migration v10 adds `kalimaat_progress` for per-user Qur’anic word meanings and
+the original `users.gate_mistake_*` columns.
 
 Migration v9 itself adds `practice_count` / `practice_target` (default 40) to
 `mistakes`, narrows `mistake_type` to `AYAH_MISTAKE`, `TRANSITION_FAILURE`, and
-`MUTASHABIHAT`, remaps the old `TAWAQQUF` / `TASHKEEL` / `LAFDH` values, and
-backfills archived rows to 40/40.
+`MUTASHABIHAT`, and remaps the old `TAWAQQUF` / `TASHKEEL` / `LAFDH` values.
 
 `setup.php` is intentionally locked after installation. **Do not delete
 `config/installed.lock` for a normal upgrade.** Use the admin-only migration
 runner instead:
 
-1. Upload the new code, including `migrate.php`, `config/migrate_v10.php`,
-   `config/migrate_v9.php`, `config/migrate_v8.php`, and `config/migrate_v7.php`.
+1. Upload the new code, including `migrate.php`, `config/migrate_v11.php`, and
+   the earlier `config/migrate_v*.php` files.
 2. Sign in at `web/index.html` with an `ADMIN` or `SUPER_ADMIN` account.
-3. Open `https://your-host/migrate.php` and press **تشغيل ترقية v10 الآن**.
-4. Check `api/health.php` returns 200 with `"schema_ok": true` and
-   `"kalimaat_ok": true`.
+3. Open `https://your-host/migrate.php` and press the migration button.
+4. Check `api/health.php` returns 200 with `"schema_ok": true`,
+   `"kalimaat_ok": true`, and `"tafsir_ok": true`.
 
-Alternative CLI: `php config/migrate_v10.php`.
+Alternative CLI: `php config/migrate_v11.php`.
 
 The installer remains available as a fallback for a lost admin or a fresh
 install: re-upload `setup.php`, delete `config/installed.lock`, create
 `config/install.enable`, open the wizard, then delete `setup.php` again.
 
-The migration is additive and idempotent. If you are upgrading from v1, run
-`migrate_v2.php` through `migrate_v6.php` first (CLI, or temporary web access),
-then run v10. `config/` is denied over HTTP by `config/.htaccess`; `migrate.php`
-is the supported browser entry point and is protected by admin login and CSRF.
-Until v10 is applied, the kalimaat APIs and the entry gate fail open; the
-mistake/flashcard APIs report a schema error until v9 is present. Local device
-data is not deleted.
+The migration is additive and idempotent except for the intentional cleanup of
+old archived mistake rows. If you are upgrading from v1, run `migrate_v2.php`
+through `migrate_v6.php` first (CLI, or temporary web access), then run v11.
+`config/` is denied over HTTP by `config/.htaccess`; `migrate.php` is the
+supported browser entry point and is protected by admin login and CSRF.
+Until v11 is applied, the waqf flag APIs and the third gate step fail open; the
+rest of the app keeps working. Local device data is not deleted.
 
 ## Rollover counting
 
@@ -115,6 +117,12 @@ default), so “today” is consistent for every request.
 > gate columns on `users`, and adds `last_test_session`. Run
 > `php config/migrate_v10.php` (it also runs v7–v9), or open `migrate.php` as an
 > admin.
+>
+> **Flagged waqf + hard-delete mistakes (v11)** creates `waqf_flags`, adds
+> `users.gate_waqf_id` / `users.gate_waqf_locked_at`, and removes archived
+> mistakes. Flagged waqf stations are practised 10 times in the third entry-gate
+> step and can be deleted after completion. Run `php config/migrate_v11.php`
+> (it also runs v7–v10), or open `migrate.php` as an admin.
 
 ## New memorization (HIFZ_JADID)
 
@@ -289,7 +297,8 @@ them with final artwork before shipping an APK.
 
 The mistake log is no longer a spaced-repetition scheduler. It is a **practice
 counter**: every active mistake must be recited correctly **40 times**, and at
-40 it is archived automatically.
+40 it is **hard-deleted automatically** — the row is not archived. Logging the
+same mistake later creates a fresh card.
 
 **The three categories** (`mistake_type`)
 | Key | Arabic | Meaning |
@@ -303,9 +312,9 @@ The old `TAWAQQUF` / `TASHKEEL` / `LAFDH` values are remapped to
 for the two pair categories.
 
 **Logging**
-- Logging the *same* mistake again does **not** add a duplicate row: it bumps
-  `occurrence_count`, resets `practice_count` to 0 and reactivates the card if
-  it had been archived (keeps it alive).
+- Logging the *same* mistake again does **not** add a duplicate row while the
+  card is still active: it bumps `occurrence_count` and resets `practice_count`
+  to 0. Once the card is deleted at 40/40, logging it again creates a new row.
 - For `MUTASHABIHAT`, the modal shows up to six **similar verses** instantly
   from the bundled `web/data/mutashabihat.json` (offline, no API call). Tapping
   a suggestion fills the paired verse and previews its text.
@@ -317,9 +326,10 @@ for the two pair categories.
 **The counter** — `api/mistakes/_practice.php`
 - `practice_count` / `practice_target` (default 40).
 - **Correct recitation** → `+1`. **Slip** → no increment (and a `lapses` bump).
-- Reaching the target archives the card (`status = ARCHIVED`,
-  `graduated_at = NOW()`); history keeps it and it can be reactivated with a
-  fresh counter.
+- Reaching the target **deletes the card row** (`review_mistake.php` returns
+  `completed: true, deleted: true`) and records a `MASTERED` event. The
+  `mistake_events` audit row is kept with `mistake_id = NULL` through the
+  `ON DELETE SET NULL` foreign key, so the daily streak survives.
 - Every action is recorded in `mistake_events` (append-only), which powers the
   review **streak** and undo.
 
@@ -327,7 +337,7 @@ for the two pair categories.
 | File | Purpose |
 | --- | --- |
 | `record_mistake.php` | log / de-duplicate a mistake, reset the counter, return practice fields |
-| `review_mistake.php` | apply `CORRECT` / `SLIP`, auto-archive at 40 |
+| `review_mistake.php` | apply `CORRECT` / `SLIP`, hard-delete at 40 |
 | `undo_review.php` | revert the last practice action (within 30 min) |
 | `get_flashcards.php` | all ACTIVE cards + remaining repetitions + completed count |
 | `update_mistake.php` | edit type / severity / notes / mutashabihat pairing |
@@ -373,8 +383,20 @@ a direct bookmark cannot bypass it. It opens **once per browser app session**
    `TRANSITION_FAILURE` shows the ayah where the user stopped plus the next ayah;
    `MUTASHABIHAT` shows both the current and the similar ayah. Only **correct**
    recitations count; 10 are required per entry (or the remainder before 40). The
-   card is archived automatically at 40/40. If a legacy transition card has no
+   card is **deleted automatically at 40/40**. If a legacy transition card has no
    stored next-ayah reference, the client derives it from the Quran text.
+3. **موقف الوقف المعلّم** — one exact stop-station flagged from Rub'
+   Consolidation, locked in `users.gate_waqf_id`. The whole ayah is shown with
+   only that station painted red. The flag has a lifetime target of **10**
+   correct repetitions; 10 are required per entry (or the remainder). Once
+   complete it leaves the gate and can be deleted from the Rub' page or directly
+   from the completion screen.
+
+The Rub' page shows a flag icon on every station, plus a **المواقف المعلّمة**
+panel that lists all flags, their progress, and a delete action. A flag may be
+deleted before practice starts (to undo an accidental flag) or after 10/10; the
+API refuses to delete it halfway through. Tafsir remains strictly verse-level;
+the flag highlights the exact waqf segment without splitting the tafsir.
 
 The gate is sequential, cannot be dismissed by clicking the backdrop, and fails
 open if the API or catalog is unavailable. If the user must change their
@@ -462,6 +484,53 @@ make a page fast to recall:
 - A dot marks page chips that already have a note. **N** toggles the board,
   **إخفاء (اختبر نفسك)** blurs the note so you can test recall, and **نسخ**
   copies it out.
+
+## Native Mushaf reader (المصحف)
+
+`web/mushaf.html` is a full-screen, text-based Madinah Mushaf reader. It
+replaces the old modal that tried to load `images.quran.com/page/{n}.png`; that
+endpoint returns 404 for every page, so the modal always fell back to an
+external Quran.com link.
+
+- **Every one of the 604 pages** is rendered from the project's own
+  `web/data/quran-uthmani.json` and the existing 604-page verse map in
+  `web/js/madinah_page_verses.json`. No page images, no external API, and no
+  schema change.
+- **Opening page** priority: `?page=N` → the last-read bookmark
+  (`rh_mushaf_last_page`) → the account's `current_hifz_page` → page 1. Task
+  pages and the recall board open it at their current page through
+  `openMushafModal(page)`, which now navigates to `mushaf.html?page=N`.
+- **Page-accurate content**: surah bands, the synthesized basmala (skipped for
+  At-Tawbah and not duplicated for Al-Fatiha), Arabic-Indic ayah/page numerals,
+  and juz/hizb/rub' labels. Line wrapping is the reader's own, not a
+  photographic facsimile of the printed page.
+- **Navigation**: previous/next page, direct page number, surah jump, juz jump,
+  a "my page" shortcut, font-size controls (persisted), and the app's theme and
+  language toggles. ArrowLeft goes to the next page (RTL convention) and
+  ArrowRight to the previous one.
+- **Ayah actions**: tap any ayah to open a small action bar with play, copy
+  (with the surah/ayah reference), and log-a-mistake. The mistake button opens
+  the shared modal pre-filled through `openMistakeModalForAyah()`.
+- **Audio**: per-ayah and whole-page recitation from EveryAyah
+  (`Alafasy_128kbps`), with the current ayah highlighted as the page plays.
+- **Page note**: a read-only, collapsed-by-default card fed by
+  `api/notes/get_page_notes.php?page_number=N`. It is hidden for logged-out
+  users, empty notes, unavailable tables, or a 401.
+- **Offline**: `mushaf.html`, `css/mushaf.css`, `js/mushaf.js` and
+  `data/mushaf_meta.json` are precached by the service worker. The 1.3 MB
+  Qur'an text bundle is cached on first fetch by the existing network-first
+  handler, so a page opened once is readable offline afterwards.
+
+### Build & verify
+
+```bash
+php config/build_mushaf_meta.php   # web/data/mushaf_meta.json (604 rows)
+php config/verify_mushaf.php       # page map, text bundle and metadata checks
+```
+
+`mushaf_meta.json` is a compact `{ "_meta": {...}, "pages": [[juz, hizb, rub], ...] }`
+table; `rub` is the absolute rub' al-hizb (1–240), converted from the
+`rub_el_hizb` 1–4 field in `api/data/madinah_pages.json`.
 
 ## Rub' consolidation — تثبيت الربع (v6)
 
@@ -570,7 +639,7 @@ migration scripts. On a host without CLI, temporarily comment out the
 `RewriteRule ^(?:config|api/data)...` line in the root `.htaccess` **and**
 rename `config/.htaccess`, open
 `https://your-host/config/migrate_v4.php?confirm=1`, then restore both files
-immediately. Prefer `migrate.php` for v10 and later upgrades, and `setup.php`
+immediately. Prefer `migrate.php` for v11 and later upgrades, and `setup.php`
 for fresh installs.
 
 This is additive and idempotent: it adds `role`, `status`, `status_reason`,
@@ -670,12 +739,13 @@ active super admin cannot be suspended or demoted.
 
 ### Deploy order
 
-1. Upload `config/` (including `.htaccess`, `database.example.php`, `migrate_v10.php`, `migrate_v9.php`, `migrate_v8.php`, and `migrate_v7.php`), `migrate.php`, `setup.php`, `api/` and the changed `web/` files (including `web/data/kalimaat/`, `web/js/entry-gate.js`, and `web/js/kalimaat.js`).
+1. Upload `config/` (including `.htaccess`, `database.example.php`, `migrate_v11.php`, `migrate_v10.php`, `migrate_v9.php`, `migrate_v8.php`, and `migrate_v7.php`), `migrate.php`, `setup.php`, `api/` (including the new `api/waqf/` folder) and the changed `web/` files (including `web/data/kalimaat/`, `web/js/entry-gate.js`, `web/js/rub.js`, and `web/js/kalimaat.js`). For the Mushaf reader also upload `web/mushaf.html`, `web/css/mushaf.css`, `web/js/mushaf.js`, and `web/data/mushaf_meta.json`; no migration is required for it.
 2. Upload `config/database.local.php` separately with the current credentials if you deploy over FTP (it is intentionally ignored by git). If you deploy through git and that file is absent, the app cannot connect until you run `setup.php`; use the wizard to write it, or set `DB_*` environment variables.
-3. Sign in as an administrator and open `https://your-host/migrate.php`, then press **تشغيل ترقية v10 الآن**. For a fresh install, use `setup.php` instead.
-4. The migration runner applies v10 (including v7-v9) and leaves `config/installed.lock` untouched. `setup.php` remains locked.
-5. Open `api/health.php` (expect 200, `"schema_ok": true`, `"tafsir_ok": true`, and `"kalimaat_ok": true`), hard-refresh `web/index.html`, and confirm the new service worker cache (`rafeequl-hifz-v24`) is active.
+3. Sign in as an administrator and open `https://your-host/migrate.php`, then press **تشغيل ترقية v11 الآن**. For a fresh install, use `setup.php` instead.
+4. The migration runner applies v11 (including v7-v10) and leaves `config/installed.lock` untouched. `setup.php` remains locked. Existing `ARCHIVED` mistake rows are purged intentionally.
+5. Open `api/health.php` (expect 200, `"schema_ok": true`, `"tafsir_ok": true`, and `"kalimaat_ok": true`), hard-refresh `web/index.html`, and confirm the new service worker cache (`rafeequl-hifz-v27`) is active.
 
-> Back up the database before step 3 on a live site. The migration is additive,
-> but a backup is always the right first move. If the host's PHP cannot reach
-> MySQL, use its phpMyAdmin/CLI and run `config/migrate_v10.php` there instead.
+> Back up the database before step 3 on a live site. The migration is additive
+> except for the intentional purge of completed mistake rows, but a backup is
+> always the right first move. If the host's PHP cannot reach MySQL, use its
+> phpMyAdmin/CLI and run `config/migrate_v11.php` there instead.
