@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'rafeequl-hifz-v28';
+const CACHE_NAME = 'rafeequl-hifz-v29';
 const AUDIO_CACHE = 'rafeequl-hifz-audio-v1';
 const PRECACHE_TIMEOUT_MS = 12000;
 
@@ -22,6 +22,7 @@ const STATIC_ASSETS = [
   'css/style.css',
   'css/mushaf.css',
   'css/kalimaat.css',
+  'css/rub-session.css',
   'js/i18n.js',
   'js/app.js',
   'js/mushaf.js',
@@ -30,6 +31,8 @@ const STATIC_ASSETS = [
   'js/hifz.js',
   'js/page-notes.js',
   'js/mutashabihat.js',
+  'js/rub-exercises.js',
+  'js/rub-session.js',
   'js/rub.js',
   'js/rub-recitation.js',
   'js/review.js',
@@ -41,6 +44,7 @@ const STATIC_ASSETS = [
   'js/madinah_page_verses.json',
   'data/mushaf_meta.json',
   'data/mutashabihat.json',
+  'data/mutashabihat_curated.json',
   'icons/icon-192.png',
   'icons/icon-512.png',
   'icons/icon-maskable-192.png',

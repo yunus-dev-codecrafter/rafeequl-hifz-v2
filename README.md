@@ -21,7 +21,7 @@ Quran memorization daily logbook: PHP 8 + MySQL backend (`api/`), RTL web fronte
 4. Open `https://your-host/setup.php` and follow the three steps:
    database connection → fresh install → admin account.
 5. The installer writes `config/database.local.php`, imports the schema, seeds
-   all 604 Madinah pages, applies migration v11 (which includes v7-v10),
+   all 604 Madinah pages, applies migration v12 (which includes v7-v11),
    creates the `SUPER_ADMIN` account, then writes `config/installed.lock` and
    removes the enable marker.
 6. **Delete `setup.php` from the server.** Check `api/health.php` returns 200,
@@ -51,13 +51,19 @@ location ~ ^/(config|api/data)/ { deny all; return 404; }
 
 ## Upgrading an existing database
 
-The current release needs **migration v11**. It runs v7–v10 first, then:
+The current release needs **migration v12**. It runs v7–v11 first, then:
 
-- creates the legacy `waqf_flags` table and the `users.gate_waqf_*` columns.
-  They are kept for compatibility and existing data, but the flagged-waqf UI
-  and API were removed; the entry gate no longer has a waqf step;
-- hard-deletes existing `ARCHIVED` mistakes, because completed mistakes are no
-  longer kept (they are deleted automatically at 40/40).
+- creates `rub_sessions`, `rub_results`, `rub_verse_stats`, and
+  `rub_word_misses` for the five-exercise Rub' consolidation session;
+- keeps the existing `RUB_TAMKIN` task, rub' catalog, arrangement progress and
+  `rub_history` intact. The legacy one-verse arrangement page remains available
+  as **Free practice**.
+
+Migration v11 creates the legacy `waqf_flags` table and the
+`users.gate_waqf_*` columns. They are kept for compatibility and existing data,
+but the flagged-waqf UI and API were removed; the entry gate no longer has a
+waqf step. It also hard-deletes existing `ARCHIVED` mistakes, because completed
+mistakes are no longer kept (they are deleted automatically at 40/40).
 
 Migration v10 adds `kalimaat_progress` for per-user Qur’anic word meanings and
 the original `users.gate_mistake_*` columns.
@@ -70,14 +76,14 @@ Migration v9 itself adds `practice_count` / `practice_target` (default 40) to
 `config/installed.lock` for a normal upgrade.** Use the admin-only migration
 runner instead:
 
-1. Upload the new code, including `migrate.php`, `config/migrate_v11.php`, and
+1. Upload the new code, including `migrate.php`, `config/migrate_v12.php`, and
    the earlier `config/migrate_v*.php` files.
 2. Sign in at `web/index.html` with an `ADMIN` or `SUPER_ADMIN` account.
 3. Open `https://your-host/migrate.php` and press the migration button.
 4. Check `api/health.php` returns 200 with `"schema_ok": true`,
    `"kalimaat_ok": true`, and `"tafsir_ok": true`.
 
-Alternative CLI: `php config/migrate_v11.php`.
+Alternative CLI: `php config/migrate_v12.php`.
 
 The installer remains available as a fallback for a lost admin or a fresh
 install: re-upload `setup.php`, delete `config/installed.lock`, create
@@ -85,7 +91,7 @@ install: re-upload `setup.php`, delete `config/installed.lock`, create
 
 The migration is additive and idempotent except for the intentional cleanup of
 old archived mistake rows. If you are upgrading from v1, run `migrate_v2.php`
-through `migrate_v6.php` first (CLI, or temporary web access), then run v11.
+through `migrate_v6.php` first (CLI, or temporary web access), then run v12.
 `config/` is denied over HTTP by `config/.htaccess`; `migrate.php` is the
 supported browser entry point and is protected by admin login and CSRF.
 The remaining waqf table/columns are never read by the app; no new migration is
@@ -124,6 +130,13 @@ default), so “today” is consistent for every request.
 > flagged-waqf feature was later removed from the UI and API, so these objects
 > remain only to preserve existing data. Run `php config/migrate_v11.php`
 > (it also runs v7–v10), or open `migrate.php` as an admin.
+>
+> **Rub' consolidation session (v12)** creates `rub_sessions`, `rub_results`,
+> `rub_verse_stats`, and `rub_word_misses`. The session adds the five revision
+> exercises, first-attempt accuracy, weak-word tracking and simple spaced
+> repetition without changing the existing `RUB_TAMKIN` task or arrangement
+> progress. Run `php config/migrate_v12.php` (it also runs v7–v11), or open
+> `migrate.php` as an admin.
 
 ## New memorization (HIFZ_JADID)
 
@@ -562,6 +575,36 @@ does not repeat until the eligible pool has been used once.
   The tafsir is split into 240 small per-rub' files so a recitation request
   never has to parse a multi-megabyte Quran-wide bundle.
 
+### Five-exercise consolidation session (v12)
+
+The Rub' page now opens on a **جلسة التثبيت** tab. The legacy one-verse
+arrangement board is still available as **الترتيب الحر** (Free practice), with
+its progress untouched.
+
+- **Five exercises**: word arrangement, missing words, continue the ayah,
+  similar ayat (mutashabihat), and progressive disappearing ayat. The session
+  draws 4 / 6 / 8 or all verses per exercise and supports beginner,
+  intermediate, and advanced difficulty. Weak and due verses are prioritised.
+- **First-attempt accuracy** is recorded for every item. Retries are allowed for
+  practice but never overwrite the first result. The server is idempotent: an
+  existing `ANSWERED` result wins; a `SKIPPED` or `BOUNDARY_SKIPPED` result can be
+  replaced by a real answer later.
+- **Exercise 4 uses curated data only** (`web/data/mutashabihat_curated.json`)
+  and four non-trivial modes: continuation, rub membership, context before, and
+  context after. Outside-rub twins are opt-in (default on) and labelled
+  `خارج الربع` only after answering. If no verified pair exists, the stage is
+  skipped with a clear empty state; the app never invents a comparison.
+- **Exercise 5 is self-reported** (`أتقنتها` / `أحتاج مراجعة`). Hiding words never
+  marks a verse as memorised automatically.
+- **Progress is private and resumable**: `rub_sessions`, `rub_results`,
+  `rub_verse_stats`, and `rub_word_misses` store the plan, first-attempt results,
+  weak words/ayat, and simple spaced-repetition due dates per user. The client
+  also keeps a local cache and retry queue for offline use.
+- Finishing a started session completes the existing `RUB_TAMKIN` task. If no
+  session was started, the original all-verses arrangement rule still completes
+  it. The summary shows accuracy, time, per-exercise results, mistake review,
+  weak items, history, and a repeat-weak-exercises action.
+
 ### Optional full-rub' microphone self-test (v19)
 
 After (or alongside) the word-arrangement flow, the user can recite the whole
@@ -644,7 +687,7 @@ migration scripts. On a host without CLI, temporarily comment out the
 `RewriteRule ^(?:config|api/data)...` line in the root `.htaccess` **and**
 rename `config/.htaccess`, open
 `https://your-host/config/migrate_v4.php?confirm=1`, then restore both files
-immediately. Prefer `migrate.php` for v11 and later upgrades, and `setup.php`
+immediately. Prefer `migrate.php` for v12 and later upgrades, and `setup.php`
 for fresh installs.
 
 This is additive and idempotent: it adds `role`, `status`, `status_reason`,
@@ -744,13 +787,13 @@ active super admin cannot be suspended or demoted.
 
 ### Deploy order
 
-1. Upload `config/` (including `.htaccess`, `database.example.php`, `migrate_v11.php`, `migrate_v10.php`, `migrate_v9.php`, `migrate_v8.php`, and `migrate_v7.php`), `migrate.php`, `setup.php`, `api/` (the `api/waqf/` folder is gone) and the changed `web/` files (including `web/data/kalimaat/`, `web/js/entry-gate.js`, `web/js/rub.js`, and `web/js/kalimaat.js`). For the Mushaf reader also upload `web/mushaf.html`, `web/css/mushaf.css`, `web/js/mushaf.js`, and `web/data/mushaf_meta.json`; no migration is required for it.
+1. Upload `config/` (including `.htaccess`, `database.example.php`, `migrate_v12.php`, `migrate_v11.php`, `migrate_v10.php`, `migrate_v9.php`, `migrate_v8.php`, and `migrate_v7.php`), `migrate.php`, `setup.php`, `api/` (the `api/waqf/` folder is gone) and the changed `web/` files (including `web/data/kalimaat/`, `web/data/mutashabihat_curated.json`, `web/js/entry-gate.js`, `web/js/rub.js`, `web/js/rub-session.js`, `web/js/rub-exercises.js`, `web/css/rub-session.css`, and `web/js/kalimaat.js`). For the Mushaf reader also upload `web/mushaf.html`, `web/css/mushaf.css`, `web/js/mushaf.js`, and `web/data/mushaf_meta.json`; no migration is required for it.
 2. Upload `config/database.local.php` separately with the current credentials if you deploy over FTP (it is intentionally ignored by git). If you deploy through git and that file is absent, the app cannot connect until you run `setup.php`; use the wizard to write it, or set `DB_*` environment variables.
-3. Sign in as an administrator and open `https://your-host/migrate.php`, then press **تشغيل ترقية v11 الآن**. For a fresh install, use `setup.php` instead.
-4. The migration runner applies v11 (including v7-v10) and leaves `config/installed.lock` untouched. `setup.php` remains locked. Existing `ARCHIVED` mistake rows are purged intentionally.
-5. Open `api/health.php` (expect 200, `"schema_ok": true`, `"tafsir_ok": true`, and `"kalimaat_ok": true`), hard-refresh `web/index.html`, and confirm the new service worker cache (`rafeequl-hifz-v28`) is active.
+3. Sign in as an administrator and open `https://your-host/migrate.php`, then press **تشغيل ترقية v12 الآن**. For a fresh install, use `setup.php` instead.
+4. The migration runner applies v12 (including v7-v11) and leaves `config/installed.lock` untouched. `setup.php` remains locked. Existing `ARCHIVED` mistake rows are purged intentionally.
+5. Open `api/health.php` (expect 200, `"schema_ok": true`, `"tafsir_ok": true`, and `"kalimaat_ok": true`), hard-refresh `web/index.html`, and confirm the new service worker cache (`rafeequl-hifz-v29`) is active.
 
 > Back up the database before step 3 on a live site. The migration is additive
 > except for the intentional purge of completed mistake rows, but a backup is
 > always the right first move. If the host's PHP cannot reach MySQL, use its
-> phpMyAdmin/CLI and run `config/migrate_v11.php` there instead.
+> phpMyAdmin/CLI and run `config/migrate_v12.php` there instead.

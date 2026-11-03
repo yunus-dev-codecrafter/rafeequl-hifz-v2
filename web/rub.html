@@ -15,6 +15,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Amiri+Quran&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/kalimaat.css">
+  <link rel="stylesheet" href="css/rub-session.css">
   <script src="js/i18n.js"></script>
 </head>
 <body data-task-type="RUB_TAMKIN">
@@ -157,6 +158,108 @@
         </div>
       </section>
 
+      <!-- Session / free-practice tabs -->
+      <nav class="rub-tabs" role="tablist" aria-label="وضع التثبيت">
+        <button type="button" class="rub-tab is-active" data-rub-tab="session" role="tab" aria-selected="true" aria-controls="rub-session-panel">
+          <span aria-hidden="true">🧠</span>
+          <span data-i18n="rub_tab_session">جلسة التثبيت</span>
+        </button>
+        <button type="button" class="rub-tab" data-rub-tab="practice" role="tab" aria-selected="false" aria-controls="rub-practice-panel">
+          <span aria-hidden="true">🧩</span>
+          <span data-i18n="rub_tab_practice">الترتيب الحر</span>
+        </button>
+      </nav>
+
+      <!-- Structured five-exercise session -->
+      <section id="rub-session-panel" class="rub-session-panel" role="tabpanel" aria-label="جلسة التثبيت">
+        <div id="rub-session-alert" class="rub-session-alert hidden" role="alert"></div>
+
+        <!-- Setup -->
+        <div id="rub-session-setup" class="rub-session-card">
+          <div class="rub-session-setup-head">
+            <div>
+              <div class="rub-eyebrow" data-i18n="rub_session_eyebrow">جلسة تثبيت الربع</div>
+              <h2 data-i18n="rub_session_setup_title">اختر إعدادات جلسة اليوم</h2>
+              <p data-i18n="rub_session_setup_sub">خمسة تمارين قصيرة تقيس الاسترجاع لا السرعة. تُحفظ نتيجتك أول مرة، ويمكنك إعادة المحاولة للتدريب.</p>
+            </div>
+            <div class="rub-session-badge" id="rub-session-due-badge"></div>
+          </div>
+
+          <div class="rub-session-field">
+            <label data-i18n="rub_session_difficulty">مستوى الصعوبة</label>
+            <div class="rub-segmented" id="rub-session-difficulty" role="group" aria-label="مستوى الصعوبة">
+              <button type="button" data-difficulty="BEGINNER" data-i18n="rub_diff_beginner">مبتدئ</button>
+              <button type="button" data-difficulty="INTERMEDIATE" class="is-active" data-i18n="rub_diff_intermediate">متوسط</button>
+              <button type="button" data-difficulty="ADVANCED" data-i18n="rub_diff_advanced">متقدم</button>
+            </div>
+          </div>
+
+          <div class="rub-session-field">
+            <label data-i18n="rub_session_sample">عدد الآيات في كل تمرين</label>
+            <div class="rub-segmented" id="rub-session-sample" role="group" aria-label="عدد الآيات">
+              <button type="button" data-size="4">4</button>
+              <button type="button" data-size="6" class="is-active">6</button>
+              <button type="button" data-size="8">8</button>
+              <button type="button" data-size="999" data-i18n="rub_session_sample_all">الكل</button>
+            </div>
+          </div>
+
+          <div class="rub-session-field">
+            <label data-i18n="rub_session_exercises">التمارين</label>
+            <div class="rub-exercise-grid" id="rub-session-exercises"></div>
+          </div>
+
+          <label class="rub-session-switch">
+            <input type="checkbox" id="rub-session-outside" checked>
+            <span>
+              <strong data-i18n="rub_session_outside_title">السماح بالمتشابهات من خارج الربع</strong>
+              <small data-i18n="rub_session_outside_sub">تُوسم الآية الخارجية بـ«خارج الربع» بعد الإجابة. أطفئ الخيار لقصر التمرين على آيات الربع فقط.</small>
+            </span>
+          </label>
+
+          <div class="rub-session-actions">
+            <button type="button" id="rub-session-start" class="btn btn-primary" data-i18n="rub_session_start">ابدأ الجلسة</button>
+            <button type="button" id="rub-session-resume" class="btn btn-ghost hidden" data-i18n="rub_session_resume">متابعة الجلسة</button>
+            <button type="button" id="rub-session-weak" class="btn btn-ghost hidden" data-i18n="rub_session_weak_start">إعادة التمارين الضعيفة</button>
+          </div>
+
+          <div id="rub-session-last" class="rub-session-last hidden"></div>
+        </div>
+
+        <!-- Active session -->
+        <div id="rub-session-active" class="rub-session-active hidden">
+          <header class="rub-session-head">
+            <div>
+              <div class="rub-eyebrow" data-i18n="rub_session_eyebrow">جلسة تثبيت الربع</div>
+              <h2 id="rub-session-title"></h2>
+              <p id="rub-session-sub"></p>
+            </div>
+            <div class="rub-session-score" aria-live="polite">
+              <strong id="rub-session-percent">0%</strong>
+              <span id="rub-session-count">0 / 0</span>
+            </div>
+          </header>
+          <div class="rub-session-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+            <span id="rub-session-bar"></span>
+          </div>
+          <ol class="rub-session-steps" id="rub-session-steps"></ol>
+          <div id="rub-session-stage" class="rub-session-stage" aria-live="polite"></div>
+          <footer class="rub-session-foot">
+            <button type="button" id="rub-session-prev" class="btn btn-ghost" data-i18n="rub_session_prev">السابق</button>
+            <button type="button" id="rub-session-check" class="btn btn-primary" data-i18n="rub_session_check">تحقق</button>
+            <button type="button" id="rub-session-next" class="btn btn-primary" data-i18n="rub_session_next">التالي</button>
+            <button type="button" id="rub-session-skip" class="btn btn-ghost" data-i18n="rub_session_skip">تخطي</button>
+            <button type="button" id="rub-session-pause" class="btn btn-ghost" data-i18n="rub_session_pause">حفظ وخروج</button>
+          </footer>
+        </div>
+
+        <!-- Session summary -->
+        <div id="rub-session-summary" class="rub-session-summary hidden"></div>
+      </section>
+
+      <!-- Free practice: the original one-verse arrangement flow -->
+      <div id="rub-practice-panel" class="rub-practice-panel hidden" role="tabpanel" aria-label="الترتيب الحر">
+
       <!-- Optional full-rub' microphone self-test -->
       <section class="rub-mic-card" id="rub-mic-card" aria-labelledby="rub-mic-card-title">
         <div class="rub-mic-card-icon" aria-hidden="true">🎙️</div>
@@ -208,7 +311,8 @@
           <span data-i18n="rub_mic_end_cta">اختبر حفظك: سمّع الربع كاملاً بالمايك</span>
         </button>
       </div>
-    </div>
+      </div><!-- /rub-practice-panel -->
+    </div><!-- /rub-root -->
   </main>
 
   <!-- Sticky verse dock -->
@@ -331,6 +435,8 @@
   </div>
 
   <script src="js/app.js"></script>
+  <script src="js/rub-exercises.js"></script>
+  <script src="js/rub-session.js"></script>
   <script src="js/rub.js"></script>
   <script src="js/rub-recitation.js"></script>
   <script src="js/nav.js"></script>

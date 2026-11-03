@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/_rub.php';
+require_once __DIR__ . '/_rub_session.php';
 require_once __DIR__ . '/_rollover.php';
 require_once __DIR__ . '/_hifz.php';
 
@@ -176,7 +177,7 @@ function insertRubTask(PDO $pdo, int $userId, array $rub, string $date): array
     ];
 }
 
-function formatTask(array $row, string $today): array
+function formatTask(array $row, string $today, ?PDO $pdo = null, int $userId = 0): array
 {
     $type = (string) $row['task_type'];
     $start = isset($row['start_page']) ? (int) $row['start_page'] : null;
@@ -237,6 +238,11 @@ function formatTask(array $row, string $today): array
         $doneCount = $versesTotal > 0 ? min(count($doneVerses), $versesTotal) : 0;
         $percent = $versesTotal > 0 ? (int) round(($doneCount / $versesTotal) * 100) : 0;
 
+        $session = null;
+        if ($pdo !== null && $userId > 0 && isset($row['id'])) {
+            $session = rh_rub_task_session_brief($pdo, $userId, (int) $row['id']);
+        }
+
         return [
             'id'                 => isset($row['id']) ? (int) $row['id'] : null,
             'task_type'          => $type,
@@ -262,6 +268,12 @@ function formatTask(array $row, string $today): array
             'verse_count'        => $rub['verse_count'] ?? 0,
             'verses_total'       => $versesTotal,
             'completed_verses'   => $doneVerses,
+            'session'            => $session,
+            'session_status'     => $session['status'] ?? null,
+            'session_progress'   => $session['progress_percent'] ?? null,
+            'session_accuracy'   => $session['accuracy'] ?? null,
+            'session_answered'   => $session['answered_items'] ?? null,
+            'session_total'      => $session['total_items'] ?? null,
         ];
     }
 
@@ -537,7 +549,7 @@ try {
             $row = insertTask($pdo, $userId, $type, $bounds, $today);
         }
 
-        $tasks[] = formatTask($row, $today);
+        $tasks[] = formatTask($row, $today, $pdo, $userId);
     }
 
     // Task 4b - Rub' consolidation (RUB_TAMKIN): one random rub' per day.
@@ -553,7 +565,7 @@ try {
             }
         }
         if ($rubRow !== null) {
-            $tasks[] = formatTask($rubRow, $today);
+            $tasks[] = formatTask($rubRow, $today, $pdo, $userId);
         }
     }
 

@@ -125,6 +125,7 @@ const RubPage = {
       this.applyData(data);
       this.render();
       this.hideLoading();
+      this.attachSession();
       await this.flushQueue();
       if (this.pendingLocalSync) {
         this.scheduleSync();
@@ -142,6 +143,7 @@ const RubPage = {
       if (cached) {
         this.applyData(cached);
         this.render();
+        this.attachSession();
         showToast(this.t('rub_offline_open', {}, 'أنت غير متصل — تم فتح آخر ربع محفوظ على جهازك'), true);
         return;
       }
@@ -317,6 +319,17 @@ const RubPage = {
     if (loading) loading.classList.add('hidden');
   },
 
+  attachSession() {
+    if (!window.RubSession || typeof window.RubSession.attach !== 'function') return;
+    try {
+      window.RubSession.attach(this);
+    } catch (e) {
+      // The legacy arrangement flow must keep working even if the session
+      // controller fails to initialise (for example on an older browser).
+      if (window.console && console.warn) console.warn('RubSession failed', e);
+    }
+  },
+
   showInactive() {
     this.hideLoading();
     const root = document.getElementById('rub-root');
@@ -375,7 +388,10 @@ const RubPage = {
     this.updateProgress();
 
     const dock = document.getElementById('rub-dock');
-    if (dock) dock.classList.remove('hidden');
+    if (dock) {
+      const practiceActive = !window.RubSession || window.RubSession.activeTab === 'practice';
+      dock.classList.toggle('hidden', !practiceActive);
+    }
 
     // Optional microphone self-test. It owns its own overlay and reads the
     // same verse payload; it never changes the arrangement progress.

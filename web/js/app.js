@@ -1344,18 +1344,35 @@ function renderDashboardUI() {
             <div class="progress-bar"><div class="progress-fill fill-amber" style="width:${percent}%"></div></div>
           </div>`;
       } else if (type === 'RUB_TAMKIN') {
-        statusPill = task.is_completed
-          ? `<span class="task-status done">${window.I18N ? I18N.t('task_status_done_today') : '✓ مكتمل اليوم'}</span>`
-          : `<span class="task-status">${window.I18N ? I18N.t('rub_verse_pill', { count, total }) : `${count} / ${total} آية`}</span>`;
+        const session = task.session || null;
+        const sessionActive = session && session.status === 'IN_PROGRESS';
+        if (sessionActive) {
+          const sTotal = Number(session.total_items) || 0;
+          const sDone = Number(session.answered_items) || 0;
+          const sPercent = Math.max(0, Math.min(100, Number(session.progress_percent) || 0));
+          statusPill = `<span class="task-status">${window.I18N ? I18N.t('rub_session_pill', { done: sDone, total: sTotal }) : `${sDone} / ${sTotal} تمرين`}</span>`;
+          progressHtml = `
+            <div class="progress-wrap">
+              <div class="progress-header">
+                <span>${window.I18N ? I18N.t('rub_session_progress_title') : 'جلسة التثبيت'}</span>
+                <span><strong>${sDone}</strong> / ${sTotal} (${sPercent}%)</span>
+              </div>
+              <div class="progress-bar"><div class="progress-fill fill-teal" style="width:${sPercent}%"></div></div>
+            </div>`;
+        } else {
+          statusPill = task.is_completed
+            ? `<span class="task-status done">${window.I18N ? I18N.t('task_status_done_today') : '✓ مكتمل اليوم'}</span>`
+            : `<span class="task-status">${window.I18N ? I18N.t('rub_verse_pill', { count, total }) : `${count} / ${total} آية`}</span>`;
 
-        progressHtml = `
-          <div class="progress-wrap">
-            <div class="progress-header">
-              <span>${window.I18N ? I18N.t('rub_progress_title') : 'الآيات المثبتة'}</span>
-              <span><strong>${count}</strong> / ${total} (${percent}%)</span>
-            </div>
-            <div class="progress-bar"><div class="progress-fill fill-teal" style="width:${percent}%"></div></div>
-          </div>`;
+          progressHtml = `
+            <div class="progress-wrap">
+              <div class="progress-header">
+                <span>${window.I18N ? I18N.t('rub_progress_title') : 'الآيات المثبتة'}</span>
+                <span><strong>${count}</strong> / ${total} (${percent}%)</span>
+              </div>
+              <div class="progress-bar"><div class="progress-fill fill-teal" style="width:${percent}%"></div></div>
+            </div>`;
+        }
       } else {
         statusPill = task.is_completed
           ? `<span class="task-status done">${window.I18N ? I18N.t('task_status_done_today') : '✓ مكتمل اليوم'}</span>`

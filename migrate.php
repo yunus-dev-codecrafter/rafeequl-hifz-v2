@@ -6,7 +6,7 @@ declare(strict_types=1);
  *
  * Why this page exists: setup.php intentionally locks itself after the first
  * successful install, so it cannot be used for ordinary code upgrades. This
- * page applies migration v11 (including v7-v10) to an existing database without
+ * page applies migration v12 (including v7-v11) to an existing database without
  * deleting config/installed.lock or re-enabling the installer.
  *
  * Security:
@@ -36,7 +36,7 @@ function mh_h($value): string
     return htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
 
-/** Current v11 readiness, without assuming the columns already exist. */
+/** Current v12 readiness, without assuming the columns already exist. */
 function mh_schema(PDO $pdo): array
 {
     $out = [
@@ -52,6 +52,10 @@ function mh_schema(PDO $pdo): array
         'gate_column'     => false,
         'waqf_table'      => false,
         'waqf_gate_column' => false,
+        'rub_session_table' => false,
+        'rub_results_table' => false,
+        'rub_stats_table' => false,
+        'rub_word_misses_table' => false,
         'ready'           => false,
     ];
 
@@ -59,6 +63,10 @@ function mh_schema(PDO $pdo): array
         $out['users'] = (bool) $pdo->query("SHOW TABLES LIKE 'users'")->fetchColumn();
         $out['kalimaat_table'] = (bool) $pdo->query("SHOW TABLES LIKE 'kalimaat_progress'")->fetchColumn();
         $out['waqf_table'] = (bool) $pdo->query("SHOW TABLES LIKE 'waqf_flags'")->fetchColumn();
+        $out['rub_session_table'] = (bool) $pdo->query("SHOW TABLES LIKE 'rub_sessions'")->fetchColumn();
+        $out['rub_results_table'] = (bool) $pdo->query("SHOW TABLES LIKE 'rub_results'")->fetchColumn();
+        $out['rub_stats_table'] = (bool) $pdo->query("SHOW TABLES LIKE 'rub_verse_stats'")->fetchColumn();
+        $out['rub_word_misses_table'] = (bool) $pdo->query("SHOW TABLES LIKE 'rub_word_misses'")->fetchColumn();
     } catch (Throwable $t) {
         $out['users'] = false;
     }
@@ -115,7 +123,11 @@ function mh_schema(PDO $pdo): array
         && $out['kalimaat_session']
         && $out['gate_column']
         && $out['waqf_table']
-        && $out['waqf_gate_column'];
+        && $out['waqf_gate_column']
+        && $out['rub_session_table']
+        && $out['rub_results_table']
+        && $out['rub_stats_table']
+        && $out['rub_word_misses_table'];
 
     try {
         foreach ($pdo->query('SHOW INDEX FROM `mistakes`') as $row) {
@@ -280,10 +292,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 throw new RuntimeException('Could not load config/migrate_v11.php.');
             }
             $stats11 = rh_migrate_v11($pdo, $log);
+            require_once __DIR__ . '/config/migrate_v12.php';
+            if (!function_exists('rh_migrate_v12')) {
+                throw new RuntimeException('Could not load config/migrate_v12.php.');
+            }
+            $stats12 = rh_migrate_v12($pdo, $log);
             foreach (['columns_added', 'indexes_added', 'tables_created', 'enum_updates'] as $statKey) {
                 $stats[$statKey] = (int) ($stats[$statKey] ?? 0) + (int) ($stats10[$statKey] ?? 0);
             }
-            $stats['tables_created'] = (int) $stats['tables_created'] + (int) ($stats11['tables_created'] ?? 0);
+            $stats['tables_created'] = (int) $stats['tables_created']
+                + (int) ($stats11['tables_created'] ?? 0)
+                + (int) ($stats12['tables_created'] ?? 0);
             $stats['columns_added'] = (int) $stats['columns_added'] + (int) ($stats11['columns_added'] ?? 0);
             $stats['mistakes_purged'] = (int) ($stats11['mistakes_purged'] ?? 0);
         } catch (Throwable $t) {
@@ -299,10 +318,10 @@ $enumDisplay = $schema['enum'] !== '' ? $schema['enum'] : '—';
 mh_page_start('رفيق الحفظ — ترقية قاعدة البيانات');
 ?>
 <span class="badge">ترقية قاعدة البيانات</span>
-<h1>ترقية قاعدة البيانات إلى v11</h1>
+<h1>ترقية قاعدة البيانات إلى v12</h1>
 <p class="muted">
-  مرحباً <?= mh_h($user['name'] ?? $user['email'] ?? '') ?>. هذه الصفحة تطبّق ترقية v11
-  (وتشمل v7 حتى v10) على قاعدة البيانات الحالية. لا تحذف
+  مرحباً <?= mh_h($user['name'] ?? $user['email'] ?? '') ?>. هذه الصفحة تطبّق ترقية v12
+  (وتشمل v7 حتى v11) على قاعدة البيانات الحالية. لا تحذف
   <code>config/installed.lock</code> ولا تعيد تفعيل المثبّت.
 </p>
 <p class="warn" style="margin-top:0">
@@ -327,6 +346,10 @@ mh_page_start('رفيق الحفظ — ترقية قاعدة البيانات');
     <li><span>عمودا <code>users.gate_mistake_*</code></span><span class="<?= $schema['gate_column'] ? 'pass' : 'fail' ?>"><?= $schema['gate_column'] ? '✓' : '✗' ?></span></li>
     <li><span>جدول <code>waqf_flags</code></span><span class="<?= $schema['waqf_table'] ? 'pass' : 'fail' ?>"><?= $schema['waqf_table'] ? '✓' : '✗' ?></span></li>
     <li><span>عمودا <code>users.gate_waqf_*</code></span><span class="<?= $schema['waqf_gate_column'] ? 'pass' : 'fail' ?>"><?= $schema['waqf_gate_column'] ? '✓' : '✗' ?></span></li>
+    <li><span>جدول <code>rub_sessions</code></span><span class="<?= $schema['rub_session_table'] ? 'pass' : 'fail' ?>"><?= $schema['rub_session_table'] ? '✓' : '✗' ?></span></li>
+    <li><span>جدول <code>rub_results</code></span><span class="<?= $schema['rub_results_table'] ? 'pass' : 'fail' ?>"><?= $schema['rub_results_table'] ? '✓' : '✗' ?></span></li>
+    <li><span>جدول <code>rub_verse_stats</code></span><span class="<?= $schema['rub_stats_table'] ? 'pass' : 'fail' ?>"><?= $schema['rub_stats_table'] ? '✓' : '✗' ?></span></li>
+    <li><span>جدول <code>rub_word_misses</code></span><span class="<?= $schema['rub_word_misses_table'] ? 'pass' : 'fail' ?>"><?= $schema['rub_word_misses_table'] ? '✓' : '✗' ?></span></li>
   </ul>
   <p class="muted" style="margin-bottom:0">نوع الخطأ الحالي: <code><?= mh_h($enumDisplay) ?></code></p>
 </div>
@@ -338,8 +361,8 @@ mh_page_start('رفيق الحفظ — ترقية قاعدة البيانات');
   </div>
 <?php elseif ($schema['ready']): ?>
   <div class="ok">
-    <strong>قاعدة البيانات جاهزة لـ v11.</strong>
-    عدّاد التكرار، وجدول تقدّم معاني الكلمات، وجدول المواقف المعلّمة موجودة. يمكنك إعادة تشغيل الترقية بأمان إذا أردت إصلاح أي شيء.
+    <strong>قاعدة البيانات جاهزة لـ v12.</strong>
+    عدّاد التكرار، وجدول تقدّم معاني الكلمات، وجدول المواقف المعلّمة، وجداول جلسات تثبيت الربع موجودة. يمكنك إعادة تشغيل الترقية بأمان إذا أردت إصلاح أي شيء.
   </div>
   <?php if (!$schema['index']): ?>
     <div class="warn">
@@ -347,23 +370,24 @@ mh_page_start('رفيق الحفظ — ترقية قاعدة البيانات');
     </div>
   <?php endif; ?>
   <div class="card">
-    <form method="post" action="migrate.php" onsubmit="return confirm('إعادة تشغيل ترقية v11 آمنة ومتكررة. هل تريد المتابعة؟');">
+    <form method="post" action="migrate.php" onsubmit="return confirm('إعادة تشغيل ترقية v12 آمنة ومتكررة. هل تريد المتابعة؟');">
       <input type="hidden" name="csrf" value="<?= mh_h($csrf) ?>">
       <input type="hidden" name="action" value="migrate">
-      <button type="submit" class="secondary">إعادة تشغيل ترقية v11</button>
+      <button type="submit" class="secondary">إعادة تشغيل ترقية v12</button>
     </form>
   </div>
 <?php else: ?>
   <div class="warn">
     <strong>الترقية مطلوبة.</strong>
     ستُضاف أعمدة عدّاد التكرار وجدول المواقف المعلّمة، ويُحوَّل نوع الخطأ إلى التصنيفات الثلاثة،
-    وتُحذف البطاقات المكتملة نهائيًا عند 40/40، ويُضاف جدول تقدّم معاني الكلمات. الترقية آمنة ومتكررة.
+    وتُحذف البطاقات المكتملة نهائيًا عند 40/40، ويُضاف جدول تقدّم معاني الكلمات،
+    وجداول جلسات تثبيت الربع. الترقية آمنة ومتكررة.
   </div>
   <div class="card">
     <form method="post" action="migrate.php">
       <input type="hidden" name="csrf" value="<?= mh_h($csrf) ?>">
       <input type="hidden" name="action" value="migrate">
-      <button type="submit">تشغيل ترقية v11 الآن</button>
+      <button type="submit">تشغيل ترقية v12 الآن</button>
     </form>
     <p class="muted" style="margin-bottom:0">قد تستغرق الترقية بعض الثواني على قاعدة بيانات كبيرة. لا تغلق الصفحة.</p>
   </div>
