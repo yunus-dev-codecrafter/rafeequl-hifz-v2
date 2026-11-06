@@ -9,7 +9,7 @@ declare(strict_types=1);
  * `users.gate_mistake_id` so the same card is practised until 15/15.
  */
 
-const KALIMAAT_TARGET = 1000;
+const KALIMAAT_TARGET = 500;
 const KALIMAAT_TEST_MASTERY_CORRECT = 3;
 
 function kal_json_out(int $code, array $payload): void

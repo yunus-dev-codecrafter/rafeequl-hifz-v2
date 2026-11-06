@@ -6,7 +6,7 @@ declare(strict_types=1);
  *
  * Returns the one word and the one mistake card that must be practised before
  * the app opens. Every lock is created lazily and is stable across sessions
- * until its target is reached (1000 for kalimaat, 40 for mistakes).
+ * until its target is reached (500 for kalimaat, 40 for mistakes).
  */
 
 require __DIR__ . '/../../config/database.php';

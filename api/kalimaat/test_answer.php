@@ -53,7 +53,7 @@ try {
             kal_json_out(409, [
                 'success' => false,
                 'code' => 'NOT_READY',
-                'error' => 'Reach 1000 repetitions before testing this word.',
+                'error' => 'Reach 500 repetitions before testing this word.',
                 'word' => kal_word_payload([], $row),
             ]);
         }

@@ -3,7 +3,7 @@
 /* ==========================================================================
    Rafeequl Hifz - entry gate
    A single blocking overlay with two sequential steps:
-     1. معاني كلمات القرآن (10 repetitions per entry, 1000 lifetime)
+     1. معاني كلمات القرآن (10 repetitions per entry, 500 lifetime)
      2. بطاقة خطأ واحدة (15 repetitions per entry, 15 lifetime)
    The gate is re-armed once per browser app-session. It fails open only when
    the API or the optional catalog is unavailable, so a server problem never
@@ -197,7 +197,7 @@
       ${wordCardHtml(word, true)}
       <div class="entry-gate-lifetime">
         <span>${esc(t('entry_gate_lifetime', 'إجمالي التكرار'))}</span>
-        <strong>${Number(word.repeat_count) || 0} / 1000</strong>
+        <strong>${Number(word.repeat_count) || 0} / 500</strong>
       </div>
       <div class="entry-gate-actions">
         <button type="button" class="btn btn-primary entry-gate-main-btn" id="entry-gate-repeat">

@@ -393,7 +393,7 @@ a direct bookmark cannot bypass it. It opens **once per browser app session**
 
 1. **معاني كلمات القرآن** — the currently locked word is shown with its meaning
    and reference. The user must record **10 repetitions** for this entry, or the
-   remaining lifetime count if fewer than 10 are left before 1,000.
+   remaining lifetime count if fewer than 10 are left before 500.
 2. **بطاقة خطأ** — the mistake card locked in `users.gate_mistake_id` is shown
    with its mistake type. `AYAH_MISTAKE` shows the single ayah;
    `TRANSITION_FAILURE` shows the ayah where the user stopped plus the next ayah;
@@ -418,13 +418,13 @@ re-arms the gate. The dedicated Kalimaat page remains reachable from **More**.
 
 | Status | Meaning |
 | --- | --- |
-| `LOCKED` | The one word currently practised; it stays locked until 1,000 repetitions |
-| `READY` | 1,000 reached; the word is in the test pool |
+| `LOCKED` | The one word currently practised; it stays locked until 500 repetitions |
+| `READY` | 500 reached; the word is in the test pool |
 | `MASTERED` | Three correct answers in three separate app sessions |
 
 - The locked word is chosen randomly from pages `1..current_hifz_page`, or all
   `604` pages for `COMPLETE` users.
-- Only one word is locked at a time. When it reaches 1,000 the next entry (or the
+- Only one word is locked at a time. When it reaches 500 the next entry (or the
   dedicated page) locks another eligible word.
 - The test draws randomly from `READY` words **inside the current zone**.
 - A user can browse the whole zone, filter by juz/page/status, and manually lock

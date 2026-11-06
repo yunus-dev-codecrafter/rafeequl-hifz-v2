@@ -162,7 +162,7 @@
     const bar = $('kalimaat-dash-progress');
 
     if (locked) {
-      if (count) count.textContent = `${fmt(locked.repeat_count)} / ${fmt(k.target || 1000)}`;
+      if (count) count.textContent = `${fmt(locked.repeat_count)} / ${fmt(k.target || 500)}`;
       if (sub) sub.textContent = `${locked.text} — ${locked.meaning}`;
       if (bar) bar.style.width = `${Math.max(0, Math.min(100, Number(locked.progress_percent) || 0))}%`;
       card.classList.remove('is-empty');
@@ -236,7 +236,7 @@
     if (!box) return;
     const k = (state.entry && state.entry.kalimaat) || {};
     const word = k.locked || null;
-    const target = Number(k.target) || 1000;
+    const target = Number(k.target) || 500;
 
     setText('kalimaat-locked-counter', word
       ? `${fmt(word.repeat_count)} / ${fmt(target)}`
@@ -289,7 +289,7 @@
         <button type="button" class="btn btn-ghost" data-kalimaat-add="10">+10</button>
         <button type="button" class="btn btn-ghost" data-kalimaat-add="50">+50</button>
       </div>
-      <p class="entry-gate-hint">${esc(t('kalimaat_locked_hint', 'تظل الكلمة مثبتة حتى تصل إلى ١٠٠٠ تكرار، ثم تنتقل تلقائيًا إلى الاختبار.'))}</p>`;
+      <p class="entry-gate-hint">${esc(t('kalimaat_locked_hint', 'تظل الكلمة مثبتة حتى تصل إلى ٥٠٠ تكرار، ثم تنتقل تلقائيًا إلى الاختبار.'))}</p>`;
   }
 
   function populateJuz() {
@@ -508,7 +508,7 @@
             <span>${esc(surahName(word.surah_number))} • ${esc(t('entry_gate_ayah', 'الآية'))} ${fmt(word.ayah_number)}</span>
             <span>${esc(t('entry_gate_page', 'صفحة'))} ${fmt(word.page_number)}</span>
             ${word.book ? `<span>${esc(word.book)}</span>` : ''}
-            <span>${fmt(word.repeat_count)} / ${fmt(word.target || 1000)}</span>
+            <span>${fmt(word.repeat_count)} / ${fmt(word.target || 500)}</span>
           </div>
         </div>`;
     }).join('');
@@ -593,7 +593,7 @@
         <div class="kalimaat-test-empty">
           <div class="kalimaat-empty-icon" aria-hidden="true">🎯</div>
           <strong>${esc(t('kalimaat_test_empty_title', 'لا توجد كلمات جاهزة بعد'))}</strong>
-          <p>${esc(t('kalimaat_test_empty_desc', 'أكمل ١٠٠٠ تكرار لكلمة واحدة على الأقل ليبدأ الاختبار.'))}</p>
+          <p>${esc(t('kalimaat_test_empty_desc', 'أكمل ٥٠٠ تكرار لكلمة واحدة على الأقل ليبدأ الاختبار.'))}</p>
           <button type="button" class="btn btn-primary" id="kalimaat-test-study" style="margin-top:0.8rem;">${esc(t('kalimaat_back_study', 'العودة إلى المراجعة'))}</button>
         </div>`;
       return;
