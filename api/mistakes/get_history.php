@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 /**
  * Rafeequl Hifz - Mistake History & Weak-Point Analytics
- * - history:      full log (ACTIVE + ARCHIVED), newest first, with the 40-practice counter
+ * - history:      full log (ACTIVE + ARCHIVED), newest first, with the 15-practice counter
  * - weak_points:  top recurring weak Ayahs and Surahs (weighted by recurrence)
  * - analytics:    type distribution, per-juz heatmap, due summary, review streak
  */
@@ -195,7 +195,7 @@ try {
         $juzHeatmap[] = ['juz_number' => $j, 'count' => $freqByJuz[$j] ?? 0];
     }
 
-    // Practice summary (40-repetition model)
+    // Practice summary (15-repetition model)
     $stmt = $pdo->prepare(
         "SELECT
             SUM(CASE WHEN `status` = 'ACTIVE' THEN 1 ELSE 0 END) AS active_cards,

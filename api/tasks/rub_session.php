@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 /**
- * Rafeequl Hifz — Rub' Consolidation structured session API (RUB_TAMKIN v12).
+ * Rafeequl Hifz - Rub' Consolidation structured session API (RUB_TAMKIN v13).
  *
  * GET  ?task_id=123
  *      Returns the active session (if any), recent history, weak verses/words,
@@ -41,6 +41,12 @@ function rh_rub_schema_ready(PDO $pdo): bool
                 return false;
             }
         }
+        // v13 extends rub_results.exercise with the advanced challenges. Refuse
+        // to start a session that cannot be saved instead of failing mid-way.
+        $column = $pdo->query("SHOW COLUMNS FROM `rub_results` LIKE 'exercise'")->fetch();
+        if (!is_array($column) || strpos((string) ($column['Type'] ?? ''), 'INTERRUPT') === false) {
+            return false;
+        }
         return true;
     } catch (Throwable $t) {
         return false;
@@ -74,9 +80,9 @@ $userId   = rh_resolve_user_id($pdo, $authUser, $input['user_id'] ?? null);
 if (!rh_rub_schema_ready($pdo)) {
     json_out(503, [
         'success' => false,
-        'error'   => 'The Rub Consolidation session tables are not installed yet.',
+        'error'   => 'The Rub Consolidation session tables are not installed or need the v13 upgrade.',
         'code'    => 'schema_missing',
-        'hint'    => 'Run config/migrate_v12.php or open migrate.php, then reload this page.',
+        'hint'    => 'Run config/migrate_v13.php or open migrate.php, then reload this page.',
     ]);
 }
 
@@ -126,7 +132,7 @@ function rh_rub_state_payload(PDO $pdo, int $userId, array $task): array
 
     $settings = [
         'difficulty'       => 'INTERMEDIATE',
-        'exercises'        => rh_rub_exercise_keys(),
+        'exercises'        => rh_rub_core_exercise_keys(),
         'sample_size'      => 6,
         'allow_outside_rub' => true,
         'focus'            => 'ALL',
@@ -135,7 +141,7 @@ function rh_rub_state_payload(PDO $pdo, int $userId, array $task): array
     if ($source !== null) {
         $settings = [
             'difficulty'       => (string) $source['difficulty'],
-            'exercises'        => $source['exercises'] ?: rh_rub_exercise_keys(),
+            'exercises'        => $source['exercises'] ?: rh_rub_core_exercise_keys(),
             'sample_size'      => (int) $source['sample_size'] > 0 ? (int) $source['sample_size'] : 6,
             'allow_outside_rub' => (bool) $source['allow_outside_rub'],
             'focus'            => 'ALL',
@@ -196,7 +202,7 @@ try {
             $difficulty = 'INTERMEDIATE';
         }
 
-        $requested = $input['exercises'] ?? rh_rub_exercise_keys();
+        $requested = $input['exercises'] ?? rh_rub_core_exercise_keys();
         if (!is_array($requested)) {
             json_out(400, ['success' => false, 'errors' => ['exercises' => 'exercises must be an array.']]);
         }

@@ -203,10 +203,10 @@ for ($rubId = 1; $rubId <= $maxRub; $rubId++) {
                         $decoys = is_array($item['decoys'] ?? null) ? $item['decoys'] : [];
                         $seenWords = [];
                         foreach ($item['words'] as $word) {
-                            $seenWords[rh_rub_normalize_arabic((string) $word['text'])] = true;
+                            $seenWords[rh_rub_normalize_strict((string) $word['text'])] = true;
                         }
                         foreach ($decoys as $decoy) {
-                            $norm = rh_rub_normalize_arabic((string) $decoy);
+                            $norm = rh_rub_normalize_strict((string) $decoy);
                             if ($norm === '') {
                                 verify_fail($errors, "rub {$rubId} {$mode} {$difficulty} {$exercise} {$itemId}: empty decoy");
                             }

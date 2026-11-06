@@ -7,10 +7,10 @@ declare(strict_types=1);
  *
  * MASTERED        -> marks the completed mistake and hard-deletes the card row,
  *                   keeping a MASTERED audit event.
- * REACTIVATE      -> returns a kept mistake to the active deck with a fresh 40-counter.
+ * REACTIVATE      -> returns a kept mistake to the active deck with a fresh 15-counter.
  * DELETE          -> hard-deletes the row, keeping a DELETED audit event.
  * KEEP_PRACTICING -> one extra correct repetition (legacy shortcut); hard-deletes
- *                   the card once the 40-repetition target is reached.
+ *                   the card once the 15-repetition target is reached.
  *
  * Graded practice should use review_mistake.php; this endpoint powers the
  * history page's management buttons.

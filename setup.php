@@ -431,7 +431,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action !== '' && $action !== 'save
                     rh_setup_import_schema($pdo);
                 }
 
-                $notices[] = 'تطبيق ترقية قاعدة البيانات v12 (تشمل v7 حتى v11)...';
+                $notices[] = 'تطبيق ترقية قاعدة البيانات v13 (تشمل v7 حتى v12)...';
                 require_once __DIR__ . '/config/migrate_v9.php';
                 if (!function_exists('rh_migrate_v9')) {
                     throw new RuntimeException('تعذر تحميل ملف الترقية config/migrate_v9.php.');
@@ -452,14 +452,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action !== '' && $action !== 'save
                     throw new RuntimeException('Could not load config/migrate_v12.php.');
                 }
                 $stats12 = rh_migrate_v12($pdo, $log);
+                require_once __DIR__ . '/config/migrate_v13.php';
+                if (!function_exists('rh_migrate_v13')) {
+                    throw new RuntimeException('Could not load config/migrate_v13.php.');
+                }
+                $stats13 = rh_migrate_v13($pdo, $log);
                 $notices[] = sprintf(
-                    'الترقية: %d عموداً، %d فهرساً، %d جدولاً إضافياً (v11: %d جدولاً، %d خطأ مكتملاً محذوفاً، v12: %d جدولاً).',
-                    $stats['columns_added'] + (int) ($stats11['columns_added'] ?? 0),
+                    'الترقية: %d عموداً، %d فهرساً، %d جدولاً إضافياً (v11: %d جدولاً، %d خطأ مكتملاً محذوفاً، v12: %d جدولاً، v13: %d تحديثاً).',
+                    $stats['columns_added'] + (int) ($stats11['columns_added'] ?? 0) + (int) ($stats13['columns_added'] ?? 0),
                     $stats['indexes_added'],
-                    $stats['tables_created'] + (int) ($stats11['tables_created'] ?? 0) + (int) ($stats12['tables_created'] ?? 0),
+                    $stats['tables_created'] + (int) ($stats11['tables_created'] ?? 0) + (int) ($stats12['tables_created'] ?? 0) + (int) ($stats13['tables_created'] ?? 0),
                     $stats11['tables_created'],
                     $stats11['mistakes_purged'],
-                    $stats12['tables_created']
+                    $stats12['tables_created'],
+                    $stats13['rows_updated'] ?? 0
                 );
 
                 $pageCount = rh_setup_seed_pages($pdo);
@@ -673,7 +679,7 @@ if (!in_array($selectedTimezone, $timezones, true)) {
         </form>
       <?php else: ?>
         <h3>ترقية قاعدة بيانات موجودة</h3>
-        <p class="muted">تُطبّق ترقية v11 (تشمل v7 حتى v10: عدّاد التكرار 40، وتصنيفات الخطأ الثلاثة، وأعمدة الترحيل والفهارس، وجدول تقدّم معاني الكلمات، وجدول المواقف المعلّمة)، تُحدّث بيانات الصفحات، وتُبقي الحسابات والمهام الحالية كما هي. ما عدا حذف بطاقات الأخطاء المكتملة القديمة نهائيًا.</p>
+        <p class="muted">تُطبّق ترقية v13 (تشمل v7 حتى v12: عدّاد التكرار 15، وتصنيفات الخطأ الثلاثة، وأعمدة الترحيل والفهارس، وجدول تقدّم معاني الكلمات، وجدول المواقف المعلّمة، وتحديات تثبيت الربع المتقدمة وتقييم الإتقان)، تُحدّث بيانات الصفحات، وتُبقي الحسابات والمهام الحالية كما هي. ما عدا حذف بطاقات الأخطاء المكتملة القديمة نهائيًا.</p>
         <form method="post" action="setup.php">
           <input type="hidden" name="csrf" value="<?= rh_h($csrf) ?>">
           <input type="hidden" name="action" value="upgrade">

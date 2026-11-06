@@ -1,9 +1,10 @@
 'use strict';
 
 /* ==========================================================================
-   Rafeequl Hifz — Rub' Consolidation session controller (v12)
+   Rafeequl Hifz — Rub' Consolidation session controller (v13)
 
-   Runs the five-exercise revision session inside the existing rub' page:
+   Runs the five core revision exercises plus the six optional advanced
+   challenges inside the existing rub' page:
      • server-generated plan, client-side rendering + first-attempt validation;
      • immediate local persistence and a small offline retry queue;
      • resume from any device because the server stores every result;
@@ -53,8 +54,51 @@
       subKey: 'rub_ex_ph_setup',
       sub: 'أخفِ الكلمات تدريجياً وسمّع الآية من حفظك.',
     },
+    {
+      key: 'INTERRUPT',
+      titleKey: 'rub_ex_int_title',
+      title: 'التوقف المفاجئ',
+      subKey: 'rub_ex_int_setup',
+      sub: 'أكمل الآية من موضع توقف عشوائي.',
+    },
+    {
+      key: 'RANDOM_START',
+      titleKey: 'rub_ex_rs_title',
+      title: 'بداية عشوائية',
+      subKey: 'rub_ex_rs_setup',
+      sub: 'سمّع من آية عشوائية دون معاينة النص.',
+    },
+    {
+      key: 'CONNECTION',
+      titleKey: 'rub_ex_cn_title',
+      title: 'ربط الآيات',
+      subKey: 'rub_ex_cn_setup',
+      sub: 'اختر الآية التي تأتي بعد الموضع المعروض.',
+    },
+    {
+      key: 'REVERSE',
+      titleKey: 'rub_ex_rv_title',
+      title: 'التراجع العكسي',
+      subKey: 'rub_ex_rv_setup',
+      sub: 'من الآية الحالية، اختر الآية التي تسبقها.',
+    },
+    {
+      key: 'ERROR_DETECT',
+      titleKey: 'rub_ex_ed_title',
+      title: 'اكتشاف الخطأ',
+      subKey: 'rub_ex_ed_setup',
+      sub: 'حدّد الكلمة المحرّفة في نص معدّل للاختبار.',
+    },
+    {
+      key: 'NO_PREVIEW',
+      titleKey: 'rub_ex_np_title',
+      title: 'التسميع بدون معاينة',
+      subKey: 'rub_ex_np_setup',
+      sub: 'سمّع من الذاكرة مع تسجيل يدوي للمقارنة.',
+    },
   ];
 
+  const CORE_EXERCISES = ['WORD_ORDER', 'MISSING_WORDS', 'CONTINUE_AYAH', 'MUTASHABIHAT', 'PROGRESSIVE_HIDE'];
   const ALL_EXERCISES = EXERCISE_META.map((item) => item.key);
 
   function clamp(value, min, max) {
@@ -86,7 +130,7 @@
     pending: [],
     settings: {
       difficulty: 'INTERMEDIATE',
-      exercises: ALL_EXERCISES.slice(),
+      exercises: CORE_EXERCISES.slice(),
       sample_size: 6,
       allow_outside_rub: true,
       focus: 'ALL',
@@ -136,6 +180,7 @@
         sample: $('rub-session-sample'),
         exercises: $('rub-session-exercises'),
         outside: $('rub-session-outside'),
+        advanced: $('rub-session-advanced'),
         start: $('rub-session-start'),
         resume: $('rub-session-resume'),
         weak: $('rub-session-weak'),
@@ -166,6 +211,26 @@
           const button = event.target.closest('[data-difficulty]');
           if (!button) return;
           this.settings.difficulty = button.dataset.difficulty;
+          if (this.settings.difficulty === 'ADVANCED') {
+            this.settings.exercises = ALL_EXERCISES.slice();
+          } else {
+            const kept = this.settings.exercises.filter((key) => CORE_EXERCISES.includes(key));
+            this.settings.exercises = kept.length ? kept : CORE_EXERCISES.slice();
+          }
+          this.applySettingsToControls();
+        });
+      }
+
+      if (this.els.advanced) {
+        this.els.advanced.addEventListener('change', () => {
+          if (this.els.advanced.checked) {
+            this.settings.difficulty = 'ADVANCED';
+            this.settings.exercises = ALL_EXERCISES.slice();
+          } else {
+            if (this.settings.difficulty === 'ADVANCED') this.settings.difficulty = 'INTERMEDIATE';
+            const kept = this.settings.exercises.filter((key) => CORE_EXERCISES.includes(key));
+            this.settings.exercises = kept.length ? kept : CORE_EXERCISES.slice();
+          }
           this.applySettingsToControls();
         });
       }
@@ -371,7 +436,7 @@
       const exercises = Array.isArray(incoming.exercises)
         ? incoming.exercises.filter((key) => ALL_EXERCISES.includes(key))
         : [];
-      this.settings.exercises = exercises.length ? exercises : ALL_EXERCISES.slice();
+      this.settings.exercises = exercises.length ? exercises : CORE_EXERCISES.slice();
 
       const size = Number(incoming.sample_size);
       this.settings.sample_size = [4, 6, 8, 999].includes(size) ? size : 6;
@@ -407,6 +472,11 @@
         });
       }
       if (this.els.outside) this.els.outside.checked = !!this.settings.allow_outside_rub;
+      if (this.els.advanced) {
+        const selected = new Set(this.settings.exercises);
+        this.els.advanced.checked = this.settings.difficulty === 'ADVANCED' &&
+          ALL_EXERCISES.every((key) => selected.has(key));
+      }
       if (this.els.exercises) {
         const selected = new Set(this.settings.exercises);
         this.els.exercises.querySelectorAll('input[type="checkbox"]').forEach((input) => {
@@ -863,6 +933,16 @@
         activeBlank: null,
         selected: null,
         stage: 0,
+        value: '',
+        selectedIndex: null,
+        selfReport: null,
+        npState: 'idle',
+        npStarting: false,
+        npRecorder: null,
+        npStream: null,
+        npChunks: [],
+        npUrl: '',
+        npDiscard: false,
       };
       if (exercise === 'MISSING_WORDS') state.values = {};
       this.itemStates[key] = state;
@@ -883,6 +963,8 @@
       state.unknown = false;
       const details = result.details && typeof result.details === 'object' ? result.details : {};
       if (details.selected != null) state.selected = String(details.selected);
+      if (details.selected_index != null) state.selectedIndex = Number(details.selected_index);
+      if (details.self_report != null) state.selfReport = String(details.self_report);
       if (details.stage != null) state.stage = clamp(Number(details.stage) || 0, 0, 5);
       if (Array.isArray(details.wrong_words)) state.wrongWords = uniqueInts(details.wrong_words);
     },
@@ -898,6 +980,7 @@
         rubLabel: this.page && this.page.rub
           ? this.t('rub_label', { num: this.page.rub.id }, 'الربع ' + this.page.rub.id)
           : '',
+        advanced: String(this.session && this.session.difficulty ? this.session.difficulty : '').toUpperCase() === 'ADVANCED',
         lang: this.isEnglish() ? 'en' : 'ar',
       };
     },
@@ -1103,12 +1186,12 @@
         hint_used: options.hint_used ? 1 : 0,
         outside_rub: item.outside_rub ? 1 : 0,
         wrong_words: uniqueInts(options.wrong_words || []),
-        details: {
+        details: Object.assign({
           wrong_words: uniqueInts(options.wrong_words || []),
           selected: options.selected != null ? String(options.selected) : (state.selected != null ? String(state.selected) : null),
           mode: item.mode || null,
           stage: Number(state.stage) || 0,
-        },
+        }, options.details && typeof options.details === 'object' ? options.details : {}),
       };
 
       this.answers[key] = result;
@@ -1242,6 +1325,10 @@
         this.toast(this.t('rub_ph_choose_rating', {}, 'اختر «أتقنتها» أو «أحتاج مراجعة» بعد التسميع'), true);
         return;
       }
+      if (exercise === 'NO_PREVIEW') {
+        this.toast(this.t('rub_np_choose_rating', {}, 'سجّل تسميعك ثم اختر «أتقنتها» أو «أحتاج مراجعة»'), true);
+        return;
+      }
       if (state.recorded && !state.practiceRetry) return;
 
       if (exercise === 'WORD_ORDER') {
@@ -1252,6 +1339,16 @@
         this.checkContinueAyah(context);
       } else if (exercise === 'MUTASHABIHAT') {
         this.checkMutashabihat(context);
+      } else if (exercise === 'INTERRUPT') {
+        this.checkInterrupt(context);
+      } else if (exercise === 'RANDOM_START') {
+        this.checkRandomStart(context);
+      } else if (exercise === 'CONNECTION') {
+        this.checkConnection(context);
+      } else if (exercise === 'REVERSE') {
+        this.checkReverse(context);
+      } else if (exercise === 'ERROR_DETECT') {
+        this.checkErrorDetect(context);
       }
     },
 
@@ -1285,6 +1382,14 @@
     },
 
     move(direction) {
+      // Release the microphone if the user leaves a no-preview item while
+      // recording, so the browser indicator does not stay on.
+      const active = this.currentContext();
+      if (active && active.state && active.state.npRecorder &&
+          active.state.npRecorder.state === 'recording') {
+        active.state.npDiscard = true;
+        try { active.state.npRecorder.stop(); } catch (err) {}
+      }
       let ei = this.exerciseIndex;
       let ii = this.itemIndex + direction;
       if (ii < 0) {
@@ -1436,6 +1541,96 @@
         attempts: 1,
         wrong_words: [],
         selected: state.selected,
+      });
+    },
+
+    checkInterrupt(context) {
+      const item = context.item;
+      const state = context.state;
+      if (!String(state.value || '').trim()) {
+        this.toast(this.t('rub_int_empty', {}, 'اكتب تكملة الآية أولاً'), true);
+        return;
+      }
+      const correct = RubExercises.normalizeArabic(state.value) ===
+        RubExercises.normalizeArabic(item.expected_text);
+      this.record(context.exercise, item, state, correct, {
+        attempts: 1,
+        wrong_words: correct ? [] : [Number(item.stop_index) || 0],
+        hint_used: state.reveal,
+        details: {
+          stop_index: Number(item.stop_index) || 0,
+          expected: item.expected_text || '',
+          answer: String(state.value || ''),
+        },
+      });
+    },
+
+    checkRandomStart(context) {
+      const item = context.item;
+      const state = context.state;
+      if (!String(state.value || '').trim()) {
+        this.toast(this.t('rub_rs_empty', {}, 'اكتب أول كلمتين من الآية أولاً'), true);
+        return;
+      }
+      const correct = RubExercises.normalizeArabic(state.value) ===
+        RubExercises.normalizeArabic(item.expected_text);
+      this.record(context.exercise, item, state, correct, {
+        attempts: 1,
+        wrong_words: [],
+        hint_used: state.reveal,
+        details: {
+          expected: item.expected_text || '',
+          answer: String(state.value || ''),
+        },
+      });
+    },
+
+    checkConnection(context) {
+      const state = context.state;
+      if (state.selected == null) {
+        this.toast(this.t('rub_cn_choose', {}, 'اختر الآية التالية أولاً'), true);
+        return;
+      }
+      const correct = String(state.selected) === String(context.item.correct_id);
+      this.record(context.exercise, context.item, state, correct, {
+        attempts: 1,
+        wrong_words: [],
+        selected: state.selected,
+      });
+    },
+
+    checkReverse(context) {
+      const state = context.state;
+      if (state.selected == null) {
+        this.toast(this.t('rub_rv_choose', {}, 'اختر الآية السابقة أولاً'), true);
+        return;
+      }
+      const correct = String(state.selected) === String(context.item.correct_id);
+      this.record(context.exercise, context.item, state, correct, {
+        attempts: 1,
+        wrong_words: [],
+        selected: state.selected,
+      });
+    },
+
+    checkErrorDetect(context) {
+      const item = context.item;
+      const state = context.state;
+      if (state.selectedIndex == null) {
+        this.toast(this.t('rub_ed_choose', {}, 'اضغط الكلمة التي ترى أنها خاطئة'), true);
+        return;
+      }
+      const errors = (Array.isArray(item.error_indices) ? item.error_indices : []).map(Number);
+      const correct = errors.includes(Number(state.selectedIndex));
+      this.record(context.exercise, item, state, correct, {
+        attempts: 1,
+        wrong_words: correct ? [] : errors,
+        selected: String(state.selectedIndex),
+        details: {
+          selected_index: Number(state.selectedIndex),
+          error_indices: errors,
+          error_type: item.error_type || '',
+        },
       });
     },
 
@@ -1643,19 +1838,220 @@
             hint_used: state.reveal,
           });
         }
+        return;
       }
+
+      if (context.exercise === 'INTERRUPT') {
+        if (locked) return;
+        if (target.closest('[data-int-reveal]')) {
+          event.preventDefault();
+          state.reveal = true;
+          this.record(context.exercise, context.item, state, false, {
+            attempts: 1,
+            wrong_words: [Number(context.item.stop_index) || 0],
+            hint_used: true,
+          });
+        }
+        return;
+      }
+
+      if (context.exercise === 'RANDOM_START') {
+        if (locked) return;
+        if (target.closest('[data-rs-reveal]')) {
+          event.preventDefault();
+          state.reveal = true;
+          this.record(context.exercise, context.item, state, false, {
+            attempts: 1,
+            wrong_words: [],
+            hint_used: true,
+          });
+        }
+        return;
+      }
+
+      if (context.exercise === 'CONNECTION' || context.exercise === 'REVERSE') {
+        if (locked) return;
+        const prefix = context.exercise === 'CONNECTION' ? 'data-cn-option' : 'data-rv-option';
+        const option = target.closest('[' + prefix + ']');
+        if (option) {
+          event.preventDefault();
+          state.selected = context.exercise === 'CONNECTION'
+            ? option.dataset.cnOption
+            : option.dataset.rvOption;
+          this.renderStage();
+        }
+        return;
+      }
+
+      if (context.exercise === 'ERROR_DETECT') {
+        if (locked) return;
+        const word = target.closest('[data-ed-word]');
+        if (word) {
+          event.preventDefault();
+          state.selectedIndex = Number(word.dataset.edWord);
+          this.renderStage();
+          return;
+        }
+        if (target.closest('[data-ed-reveal]')) {
+          event.preventDefault();
+          state.reveal = true;
+          const errors = (Array.isArray(context.item.error_indices) ? context.item.error_indices : []).map(Number);
+          this.record(context.exercise, context.item, state, false, {
+            attempts: 1,
+            wrong_words: errors,
+            hint_used: true,
+            details: {
+              selected_index: state.selectedIndex,
+              error_indices: errors,
+              error_type: context.item.error_type || '',
+            },
+          });
+        }
+        return;
+      }
+
+      if (context.exercise === 'NO_PREVIEW') {
+        if (locked) return;
+        if (target.closest('[data-np-record]')) {
+          event.preventDefault();
+          this.startNoPreviewRecording(context);
+          return;
+        }
+        if (target.closest('[data-np-stop]')) {
+          event.preventDefault();
+          this.stopNoPreviewRecording(context);
+          return;
+        }
+        if (target.closest('[data-np-play]')) {
+          event.preventDefault();
+          this.playNoPreviewRecording(context);
+          return;
+        }
+        if (target.closest('[data-np-reveal]')) {
+          event.preventDefault();
+          state.reveal = !state.reveal;
+          this.renderStage();
+          return;
+        }
+        const report = target.closest('[data-np-report]');
+        if (report) {
+          event.preventDefault();
+          const good = report.dataset.npReport === 'good';
+          state.selfReport = good ? 'good' : 'review';
+          this.record(context.exercise, context.item, state, good, {
+            attempts: 1,
+            wrong_words: [],
+            hint_used: state.reveal,
+            details: {
+              self_report: state.selfReport,
+              verified: false,
+              recorded: state.npState === 'recorded',
+              recording: 'manual',
+            },
+          });
+        }
+      }
+    },
+
+    startNoPreviewRecording(context) {
+      const state = context.state;
+      if (state.npState === 'recording' || state.npStarting) return;
+      if (!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== 'function' || !window.MediaRecorder) {
+        this.toast(this.t('rub_np_unsupported', {}, 'المتصفح لا يدعم التسجيل الصوتي. يمكنك التسميع ثم التقييم الذاتي.'), true);
+        return;
+      }
+      state.npStarting = true;
+      navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
+        state.npStarting = false;
+        const current = this.currentContext();
+        if (!current || current.state !== state) {
+          stream.getTracks().forEach((track) => track.stop());
+          return;
+        }
+        if (state.npUrl && String(state.npUrl).startsWith('blob:')) {
+          try { URL.revokeObjectURL(state.npUrl); } catch (err) {}
+          state.npUrl = '';
+        }
+        state.npDiscard = false;
+        const recorder = new MediaRecorder(stream);
+        state.npChunks = [];
+        state.npRecorder = recorder;
+        state.npStream = stream;
+        recorder.ondataavailable = (event) => {
+          if (event.data && event.data.size > 0) state.npChunks.push(event.data);
+        };
+        recorder.onstop = () => {
+          try {
+            stream.getTracks().forEach((track) => track.stop());
+          } catch (err) {}
+          state.npRecorder = null;
+          state.npStream = null;
+          if (state.npDiscard) {
+            state.npDiscard = false;
+            state.npState = 'idle';
+            return;
+          }
+          const blob = new Blob(state.npChunks || [], { type: recorder.mimeType || 'audio/webm' });
+          if (state.npUrl && String(state.npUrl).startsWith('blob:')) {
+            try { URL.revokeObjectURL(state.npUrl); } catch (err) {}
+          }
+          state.npUrl = URL.createObjectURL(blob);
+          state.npState = 'recorded';
+          state.npRecorder = null;
+          state.npStream = null;
+          this.renderStage();
+          const audio = this.els.stage ? this.els.stage.querySelector('[data-np-audio]') : null;
+          if (audio) {
+            audio.src = state.npUrl;
+            audio.hidden = false;
+          }
+        };
+        recorder.start();
+        state.npState = 'recording';
+        this.renderStage();
+      }).catch(() => {
+        state.npStarting = false;
+        state.npState = 'idle';
+        this.toast(this.t('rub_np_mic_denied', {}, 'تعذر الوصول إلى الميكروفون. اسمح بالتسجيل أو استخدم التقييم الذاتي.'), true);
+        this.renderStage();
+      });
+    },
+
+    stopNoPreviewRecording(context) {
+      const state = context.state;
+      if (state.npRecorder && state.npRecorder.state === 'recording') {
+        state.npRecorder.stop();
+      }
+    },
+
+    playNoPreviewRecording(context) {
+      const state = context.state;
+      if (!state.npUrl) return;
+      const audio = this.els.stage ? this.els.stage.querySelector('[data-np-audio]') : null;
+      if (!audio) return;
+      audio.src = state.npUrl;
+      audio.hidden = false;
+      const played = audio.play();
+      if (played && typeof played.catch === 'function') played.catch(() => {});
     },
 
     onStageInput(event) {
       const target = event.target;
-      if (!target || !target.matches || !target.matches('[data-mw-index]')) return;
+      if (!target || !target.matches) return;
       const context = this.currentContext();
       if (!context || (context.state.recorded && !context.state.practiceRetry)) return;
-      const index = Number(target.dataset.mwIndex);
-      if (!Number.isInteger(index)) return;
-      context.state.values[index] = target.value;
-      context.state.activeBlank = index;
-      this.writeCache();
+      if (target.matches('[data-mw-index]')) {
+        const index = Number(target.dataset.mwIndex);
+        if (!Number.isInteger(index)) return;
+        context.state.values[index] = target.value;
+        context.state.activeBlank = index;
+        this.writeCache();
+        return;
+      }
+      if (target.matches('[data-int-input]') || target.matches('[data-rs-input]')) {
+        context.state.value = target.value;
+        this.writeCache();
+      }
     },
 
     onStageFocus(event) {
@@ -1668,7 +2064,14 @@
 
     onStageKeydown(event) {
       const target = event.target;
-      if (!target || !target.matches || !target.matches('[data-mw-index]')) return;
+      if (!target || !target.matches) return;
+      if (target.matches('[data-int-input]') || target.matches('[data-rs-input]')) {
+        if (event.key !== 'Enter') return;
+        event.preventDefault();
+        this.check();
+        return;
+      }
+      if (!target.matches('[data-mw-index]')) return;
       if (event.key !== 'Enter') return;
       event.preventDefault();
       const context = this.currentContext();
@@ -1684,15 +2087,32 @@
     },
 
     placeWordOrderToken(context, tokenId) {
-      const match = /^([wd])(\d+)$/.exec(String(tokenId || ''));
-      if (!match) return;
       const state = context.state;
       const words = Array.isArray(context.item.words) ? context.item.words : [];
-      const isWord = match[1] === 'w';
-      const index = Number(match[2]);
+      const decoys = Array.isArray(context.item.decoys) ? context.item.decoys : [];
       const expected = state.placed.length;
+      if (new Set(state.placed).has(tokenId)) return;
 
-      if (isWord && index === expected) {
+      const tokens = [];
+      words.forEach((word, index) => {
+        tokens.push({
+          id: 'w' + index,
+          text: RubExercises.wordText(word),
+          wordIndex: index,
+          decoy: false,
+        });
+      });
+      decoys.forEach((word, index) => {
+        tokens.push({
+          id: 'd' + index,
+          text: RubExercises.wordText(word),
+          wordIndex: -1,
+          decoy: true,
+        });
+      });
+
+      const matched = RubExercises.tokenMatchesPosition(tokens, tokenId, expected);
+      if (matched) {
         state.placed.push(tokenId);
         this.playFeedback(true);
         this.writeCache();
@@ -1719,7 +2139,17 @@
       const words = Array.isArray(context.item.words) ? context.item.words : [];
       const index = Number(match[1]);
       const expected = state.placed.length;
-      if (index === expected) {
+      if (new Set(state.placed).has(tokenId)) return;
+
+      // Repeated words are interchangeable at the matching position, but the
+      // token keeps its own occurrence id so remove/reselect is lossless.
+      const clicked = words[index];
+      const wanted = words[expected];
+      const matched = index === expected || (
+        clicked && wanted &&
+        RubExercises.wordStrict(clicked) === RubExercises.wordStrict(wanted)
+      );
+      if (matched) {
         state.placed.push(tokenId);
         this.playFeedback(true);
         this.writeCache();
@@ -1797,6 +2227,25 @@
       state.activeBlank = null;
       state.selected = null;
       state.stage = 0;
+      state.value = '';
+      state.selectedIndex = null;
+      state.selfReport = null;
+      state.npState = 'idle';
+      state.npStarting = false;
+      if (state.npRecorder && state.npRecorder.state === 'recording') {
+        state.npDiscard = true;
+        try { state.npRecorder.stop(); } catch (err) {}
+      }
+      if (state.npStream) {
+        try { state.npStream.getTracks().forEach((track) => track.stop()); } catch (err) {}
+      }
+      state.npRecorder = null;
+      state.npStream = null;
+      if (state.npUrl) {
+        try { URL.revokeObjectURL(state.npUrl); } catch (err) {}
+      }
+      state.npUrl = '';
+      state.npChunks = [];
       state.skipped = false;
       this.renderActive();
     },
@@ -1861,6 +2310,7 @@
           if ((!Array.isArray(data.session.results) || !data.session.results.length) && localResults.length) {
             data.session.results = localResults;
           }
+          if (data.mastery && !data.session.mastery) data.session.mastery = data.mastery;
           this.session = data.session;
           if (data.state) this.state = data.state;
           if (this.state) this.state.active_session = null;
@@ -1869,7 +2319,9 @@
           this.itemStates = {};
           this.clearCache();
           this.showSummary(data.session, data.state || this.state);
-          if (window.AudioEngine && typeof AudioEngine.playCelebration === 'function') {
+          const masteryResult = data.mastery || (data.session && data.session.mastery);
+          if (masteryResult && masteryResult.mastered &&
+              window.AudioEngine && typeof AudioEngine.playCelebration === 'function') {
             try { AudioEngine.playCelebration(); } catch (e) {}
           }
         }
@@ -1953,6 +2405,124 @@
       const weakWords = Array.isArray(stats.weak_words) ? stats.weak_words.slice(0, 12) : [];
       const history = Array.isArray(state && state.history) ? state.history.slice(0, 6) : [];
 
+      const needsReviewRows = perExercise.filter((row) =>
+        row.skipped > 0 || (row.answered > 0 && row.accuracy < 70) || row.answered === 0
+      );
+      const mastery = session.mastery && typeof session.mastery === 'object'
+        ? session.mastery
+        : {
+          mastered: accuracy >= 70 && skipped === 0 && needsReviewRows.length === 0,
+          status: accuracy >= 70 && needsReviewRows.length === 0 ? 'MASTERED' : (accuracy >= 50 ? 'DEVELOPING' : 'NEEDS_REVIEW'),
+          recommendations: [],
+        };
+      const masteryLabels = {
+        MASTERED: this.t('rub_mastery_mastered', {}, 'متقن أداءً'),
+        DEVELOPING: this.t('rub_mastery_developing', {}, 'قيد التثبيت'),
+        NEEDS_REVIEW: this.t('rub_mastery_needs_review', {}, 'يحتاج إعادة'),
+      };
+      const masteryStatus = String(mastery.status || (mastery.mastered ? 'MASTERED' : 'DEVELOPING'));
+      const masteryRecommendation = (code) => {
+        const text = String(code || '');
+        const split = text.indexOf(':');
+        const key = split === -1 ? text : text.slice(0, split);
+        const count = split === -1 ? 0 : Number(text.slice(split + 1)) || 0;
+        switch (key) {
+          case 'accuracy_low':
+            return this.t('rub_mastery_rec_accuracy', {},
+              'أعد الجلسة وركّز على الآيات التي أخطأت فيها قبل الانتقال إلى ربع جديد.');
+          case 'weak_transitions':
+            return this.t('rub_mastery_rec_transitions', { count },
+              'راجع الربط بين الآيات: توجد {count} وصلة انتقالية تحتاج تثبيتاً.');
+          case 'similar_wrong':
+            return this.t('rub_mastery_rec_similar', { count },
+              'خصص جلسة للمتشابهات: {count} موضعاً لم تتميز فيه بين الآيات المتشابهة.');
+          case 'interrupt_wrong':
+            return this.t('rub_mastery_rec_interrupt', { count },
+              'تدرّب على التوقف المفاجئ: {count} موضعاً لم تستحضر تكملته.');
+          case 'skipped':
+            return this.t('rub_mastery_rec_skipped', {},
+              'لا تتجاوز التمارين غير المتقنة؛ أعدها في جلسة قريبة.');
+          case 'mastered':
+            return this.t('rub_mastery_rec_mastered', {},
+              'أتقنت هذا الربع أداءً؛ يمكنك الانتقال إلى ربع جديد مع مراجعة دورية.');
+          default:
+            return '';
+        }
+      };
+      const codedRecommendations = Array.isArray(mastery.recommendation_codes)
+        ? mastery.recommendation_codes.map(masteryRecommendation).filter(Boolean)
+        : [];
+      const recommendationList = codedRecommendations.length
+        ? codedRecommendations
+        : (Array.isArray(mastery.recommendations) && mastery.recommendations.length
+          ? mastery.recommendations
+          : (needsReviewRows.length
+            ? [this.t('rub_mastery_repeat_note', {}, 'أعد التمارين التي لم تصل إلى 70% قبل اعتبار الربع متقناً.')]
+            : [this.t('rub_mastery_ok_note', {}, 'النتيجة مبنية على الأداء الفعلي، وليست مجرد إكمال التمارين.')]));
+      const strongVerseKeys = (Array.isArray(mastery.strong_verses) ? mastery.strong_verses : [])
+        .map((key) => String(key || '')).filter(Boolean);
+      const weakVerseKeys = (Array.isArray(mastery.weak_verses) ? mastery.weak_verses : [])
+        .map((key) => {
+          if (key && typeof key === 'object') return String(key.verse_key || '');
+          return String(key || '');
+        }).filter(Boolean);
+      const confusionRows = Array.isArray(mastery.repeated_confusions) && mastery.repeated_confusions.length
+        ? mastery.repeated_confusions.slice(0, 8)
+        : weakWords.slice(0, 8).map((row) => ({
+          word_text: row.word_text || '',
+          count: row.miss_count || row.wrong_count || 0,
+          verse_key: row.verse_key || '',
+          word_index: row.word_index != null ? row.word_index : -1,
+        }));
+      const needsReviewTitles = (Array.isArray(mastery.needs_review_exercises)
+        ? mastery.needs_review_exercises
+        : needsReviewRows.map((row) => row.exercise))
+        .map((key) => {
+          const meta = EXERCISE_META.find((item) => item.key === key);
+          return meta ? this.t(meta.titleKey || '', {}, meta.title) : key;
+        })
+        .filter((value, index, list) => list.indexOf(value) === index);
+      const masteryHtml = '<div class="rub-mastery-card is-' + this.esc(masteryStatus.toLowerCase()) + '">' +
+        '<div class="rub-mastery-head"><div><span class="rub-eyebrow">' +
+        this.esc(this.t('rub_mastery_title', {}, 'تقييم الإتقان')) + '</span><h3>' +
+        this.esc(masteryLabels[masteryStatus] || masteryStatus) + '</h3></div>' +
+        '<strong class="rub-mastery-badge">' + this.esc((mastery.mastered ? '✓ ' : '') + (masteryLabels[masteryStatus] || masteryStatus)) + '</strong></div>' +
+        '<p class="rub-mastery-note">' + this.esc(this.t('rub_mastery_completion_note', {},
+          'إكمال التمارين وحده لا يعني الإتقان. هذا التقييم يعتمد على الدقة والتخطي والأخطاء المتكررة.')) + '</p>' +
+        '<div class="rub-mastery-grid">' +
+        '<div><strong>' + this.esc(String(mastery.accuracy != null ? mastery.accuracy : accuracy)) + '%</strong><span>' +
+        this.esc(this.t('rub_mastery_accuracy', {}, 'الدقة')) + '</span></div>' +
+        '<div><strong>' + this.esc(String(mastery.skipped != null ? mastery.skipped : skipped)) + '</strong><span>' +
+        this.esc(this.t('rub_mastery_skipped', {}, 'متخطاة')) + '</span></div>' +
+        '<div><strong>' + this.esc(String(needsReviewTitles.length)) + '</strong><span>' +
+        this.esc(this.t('rub_mastery_exercises_need_review', {}, 'تمارين تحتاج إعادة')) + '</span></div>' +
+        '<div><strong>' + this.esc(String(Array.isArray(mastery.weak_transitions) ? mastery.weak_transitions.length : 0)) + '</strong><span>' +
+        this.esc(this.t('rub_mastery_weak_transitions', {}, 'روابط انتقالية ضعيفة')) + '</span></div>' +
+        '</div>' +
+        (needsReviewTitles.length
+          ? '<div class="rub-mastery-chips">' + needsReviewTitles.map((title) =>
+            '<span class="rub-summary-chip is-bad">' + this.esc(title) + '</span>').join('') + '</div>'
+          : '') +
+        (strongVerseKeys.length
+          ? '<div class="rub-mastery-section"><h4>' + this.esc(this.t('rub_mastery_strong_verses', {}, 'آيات أُتقنت')) +
+            '</h4><div class="rub-mastery-chips">' + strongVerseKeys.map((key) =>
+              '<span class="rub-summary-chip is-good">' + this.esc(this.refFromKey(key)) + '</span>').join('') + '</div></div>'
+          : '') +
+        (weakVerseKeys.length
+          ? '<div class="rub-mastery-section"><h4>' + this.esc(this.t('rub_mastery_weak_verses', {}, 'آيات تحتاج مراجعة')) +
+            '</h4><div class="rub-mastery-chips">' + weakVerseKeys.map((key) =>
+              '<span class="rub-summary-chip is-bad">' + this.esc(this.refFromKey(key)) + '</span>').join('') + '</div></div>'
+          : '') +
+        (confusionRows.length
+          ? '<div class="rub-mastery-section"><h4>' + this.esc(this.t('rub_mastery_confusions', {}, 'كلمات تكرر الخطأ فيها')) +
+            '</h4><div class="rub-mastery-chips">' + confusionRows.map((row) =>
+              '<span class="rub-summary-chip is-bad"><span dir="rtl" lang="ar">' +
+              this.esc(row.word_text || this.refFromKey(row.verse_key || '') + ' · ' + (Number(row.word_index) + 1)) +
+              '</span><small>×' + this.esc(String(row.count || 0)) + '</small></span>').join('') + '</div></div>'
+          : '') +
+        '<ul class="rub-mastery-recommendations">' + recommendationList.map((line) =>
+          '<li>' + this.esc(String(line)) + '</li>').join('') + '</ul></div>';
+
       const exerciseRows = perExercise.map((row) => {
         const resultText = row.answered + row.wrong + row.skipped > 0
           ? this.t('rub_summary_result_count', { correct: row.correct, wrong: row.wrong, skipped: row.skipped },
@@ -2003,6 +2573,7 @@
         '</div><div class="rub-summary-score"><strong>' + accuracy + '%</strong><span>' +
         this.esc(this.t('rub_summary_accuracy', {}, 'دقة المحاولة الأولى')) + '</span></div></div>' +
         taskDone +
+        masteryHtml +
         '<div class="rub-summary-grid">' +
         '<div class="rub-summary-stat is-good"><strong>' + correct + '</strong><span>' + this.esc(this.t('rub_summary_correct', {}, 'إجابة صحيحة')) + '</span></div>' +
         '<div class="rub-summary-stat is-bad"><strong>' + wrong + '</strong><span>' + this.esc(this.t('rub_summary_wrong', {}, 'إجابة خاطئة')) + '</span></div>' +

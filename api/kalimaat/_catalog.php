@@ -6,7 +6,7 @@ declare(strict_types=1);
  *
  * Content is static (web/data/kalimaat/), progress is per-user in
  * `kalimaat_progress`. The entry gate also keeps one active mistake locked in
- * `users.gate_mistake_id` so the same card is practised until 40/40.
+ * `users.gate_mistake_id` so the same card is practised until 15/15.
  */
 
 const KALIMAAT_TARGET = 1000;
@@ -283,7 +283,7 @@ function kal_mistake_payload(?array $row): ?array
 {
     if (!$row) return null;
     $count = (int) ($row['practice_count'] ?? 0);
-    $target = max(1, (int) ($row['practice_target'] ?? 40));
+    $target = max(1, (int) ($row['practice_target'] ?? 15));
     return [
         'mistake_id' => (int) $row['id'],
         'surah_number' => (int) $row['surah_number'],

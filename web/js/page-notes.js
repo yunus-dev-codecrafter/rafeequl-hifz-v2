@@ -818,7 +818,7 @@ PageNotes.renderCues = function (page) {
     const note = (m.notes || '').trim();
     const occ = Number(m.occurrence_count) || 1;
     const practiceCount = Number(m.practice_count) || 0;
-    const practiceTarget = Number(m.practice_target) || 40;
+    const practiceTarget = Number(m.practice_target) || 15;
     const practiceTitle = (window.I18N && typeof I18N.t === 'function')
       ? I18N.t('history_practice', { count: practiceCount, target: practiceTarget })
       : ('التكرار: ' + practiceCount + ' / ' + practiceTarget);

@@ -109,14 +109,19 @@
 
   <main class="container">
 
-    <div class="task-page-head">
-      <div class="task-page-title-row">
-        <div>
-          <h2 data-i18n="fc_head_title">🔴 تدريب بطاقات الأخطاء السابقة</h2>
-          <p class="hint" data-i18n="fc_head_desc">كرر تلاوة الآيات التي سُجلت عليها أخطاء حتى تتقنها وتنتقل تلقائياً إلى الأرشيف.</p>
+    <section class="fc-hero">
+      <div class="fc-hero-glow" aria-hidden="true"></div>
+      <div class="fc-hero-top">
+        <div class="fc-hero-identity">
+          <div class="fc-hero-orb" aria-hidden="true">۝</div>
+          <div class="fc-hero-copy">
+            <span class="fc-hero-kicker" data-i18n="fc_hero_kicker">المعالجة الذكية</span>
+            <h2 data-i18n="fc_head_title">تدريب بطاقات الأخطاء السابقة</h2>
+            <p class="hint" data-i18n="fc_head_desc">كرر تلاوة الآيات التي سُجلت عليها أخطاء حتى تتقنها وتنتقل تلقائياً إلى الأرشيف.</p>
+          </div>
         </div>
-        <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
-          <a href="history.html" class="btn btn-ghost" style="font-size:0.8rem; padding:0.35rem 0.75rem;" data-i18n="fc_btn_view_history">
+        <div class="fc-hero-actions">
+          <a href="history.html" class="btn btn-ghost fc-hero-link" data-i18n="fc_btn_view_history">
             📜 عرض الأخطاء المتقنة
           </a>
         </div>
@@ -125,14 +130,17 @@
       <!-- Deck counters -->
       <div class="fc-counters" id="fc-counters">
         <div class="fc-counter fc-counter-due">
+          <span class="fc-counter-icon" aria-hidden="true">🔁</span>
           <span class="fc-counter-value" id="fc-remaining-reps">0</span>
           <span class="fc-counter-label" data-i18n="fc_remaining_reps_badge">تكرار متبقٍ</span>
         </div>
         <div class="fc-counter fc-counter-new">
+          <span class="fc-counter-icon" aria-hidden="true">🗂️</span>
           <span class="fc-counter-value" id="fc-active-cards">0</span>
           <span class="fc-counter-label" data-i18n="fc_active_cards_badge">بطاقات نشطة</span>
         </div>
         <div class="fc-counter fc-counter-total">
+          <span class="fc-counter-icon" aria-hidden="true">✅</span>
           <span class="fc-counter-value" id="fc-completed-cards">0</span>
           <span class="fc-counter-label" data-i18n="fc_completed_cards_badge">مكتملة</span>
         </div>
@@ -178,7 +186,7 @@
         <div class="fc-progress"><div class="fc-progress-bar" id="deck-progress-bar"></div></div>
         <span class="fc-progress-text" id="deck-counter" data-i18n="fc_counter_loading">البطاقات</span>
       </div>
-    </div>
+    </section>
 
     <!-- Loading State -->
     <div id="deck-loading" style="text-align: center; padding: 3rem 1rem;">
@@ -222,7 +230,7 @@
               <div class="fc-practice-head">
                 <span class="fc-practice-label" data-i18n="fc_practice_label">التكرار</span>
                 <span class="fc-practice-num">
-                  <span id="fc-practice-count">0</span> / <span id="fc-practice-target">40</span>
+                  <span id="fc-practice-count">0</span> / <span id="fc-practice-target">15</span>
                 </span>
               </div>
               <div class="fc-practice-track"><div id="fc-practice-fill" class="fc-practice-fill"></div></div>

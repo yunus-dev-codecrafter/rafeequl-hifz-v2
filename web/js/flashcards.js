@@ -1,10 +1,10 @@
 'use strict';
 
 /* ==========================================================================
-   Rafeequl Hifz (رفيق الحفظ) — 40-Repetition Mistake Practice Engine
+   Rafeequl Hifz — 15-Repetition Mistake Practice Engine
    - Every ACTIVE mistake is in the deck (no due-date scheduling)
    - CORRECT adds +1 to practice_count; SLIP adds nothing
-   - At practice_target (40) the card is hard-deleted automatically
+   - At practice_target (15) the card is hard-deleted automatically
    - Ayah text on the card back (offline bundle) + recitation audio
    - Swipe / tap to flip, undo, session summary
    ========================================================================== */
@@ -107,8 +107,8 @@ function normalizeCard(raw) {
     back: {
       notes: back.notes || '',
       practice_count: parseInt(back.practice_count ?? 0, 10) || 0,
-      practice_target: parseInt(back.practice_target ?? 40, 10) || 40,
-      remaining: parseInt(back.remaining ?? 40, 10),
+      practice_target: parseInt(back.practice_target ?? 15, 10) || 15,
+      remaining: parseInt(back.remaining ?? 15, 10),
       progress_percent: parseInt(back.progress_percent ?? 0, 10) || 0,
       mastery_count: parseInt(back.mastery_count ?? 0, 10),
       occurrence_count: parseInt(back.occurrence_count ?? 1, 10),
@@ -128,7 +128,7 @@ function fcCard() {
 }
 
 function fcPracticePercent(count, target) {
-  const t = Math.max(1, target || 40);
+  const t = Math.max(1, target || 15);
   return Math.max(0, Math.min(100, Math.round((count / t) * 100)));
 }
 
@@ -136,7 +136,7 @@ function fcUpdatePracticeUI(card) {
   if (!card) return;
   const b = card.back;
   const count = Math.max(0, parseInt(b.practice_count, 10) || 0);
-  const target = Math.max(1, parseInt(b.practice_target, 10) || 40);
+  const target = Math.max(1, parseInt(b.practice_target, 10) || 15);
   const pct = fcPracticePercent(count, target);
 
   if (fcEl('fc-practice-count')) fcEl('fc-practice-count').textContent = count;
@@ -417,7 +417,7 @@ function fcAnimateExit(direction) {
   });
 }
 
-/* ---------------- Practice (40 repetitions) ---------------- */
+/* ---------------- Practice (15 repetitions) ---------------- */
 
 async function fcPractice(result) {
   const card = fcCard();
@@ -443,7 +443,7 @@ async function fcPractice(result) {
       redirectOn401: true,
     });
 
-    const target = Math.max(1, parseInt(res.practice_target ?? card.back.practice_target, 10) || 40);
+    const target = Math.max(1, parseInt(res.practice_target ?? card.back.practice_target, 10) || 15);
     const count = Math.max(0, parseInt(res.practice_count ?? card.back.practice_count, 10) || 0);
     const completed = !!(res && res.completed);
 

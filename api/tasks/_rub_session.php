@@ -2,17 +2,25 @@
 declare(strict_types=1);
 
 /**
- * Rafeequl Hifz — Rub' Consolidation session helpers (RUB_TAMKIN v12).
+ * Rafeequl Hifz — Rub' Consolidation session helpers (RUB_TAMKIN v13).
  *
  * The legacy word-arrangement board (api/tasks/get_rub_verses.php +
  * update_rub.php) is kept for the "Free Practice" tab. This file powers the
- * structured five-exercise session:
+ * structured session:
  *
  *   WORD_ORDER       ترتيب الكلمات
  *   MISSING_WORDS    أكمل الآية
  *   CONTINUE_AYAH    أكمل من حيث انتهى
  *   MUTASHABIHAT     المتشابهات
  *   PROGRESSIVE_HIDE التدرج في الحفظ
+ *
+ * Advanced mode adds:
+ *   INTERRUPT        التوقف المفاجئ
+ *   RANDOM_START     بداية عشوائية
+ *   CONNECTION       ربط الآيات
+ *   REVERSE          التنقل العكسي
+ *   ERROR_DETECT     اكتشاف الخطأ
+ *   NO_PREVIEW       التسميع بدون معاينة
  *
  * Everything is generated server-side so that:
  *   - every item belongs to the selected rub';
@@ -27,9 +35,19 @@ require_once __DIR__ . '/_rub.php';
  * Exercise catalog
  * ---------------------------------------------------------------------- */
 
-function rh_rub_exercise_keys(): array
+function rh_rub_core_exercise_keys(): array
 {
     return ['WORD_ORDER', 'MISSING_WORDS', 'CONTINUE_AYAH', 'MUTASHABIHAT', 'PROGRESSIVE_HIDE'];
+}
+
+function rh_rub_advanced_exercise_keys(): array
+{
+    return ['INTERRUPT', 'RANDOM_START', 'CONNECTION', 'REVERSE', 'ERROR_DETECT', 'NO_PREVIEW'];
+}
+
+function rh_rub_exercise_keys(): array
+{
+    return array_merge(rh_rub_core_exercise_keys(), rh_rub_advanced_exercise_keys());
 }
 
 function rh_rub_difficulties(): array
@@ -71,15 +89,37 @@ function rh_rub_normalize_arabic(string $text): string
     return $text === null ? '' : trim($text);
 }
 
+/**
+ * Strict comparison form: removes only harakat/Quranic marks and tatweel.
+ *
+ * Unlike rh_rub_normalize_arabic() this never folds letters together, so
+ * أ / ا, ى / ي, ة / ه and hamzah forms stay distinct. Word-identity checks and
+ * the mutashabihat diff use this form; folding is only for typed answers.
+ */
+function rh_rub_normalize_strict(string $text): string
+{
+    $text = preg_replace(
+        '/[\x{0610}-\x{061A}\x{064B}-\x{065F}\x{0670}\x{06D6}-\x{06ED}\x{0640}]/u',
+        '',
+        $text
+    );
+    if ($text === null) {
+        return '';
+    }
+    $text = preg_replace('/\s+/u', ' ', $text);
+    return $text === null ? '' : trim($text);
+}
+
 /** Split a verse into display words (already provided by rh_split_words). */
 function rh_rub_word_objects(array $words): array
 {
     $out = [];
     foreach ($words as $index => $word) {
         $out[] = [
-            'i'    => (int) $index,
-            'text' => (string) $word,
-            'norm' => rh_rub_normalize_arabic((string) $word),
+            'i'      => (int) $index,
+            'text'   => (string) $word,
+            'strict' => rh_rub_normalize_strict((string) $word),
+            'norm'   => rh_rub_normalize_arabic((string) $word),
         ];
     }
     return $out;
@@ -97,13 +137,13 @@ function rh_rub_filter_decoys(array $decoys, array $verseWords, array $already =
 {
     $seen = [];
     foreach ($verseWords as $word) {
-        $norm = rh_rub_normalize_arabic((string) $word);
+        $norm = rh_rub_normalize_strict((string) $word);
         if ($norm !== '') {
             $seen[$norm] = true;
         }
     }
     foreach ($already as $word) {
-        $norm = rh_rub_normalize_arabic((string) $word);
+        $norm = rh_rub_normalize_strict((string) $word);
         if ($norm !== '') {
             $seen[$norm] = true;
         }
@@ -111,7 +151,7 @@ function rh_rub_filter_decoys(array $decoys, array $verseWords, array $already =
 
     $out = [];
     foreach ($decoys as $decoy) {
-        $norm = rh_rub_normalize_arabic((string) $decoy);
+        $norm = rh_rub_normalize_strict((string) $decoy);
         if ($norm === '' || isset($seen[$norm])) {
             continue;
         }
@@ -319,8 +359,8 @@ function rh_rub_curated_mutashabihat(): array
  */
 function rh_rub_word_diff(array $aWords, array $bWords): array
 {
-    $aNorm = array_map('rh_rub_normalize_arabic', $aWords);
-    $bNorm = array_map('rh_rub_normalize_arabic', $bWords);
+    $aNorm = array_map('rh_rub_normalize_strict', $aWords);
+    $bNorm = array_map('rh_rub_normalize_strict', $bWords);
     $n = count($aNorm);
     $m = count($bNorm);
 
@@ -388,8 +428,8 @@ function rh_rub_common_prefix(array $aWords, array $bWords): int
     $n = min(count($aWords), count($bWords));
     $prefix = 0;
     for ($i = 0; $i < $n; $i++) {
-        $an = rh_rub_normalize_arabic((string) $aWords[$i]);
-        $bn = rh_rub_normalize_arabic((string) $bWords[$i]);
+        $an = rh_rub_normalize_strict((string) $aWords[$i]);
+        $bn = rh_rub_normalize_strict((string) $bWords[$i]);
         if ($an === '' || $an !== $bn) {
             break;
         }
@@ -759,8 +799,8 @@ function rh_rub_plan_mutashabihat(array $verses, int $count, int $seed, array $s
             }
 
             $aWords = $verse['words'];
-            $aNorm = implode(' ', array_map('rh_rub_normalize_arabic', $aWords));
-            $bNorm = implode(' ', array_map('rh_rub_normalize_arabic', $twinWords));
+            $aNorm = implode(' ', array_map('rh_rub_normalize_strict', $aWords));
+            $bNorm = implode(' ', array_map('rh_rub_normalize_strict', $twinWords));
             if ($aNorm === '' || $aNorm === $bNorm) {
                 continue;
             }
@@ -909,6 +949,403 @@ function rh_rub_plan_progressive_hide(array $verses, int $count, int $seed, arra
     ];
 }
 
+/* -------------------------------------------------------------------------
+ * Added challenge builders (advanced Rub' consolidation)
+ * ---------------------------------------------------------------------- */
+
+function rh_rub_ref_label(array $verse): string
+{
+    return (int) $verse['surah'] . ':' . (int) $verse['ayah'];
+}
+
+/** Join a slice of words with single spaces, preserving every mark. */
+function rh_rub_phrase(array $words, int $start, int $length): string
+{
+    $slice = array_slice(array_values($words), max(0, $start), max(0, $length));
+    return implode(' ', array_map('strval', $slice));
+}
+
+function rh_rub_plan_interrupt(array $verses, string $difficulty, int $count, int $seed, array $stats, string $focus): array
+{
+    $candidates = array_values(array_filter($verses, static function (array $v): bool {
+        return count($v['words']) >= 4;
+    }));
+    $picked = rh_rub_pick_items($candidates, $count, $seed, $stats, $focus);
+    $advanced = $difficulty === 'ADVANCED';
+    $items = [];
+
+    foreach ($picked as $verse) {
+        $words = array_values($verse['words']);
+        $n = count($words);
+        $rand = rh_rub_rng(abs((int) crc32($seed . ':int:' . $verse['key'])));
+        $stop = 1 + (int) floor($rand() * max(1, $n - 2));
+        if ($stop > $n - 2) {
+            $stop = $n - 2;
+        }
+        $take = $advanced ? 3 : 2;
+        $take = min($take, $n - 1 - $stop);
+        if ($take < 1) {
+            $take = 1;
+        }
+        $items[] = [
+            'item_id'       => 'int:' . $verse['key'],
+            'verse_key'     => $verse['key'],
+            'surah'         => (int) $verse['surah'],
+            'ayah'          => (int) $verse['ayah'],
+            'prompt_text'   => rh_rub_phrase($words, 0, $stop + 1),
+            'stop_index'    => $stop,
+            'expected_text' => rh_rub_phrase($words, $stop + 1, $take),
+            'full_text'     => (string) $verse['text'],
+            'text'          => (string) $verse['text'],
+        ];
+    }
+
+    return [
+        'available' => count($items) > 0,
+        'items'     => $items,
+        'reason'    => count($items) > 0 ? null : 'no_verses',
+    ];
+}
+
+function rh_rub_plan_random_start(array $verses, string $difficulty, int $count, int $seed, array $stats, string $focus): array
+{
+    $picked = rh_rub_pick_items($verses, $count, $seed, $stats, $focus);
+    $advanced = $difficulty === 'ADVANCED';
+    $items = [];
+
+    foreach ($picked as $verse) {
+        $words = array_values($verse['words']);
+        $take = min($advanced ? 3 : 2, count($words));
+        $items[] = [
+            'item_id'       => 'rs:' . $verse['key'],
+            'verse_key'     => $verse['key'],
+            'surah'         => (int) $verse['surah'],
+            'ayah'          => (int) $verse['ayah'],
+            'prompt_ref'    => rh_rub_ref_label($verse),
+            'expected_text' => rh_rub_phrase($words, 0, $take),
+            'passage'       => (string) $verse['text'],
+            'text'          => (string) $verse['text'],
+            'length'        => $advanced ? 5 : 2,
+            'hide_reference' => $advanced,
+        ];
+    }
+
+    return [
+        'available' => count($items) > 0,
+        'items'     => $items,
+        'reason'    => count($items) > 0 ? null : 'no_verses',
+    ];
+}
+
+/**
+ * Build a small, deterministic option set from real ayat only.
+ *
+ * @param array<int,array<string,mixed>> $verses
+ * @param array<int,string> $pool verse keys allowed as distractors
+ * @return array<int,array<string,mixed>>
+ */
+function rh_rub_build_options(array $verses, array $pool, string $correctText, string $correctRef, int $seed, int $wanted): array
+{
+    $candidates = [];
+    foreach ($verses as $verse) {
+        if (!in_array($verse['key'], $pool, true)) {
+            continue;
+        }
+        $text = (string) $verse['text'];
+        if (rh_rub_normalize_strict($text) === rh_rub_normalize_strict($correctText)) {
+            continue;
+        }
+        $candidates[] = ['text' => $text, 'ref' => rh_rub_ref_label($verse)];
+    }
+    $candidates = rh_rub_shuffle($candidates, $seed);
+    $options = [['text' => $correctText, 'ref' => $correctRef, 'correct' => true]];
+    $seen = [rh_rub_normalize_strict($correctText) => true];
+    foreach ($candidates as $candidate) {
+        $norm = rh_rub_normalize_strict($candidate['text']);
+        if ($norm === '' || isset($seen[$norm])) {
+            continue;
+        }
+        $seen[$norm] = true;
+        $options[] = ['text' => $candidate['text'], 'ref' => $candidate['ref'], 'correct' => false];
+        if (count($options) >= $wanted) {
+            break;
+        }
+    }
+    $options = rh_rub_shuffle($options, $seed + 13);
+    $ids = ['a', 'b', 'c', 'd', 'e'];
+    $correctId = 'a';
+    foreach ($options as $index => $option) {
+        $options[$index]['id'] = $ids[$index] ?? ('o' . $index);
+        if (!empty($option['correct'])) {
+            $correctId = $options[$index]['id'];
+        }
+        unset($options[$index]['correct']);
+    }
+    return ['options' => $options, 'correct_id' => $correctId];
+}
+
+function rh_rub_plan_connection(array $verses, string $difficulty, int $count, int $seed, array $stats, string $focus): array
+{
+    $indexByKey = [];
+    foreach ($verses as $index => $verse) {
+        $indexByKey[$verse['key']] = $index;
+    }
+    $candidates = [];
+    foreach ($verses as $index => $verse) {
+        if ($index < count($verses) - 1) {
+            $candidates[] = $verse;
+        }
+    }
+    $picked = rh_rub_pick_items($candidates, $count, $seed, $stats, $focus);
+    $wanted = $difficulty === 'ADVANCED' ? 4 : 3;
+    $items = [];
+
+    foreach ($picked as $verse) {
+        $index = $indexByKey[$verse['key']] ?? null;
+        if ($index === null || !isset($verses[$index + 1])) {
+            continue;
+        }
+        $next = $verses[$index + 1];
+        $promptWords = array_values($verse['words']);
+        $nextWords = array_values($next['words']);
+        $correctText = rh_rub_phrase($nextWords, 0, min(3, count($nextWords)));
+        $pool = [];
+        foreach ($verses as $candidate) {
+            if ($candidate['key'] !== $verse['key'] && $candidate['key'] !== $next['key']) {
+                $pool[] = $candidate['key'];
+            }
+        }
+        $built = rh_rub_build_options(
+            $verses,
+            $pool,
+            $correctText,
+            rh_rub_ref_label($next),
+            abs((int) crc32($seed . ':cn:' . $verse['key'])),
+            $wanted
+        );
+        $items[] = [
+            'item_id'      => 'cn:' . $verse['key'],
+            'verse_key'    => $verse['key'],
+            'surah'        => (int) $verse['surah'],
+            'ayah'         => (int) $verse['ayah'],
+            'prompt_text'  => rh_rub_phrase($promptWords, max(0, count($promptWords) - 4), 4),
+            'prompt_ref'   => rh_rub_ref_label($verse),
+            'options'      => $built['options'],
+            'correct_id'   => $built['correct_id'],
+            'text'         => (string) $next['text'],
+            'next_ref'     => rh_rub_ref_label($next),
+        ];
+    }
+
+    return [
+        'available' => count($items) > 0,
+        'items'     => $items,
+        'reason'    => count($items) > 0 ? null : 'no_verses',
+    ];
+}
+
+function rh_rub_plan_reverse(array $verses, string $difficulty, int $count, int $seed, array $stats, string $focus): array
+{
+    $indexByKey = [];
+    foreach ($verses as $index => $verse) {
+        $indexByKey[$verse['key']] = $index;
+    }
+    $candidates = [];
+    foreach ($verses as $index => $verse) {
+        if ($index > 0) {
+            $candidates[] = $verse;
+        }
+    }
+    $picked = rh_rub_pick_items($candidates, $count, $seed, $stats, $focus);
+    $wanted = $difficulty === 'ADVANCED' ? 4 : 3;
+    $items = [];
+
+    foreach ($picked as $verse) {
+        $index = $indexByKey[$verse['key']] ?? null;
+        if ($index === null || $index < 1 || !isset($verses[$index - 1])) {
+            continue;
+        }
+        $previous = $verses[$index - 1];
+        $pool = [];
+        foreach ($verses as $candidate) {
+            if ($candidate['key'] !== $verse['key'] && $candidate['key'] !== $previous['key']) {
+                $pool[] = $candidate['key'];
+            }
+        }
+        $built = rh_rub_build_options(
+            $verses,
+            $pool,
+            (string) $previous['text'],
+            rh_rub_ref_label($previous),
+            abs((int) crc32($seed . ':rv:' . $verse['key'])),
+            $wanted
+        );
+        $items[] = [
+            'item_id'     => 'rv:' . $verse['key'],
+            'verse_key'   => $verse['key'],
+            'surah'       => (int) $verse['surah'],
+            'ayah'        => (int) $verse['ayah'],
+            'prompt_text' => (string) $verse['text'],
+            'prompt_ref'  => rh_rub_ref_label($verse),
+            'options'     => $built['options'],
+            'correct_id'  => $built['correct_id'],
+            'text'        => (string) $previous['text'],
+        ];
+    }
+
+    return [
+        'available' => count($items) > 0,
+        'items'     => $items,
+        'reason'    => count($items) > 0 ? null : 'no_verses',
+    ];
+}
+
+function rh_rub_plan_error_detect(array $verses, string $difficulty, int $count, int $seed, array $stats, string $focus): array
+{
+    $candidates = array_values(array_filter($verses, static function (array $v): bool {
+        return count($v['words']) >= 4;
+    }));
+    $picked = rh_rub_pick_items($candidates, $count, $seed, $stats, $focus);
+    $items = [];
+
+    foreach ($picked as $verse) {
+        $words = array_values($verse['words']);
+        $n = count($words);
+        $rand = rh_rub_rng(abs((int) crc32($seed . ':ed:' . $verse['key'])));
+        $type = $rand() < 0.65 ? 'substitute' : 'move';
+        $display = [];
+        $errorIndices = [];
+
+        if ($type === 'substitute') {
+            $errorIndex = 1 + (int) floor($rand() * max(1, $n - 1));
+            if ($errorIndex >= $n) {
+                $errorIndex = $n - 1;
+            }
+            $original = (string) $words[$errorIndex];
+            $replacement = '';
+            $others = rh_rub_shuffle($verses, abs((int) crc32($seed . ':edpool:' . $verse['key'])));
+            foreach ($others as $other) {
+                if ($other['key'] === $verse['key']) {
+                    continue;
+                }
+                foreach (array_values($other['words']) as $candidate) {
+                    if (rh_rub_normalize_strict((string) $candidate) !== rh_rub_normalize_strict($original)) {
+                        $replacement = (string) $candidate;
+                        break 2;
+                    }
+                }
+            }
+            if ($replacement === '') {
+                $type = 'move';
+            } else {
+                foreach ($words as $i => $word) {
+                    $display[] = [
+                        'i'      => $i,
+                        'text'   => $i === $errorIndex ? $replacement : (string) $word,
+                        'changed' => $i === $errorIndex,
+                    ];
+                }
+                $errorIndices = [$errorIndex];
+            }
+        }
+
+        if ($type === 'move') {
+            $errorIndex = 1 + (int) floor($rand() * max(1, $n - 2));
+            if ($errorIndex > $n - 2) {
+                $errorIndex = max(0, $n - 2);
+            }
+            $swapped = $words;
+            $tmp = $swapped[$errorIndex];
+            $swapped[$errorIndex] = $swapped[$errorIndex + 1];
+            $swapped[$errorIndex + 1] = $tmp;
+            $display = [];
+            foreach ($swapped as $i => $word) {
+                $display[] = [
+                    'i'      => $i,
+                    'text'   => (string) $word,
+                    'changed' => $i === $errorIndex || $i === $errorIndex + 1,
+                ];
+            }
+            $errorIndices = [$errorIndex, $errorIndex + 1];
+        }
+
+        $modifiedWords = [];
+        foreach ($display as $token) {
+            $modifiedWords[] = $token['text'];
+        }
+
+        $items[] = [
+            'item_id'       => 'ed:' . $verse['key'],
+            'verse_key'     => $verse['key'],
+            'surah'         => (int) $verse['surah'],
+            'ayah'          => (int) $verse['ayah'],
+            'display_words' => $display,
+            'original_text' => (string) $verse['text'],
+            'modified_text' => implode(' ', $modifiedWords),
+            'text'          => (string) $verse['text'],
+            'error_type'    => $type,
+            'error_indices' => $errorIndices,
+        ];
+    }
+
+    return [
+        'available' => count($items) > 0,
+        'items'     => $items,
+        'reason'    => count($items) > 0 ? null : 'no_verses',
+    ];
+}
+
+function rh_rub_plan_no_preview(array $verses, string $difficulty, int $count, int $seed, array $stats, string $focus): array
+{
+    $candidates = [];
+    $total = count($verses);
+    foreach ($verses as $index => $verse) {
+        if ($index < $total) {
+            $candidates[] = $verse;
+        }
+    }
+    $picked = rh_rub_pick_items($candidates, $count, $seed, $stats, $focus);
+    $length = $difficulty === 'ADVANCED' ? 3 : ($difficulty === 'BEGINNER' ? 1 : 2);
+    $indexByKey = [];
+    foreach ($verses as $index => $verse) {
+        $indexByKey[$verse['key']] = $index;
+    }
+    $items = [];
+
+    foreach ($picked as $verse) {
+        $index = $indexByKey[$verse['key']] ?? null;
+        if ($index === null) {
+            continue;
+        }
+        $passage = [];
+        $texts = [];
+        for ($i = $index; $i < min($total, $index + $length); $i++) {
+            $passage[] = [
+                'surah' => (int) $verses[$i]['surah'],
+                'ayah'  => (int) $verses[$i]['ayah'],
+                'text'  => (string) $verses[$i]['text'],
+            ];
+            $texts[] = (string) $verses[$i]['text'];
+        }
+        $items[] = [
+            'item_id'     => 'np:' . $verse['key'],
+            'verse_key'   => $verse['key'],
+            'surah'       => (int) $verse['surah'],
+            'ayah'        => (int) $verse['ayah'],
+            'start_ref'   => rh_rub_ref_label($verse),
+            'passage'     => $passage,
+            'text'        => implode(' ۝ ', $texts),
+            'length'      => count($passage),
+        ];
+    }
+
+    return [
+        'available' => count($items) > 0,
+        'items'     => $items,
+        'reason'    => count($items) > 0 ? null : 'no_verses',
+    ];
+}
+
 /**
  * Build the complete session plan.
  *
@@ -955,6 +1392,24 @@ function rh_rub_build_plan(int $rubId, string $difficulty, array $exercises, int
                 break;
             case 'PROGRESSIVE_HIDE':
                 $plan[$exercise] = rh_rub_plan_progressive_hide($verses, $sampleSize, $seed + 503, $stats, $focus);
+                break;
+            case 'INTERRUPT':
+                $plan[$exercise] = rh_rub_plan_interrupt($verses, $difficulty, $sampleSize, $seed + 601, $stats, $focus);
+                break;
+            case 'RANDOM_START':
+                $plan[$exercise] = rh_rub_plan_random_start($verses, $difficulty, $sampleSize, $seed + 701, $stats, $focus);
+                break;
+            case 'CONNECTION':
+                $plan[$exercise] = rh_rub_plan_connection($verses, $difficulty, $sampleSize, $seed + 809, $stats, $focus);
+                break;
+            case 'REVERSE':
+                $plan[$exercise] = rh_rub_plan_reverse($verses, $difficulty, $sampleSize, $seed + 907, $stats, $focus);
+                break;
+            case 'ERROR_DETECT':
+                $plan[$exercise] = rh_rub_plan_error_detect($verses, $difficulty, $sampleSize, $seed + 1009, $stats, $focus);
+                break;
+            case 'NO_PREVIEW':
+                $plan[$exercise] = rh_rub_plan_no_preview($verses, $difficulty, $sampleSize, $seed + 1103, $stats, $focus);
                 break;
         }
     }
@@ -1647,6 +2102,231 @@ function rh_rub_mark_task_complete(PDO $pdo, int $userId, int $taskId, int $rubI
  *
  * @return array<string,mixed>
  */
+/**
+ * Performance-based mastery assessment for a completed session.
+ *
+ * Exercise completion alone never marks a rub' as mastered: accuracy, skipped
+ * items, per-exercise performance and repeated word/transition confusion all
+ * have to pass. The same payload is returned to the client summary.
+ *
+ * @param array<int,array<string,mixed>> $results
+ * @return array<string,mixed>
+ */
+function rh_rub_assess_mastery(array $plan, array $results): array
+{
+    $required = rh_rub_plan_required_items($plan);
+    $requiredTotal = count($required);
+
+    $answered = 0;
+    $correct = 0;
+    $skipped = 0;
+    $perExercise = [];
+    $weakVerses = [];
+    $strongVerses = [];
+    $weakTransitions = [];
+    $similarWrong = 0;
+    $interruptWrong = 0;
+    $confusions = [];
+
+    $stages = is_array($plan['exercises'] ?? null) ? $plan['exercises'] : [];
+    foreach ($stages as $exercise => $stage) {
+        if (!is_array($stage) || empty($stage['available'])) {
+            continue;
+        }
+        $perExercise[$exercise] = [
+            'exercise' => $exercise,
+            'total'    => 0,
+            'answered' => 0,
+            'correct'  => 0,
+            'skipped'  => 0,
+            'accuracy' => 0,
+            'needs_review' => false,
+        ];
+        foreach (($stage['items'] ?? []) as $item) {
+            if (is_array($item) && !empty($item['item_id']) && empty($item['boundary_skip'])) {
+                $perExercise[$exercise]['total']++;
+            }
+        }
+    }
+
+    // Map every planned word to its text so repeated word confusions can name
+    // the actual word instead of only an index.
+    $wordTextMap = [];
+    foreach ($stages as $stage) {
+        if (!is_array($stage) || empty($stage['items'])) {
+            continue;
+        }
+        foreach ($stage['items'] as $plannedItem) {
+            if (!is_array($plannedItem)) {
+                continue;
+            }
+            $verseKey = (string) ($plannedItem['verse_key'] ?? '');
+            $words = is_array($plannedItem['words'] ?? null) ? $plannedItem['words'] : [];
+            foreach ($words as $index => $word) {
+                if (is_array($word) && isset($word['i'])) {
+                    $wordTextMap[$verseKey . ':' . (int) $word['i']] = (string) ($word['text'] ?? '');
+                } elseif (is_string($word)) {
+                    $wordTextMap[$verseKey . ':' . (int) $index] = $word;
+                }
+            }
+        }
+    }
+
+    foreach ($results as $result) {
+        if (!is_array($result)) {
+            continue;
+        }
+        $exercise = strtoupper((string) ($result['exercise'] ?? ''));
+        if (!isset($perExercise[$exercise])) {
+            $perExercise[$exercise] = [
+                'exercise' => $exercise, 'total' => 0, 'answered' => 0,
+                'correct' => 0, 'skipped' => 0, 'accuracy' => 0, 'needs_review' => false,
+            ];
+        }
+        $status = strtoupper((string) ($result['status'] ?? 'ANSWERED'));
+        if ($status === 'BOUNDARY_SKIPPED') {
+            // Informational end-of-rub card, not a user skip. It must not lower
+            // mastery or make the exercise look unreviewed.
+            continue;
+        }
+        if ($status !== 'ANSWERED') {
+            $skipped++;
+            $perExercise[$exercise]['skipped']++;
+            continue;
+        }
+        $answered++;
+        $perExercise[$exercise]['answered']++;
+        $isCorrect = !empty($result['is_correct']);
+        if ($isCorrect) {
+            $correct++;
+            $perExercise[$exercise]['correct']++;
+            $verseKey = (string) ($result['verse_key'] ?? '');
+            if ($verseKey !== '') {
+                $strongVerses[$verseKey] = $verseKey;
+            }
+        } else {
+            $verseKey = (string) ($result['verse_key'] ?? '');
+            if ($verseKey !== '') {
+                $weakVerses[$verseKey] = $verseKey;
+            }
+            if (in_array($exercise, ['CONTINUE_AYAH', 'CONNECTION', 'REVERSE'], true)) {
+                $weakTransitions[] = [
+                    'exercise'  => $exercise,
+                    'verse_key' => $verseKey,
+                    'item_id'   => (string) ($result['item_id'] ?? ''),
+                ];
+            }
+            if ($exercise === 'MUTASHABIHAT') {
+                $similarWrong++;
+            }
+            if ($exercise === 'INTERRUPT') {
+                $interruptWrong++;
+            }
+            foreach (($result['wrong_words'] ?? []) as $wordIndex) {
+                if (!is_numeric($wordIndex)) {
+                    continue;
+                }
+                $key = $verseKey . ':' . (int) $wordIndex;
+                if (!isset($confusions[$key])) {
+                    $confusions[$key] = [
+                        'verse_key' => $verseKey,
+                        'word_index' => (int) $wordIndex,
+                        'word_text' => (string) ($wordTextMap[$key] ?? ''),
+                        'count' => 0,
+                    ];
+                }
+                $confusions[$key]['count']++;
+            }
+        }
+    }
+
+    // A verse that was missed in any exercise needs revision, even if another
+    // exercise recalled a part of it correctly.
+    $strongVerses = array_diff_key($strongVerses, $weakVerses);
+
+    foreach ($perExercise as $exercise => $row) {
+        $attempted = $row['answered'] + $row['skipped'];
+        $perExercise[$exercise]['accuracy'] = $row['answered'] > 0
+            ? (int) round(($row['correct'] / $row['answered']) * 100)
+            : 0;
+        $perExercise[$exercise]['needs_review'] = $row['skipped'] > 0 ||
+            ($row['answered'] > 0 && $perExercise[$exercise]['accuracy'] < 70) ||
+            ($attempted === 0 && $row['total'] > 0);
+    }
+
+    $accuracy = $answered > 0 ? (int) round(($correct / $answered) * 100) : 0;
+    $attemptedRatio = $requiredTotal > 0 ? min(1, ($answered + $skipped) / $requiredTotal) : 0;
+    $skippedRatio = ($answered + $skipped) > 0 ? $skipped / ($answered + $skipped) : 1;
+
+    $needsReviewExercises = [];
+    foreach ($perExercise as $exercise => $row) {
+        if (!empty($row['needs_review'])) {
+            $needsReviewExercises[] = $exercise;
+        }
+    }
+
+    $mastered = $requiredTotal > 0
+        && $attemptedRatio >= 0.8
+        && $skippedRatio <= 0.2
+        && $accuracy >= 70
+        && count($needsReviewExercises) === 0;
+
+    $recommendations = [];
+    $recommendationCodes = [];
+    if ($accuracy < 70) {
+        $recommendationCodes[] = 'accuracy_low';
+        $recommendations[] = 'أعد الجلسة وركّز على الآيات التي أخطأت فيها قبل الانتقال إلى ربع جديد.';
+    }
+    if ($weakTransitions) {
+        $recommendationCodes[] = 'weak_transitions:' . count($weakTransitions);
+        $recommendations[] = 'راجع الربط بين الآيات: توجد ' . count($weakTransitions) . ' وصلة انتقالية تحتاج تثبيتاً.';
+    }
+    if ($similarWrong > 0) {
+        $recommendationCodes[] = 'similar_wrong:' . $similarWrong;
+        $recommendations[] = 'خصص جلسة للمتشابهات: ' . $similarWrong . ' موضعاً لم يتميز فيه بين الآيات المتشابهة.';
+    }
+    if ($interruptWrong > 0) {
+        $recommendationCodes[] = 'interrupt_wrong:' . $interruptWrong;
+        $recommendations[] = 'تدرّب على التوقف المفاجئ: ' . $interruptWrong . ' موضعاً لم تستحضر تكملته.';
+    }
+    if ($skipped > 0) {
+        $recommendationCodes[] = 'skipped:' . $skipped;
+        $recommendations[] = 'لا تتجاوز التمارين غير المتقنة؛ أعدها في جلسة قريبة.';
+    }
+    if ($mastered) {
+        $recommendationCodes[] = 'mastered';
+        $recommendations[] = 'أتقنت هذا الربع أداءً؛ يمكنك الانتقال إلى ربع جديد مع مراجعة دورية.';
+    }
+
+    $confusions = array_values($confusions);
+    usort($confusions, static function (array $a, array $b): int {
+        return ($b['count'] <=> $a['count']);
+    });
+    $confusions = array_slice($confusions, 0, 12);
+
+    return [
+        'mastered'              => $mastered,
+        'status'                => $mastered ? 'MASTERED' : ($accuracy >= 50 ? 'DEVELOPING' : 'NEEDS_REVIEW'),
+        'accuracy'              => $accuracy,
+        'correct'               => $correct,
+        'answered'              => $answered,
+        'skipped'               => $skipped,
+        'required_total'        => $requiredTotal,
+        'attempted_ratio'       => (int) round($attemptedRatio * 100),
+        'skipped_ratio'         => (int) round($skippedRatio * 100),
+        'per_exercise'          => array_values($perExercise),
+        'needs_review_exercises' => $needsReviewExercises,
+        'weak_verses'           => array_values($weakVerses),
+        'strong_verses'         => array_values($strongVerses),
+        'weak_transitions'      => $weakTransitions,
+        'similar_ayat_wrong'    => $similarWrong,
+        'interrupt_wrong'       => $interruptWrong,
+        'repeated_confusions'   => $confusions,
+        'recommendations'       => $recommendations,
+        'recommendation_codes'  => $recommendationCodes,
+    ];
+}
+
 function rh_rub_finish_session(PDO $pdo, int $userId, array $session, int $durationSeconds): array
 {
     $sessionId = (int) $session['id'];
@@ -1695,21 +2375,31 @@ function rh_rub_finish_session(PDO $pdo, int $userId, array $session, int $durat
         ':u' => $userId,
     ]);
 
-    // Hybrid completion rule: once a structured session is finished, the daily
-    // task is complete. Users who never start a session keep the legacy
-    // "all verses arranged" rule in update_rub.php.
-    rh_rub_mark_task_complete(
-        $pdo,
-        $userId,
-        (int) $session['task_id'],
-        (int) $session['rub_id'],
-        date('Y-m-d', strtotime((string) ($session['started_at'] ?? 'now')))
-    );
+    // Performance gate: finishing the exercises is not the same as mastering
+    // the rub'. The daily task is only marked complete when the performance
+    // assessment passes; otherwise the user is asked to repeat the weak parts.
+    $results = rh_rub_session_results($pdo, $sessionId, $userId);
+    $mastery = rh_rub_assess_mastery($plan, $results);
+    if (!empty($mastery['mastered'])) {
+        rh_rub_mark_task_complete(
+            $pdo,
+            $userId,
+            (int) $session['task_id'],
+            (int) $session['rub_id'],
+            date('Y-m-d', strtotime((string) ($session['started_at'] ?? 'now')))
+        );
+    }
 
     $row = rh_rub_session_by_id($pdo, $userId, $sessionId);
+    $public = $row ? rh_rub_session_public($row) : null;
+    if ($public !== null) {
+        $public['results'] = $results;
+        $public['mastery'] = $mastery;
+    }
     return [
         'ok'      => true,
-        'session' => $row ? rh_rub_session_public($row) : null,
+        'session' => $public,
+        'mastery' => $mastery,
     ];
 }
 

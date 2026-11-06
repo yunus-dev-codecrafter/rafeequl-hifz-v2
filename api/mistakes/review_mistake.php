@@ -2,12 +2,12 @@
 declare(strict_types=1);
 
 /**
- * Rafeequl Hifz - Practice a Mistake (40-repetition model)
+ * Rafeequl Hifz - Practice a Mistake (15-repetition model)
  * POST JSON: user_id, mistake_id, result ('CORRECT'|'SLIP')
  *            (legacy) grade ('AGAIN'|'HARD'|'GOOD'|'EASY')
  *            (legacy) action ('MASTERED' -> CORRECT, 'KEEP_PRACTICING' -> SLIP)
  *
- * CORRECT adds one repetition; when the counter reaches `practice_target` (40)
+ * CORRECT adds one repetition; when the counter reaches `practice_target` (15)
  * the card is hard-deleted and leaves the practice deck. SLIP records the
  * stumble but does not add a repetition. Logging the same mistake later starts
  * a fresh card.

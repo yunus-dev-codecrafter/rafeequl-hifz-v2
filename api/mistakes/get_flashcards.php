@@ -7,7 +7,7 @@ declare(strict_types=1);
  * GET/POST: user_id, mistake_type, surah_number, juz_number, page_number,
  *           limit, shuffle, mode (legacy: 'due' and 'all' now behave the same)
  *
- * The deck is every ACTIVE mistake. Each card carries its 40-practice counter
+ * The deck is every ACTIVE mistake. Each card carries its 15-practice counter
  * (`practice_count` / `practice_target`); a card leaves the deck when the
  * counter reaches the target.
  */

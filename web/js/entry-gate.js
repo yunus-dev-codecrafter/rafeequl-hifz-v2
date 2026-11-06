@@ -4,7 +4,7 @@
    Rafeequl Hifz - entry gate
    A single blocking overlay with two sequential steps:
      1. معاني كلمات القرآن (10 repetitions per entry, 1000 lifetime)
-     2. بطاقة خطأ واحدة (10 repetitions per entry, 40 lifetime)
+     2. بطاقة خطأ واحدة (15 repetitions per entry, 15 lifetime)
    The gate is re-armed once per browser app-session. It fails open only when
    the API or the optional catalog is unavailable, so a server problem never
    locks the user out of the app.
@@ -350,7 +350,7 @@
     }
 
     const remaining = Math.max(0, Number(card.remaining) || 0);
-    const target = Math.max(1, Math.min(10, remaining));
+    const target = Math.max(1, Math.min(15, remaining || 15));
     state.step = 'mistake';
     state.mistake = {
       done: 0,
@@ -423,7 +423,7 @@
         ${card.notes ? `<p class="entry-gate-note">${esc(card.notes)}</p>` : ''}
         <div class="entry-gate-lifetime">
           <span>${esc(t('entry_gate_mistake_lifetime', 'تكرار البطاقة'))}</span>
-          <strong>${Number(card.practice_count) || 0} / ${Number(card.practice_target) || 40}</strong>
+          <strong>${Number(card.practice_count) || 0} / ${Number(card.practice_target) || 15}</strong>
         </div>
       </div>
       <div class="entry-gate-actions entry-gate-actions-split">
@@ -513,20 +513,21 @@
     const m = state.mistake;
     if (!m) return;
     m.done = true;
-    const finished = Number(m.card.practice_count) >= Number(m.card.practice_target);
+    const finished = Number(m.done) >= Number(m.target) ||
+      Number(m.card.practice_count) >= Number(m.card.practice_target);
     const body = `
       <div class="entry-gate-success" role="status">
         <span class="entry-gate-success-icon" aria-hidden="true">✓</span>
         <div>
           <strong>${esc(t('entry_gate_mistake_done_title', 'أتممت بطاقة الخطأ'))}</strong>
           <p>${esc(finished
-            ? t('entry_gate_mistake_deleted_desc', 'أكملت ٤٠ تكرارًا، فحُذفت البطاقة تلقائيًا. إن تكرر الخطأ لاحقًا فسجّله من جديد.')
-            : t('entry_gate_mistake_done_desc', 'ستعود البطاقة في دخول قادم حتى تصل إلى 40 تكرارًا، ثم تُحذف تلقائيًا.'))}</p>
+            ? t('entry_gate_mistake_deleted_desc', 'أكملت التكرارات المطلوبة، فحُذفت البطاقة تلقائيًا. إن تكرر الخطأ لاحقًا فسجّله من جديد.')
+            : t('entry_gate_mistake_done_desc', 'أكملت هذه الجولة. ستحضر بطاقة جديدة في الدخول القادم.'))}</p>
         </div>
       </div>
       <div class="entry-gate-lifetime">
         <span>${esc(t('entry_gate_mistake_lifetime', 'تكرار البطاقة'))}</span>
-        <strong>${Number(m.card.practice_count) || 0} / ${Number(m.card.practice_target) || 40}</strong>
+        <strong>${Number(m.card.practice_count) || 0} / ${Number(m.card.practice_target) || 15}</strong>
       </div>
       <div class="entry-gate-actions">
         <button type="button" class="btn btn-primary entry-gate-main-btn" id="entry-gate-enter">

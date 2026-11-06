@@ -588,6 +588,9 @@ const HifzPage = {
           <div class="hifz-meter"><div class="hifz-meter-fill" id="hifz-rep-fill" style="width:${fill}%;"></div></div>
           <div class="hifz-counter-meta">${hifzEsc(hint)}</div>
         </div>
+        <button type="button" id="btn-mark-rep-done" class="btn btn-success hifz-counter-action" title="${hifzEsc(hifzT('hifz_mark_rep_done', {}, 'Mark this repetition as memorized'))}">
+          ✓ ${hifzEsc(hifzT('hifz_mark_rep_done', {}, 'Mark this repetition as memorized'))}
+        </button>
       </div>`;
   },
 
@@ -718,6 +721,10 @@ const HifzPage = {
       mainAction = `<button type="button" id="btn-complete-page" class="btn btn-success hifz-main-action">${hifzEsc(hifzT('hifz_mark_complete', {}, 'Page recited — Complete memorization'))}</button>`;
     }
 
+    const markPageDoneBtn = (phase === 'repeat' || phase === 'link')
+      ? `<button type="button" id="btn-mark-page-done" class="btn btn-success stage-icon-btn" title="${hifzEsc(hifzT('hifz_mark_page_done', {}, 'Mark page as done'))}">✓ ${hifzEsc(hifzT('hifz_mark_page_done', {}, 'Mark page as done'))}</button>`
+      : '';
+
     const counter = phase === 'repeat'
       ? Number(this.state.reps[this.state.current]) || 0
       : (phase === 'link' ? Number(this.state.links[this.state.current]) || 0 : 0);
@@ -729,6 +736,7 @@ const HifzPage = {
       <div class="stage-actions is-sticky hifz-actions">
         <div class="stage-primary-actions">${mainAction}</div>
         <div class="hifz-sub-actions">
+          ${markPageDoneBtn}
           ${undo}
           <button type="button" id="btn-focus" class="btn btn-ghost btn-focus-toggle stage-icon-btn" title="${hifzEsc(hifzT('focus_mode_title', {}, 'Focus mode'))}">
             <span class="focus-enter-label">🎯 ${hifzEsc(hifzT('focus_mode', {}, 'Focus mode'))}</span>
@@ -817,6 +825,12 @@ const HifzPage = {
 
     const undoBtn = document.getElementById('btn-undo-rep');
     if (undoBtn) undoBtn.addEventListener('click', () => this.undoRep());
+
+    const markRepDoneBtn = document.getElementById('btn-mark-rep-done');
+    if (markRepDoneBtn) markRepDoneBtn.addEventListener('click', () => this.markRepDone());
+
+    const markPageDoneBtn = document.getElementById('btn-mark-page-done');
+    if (markPageDoneBtn) markPageDoneBtn.addEventListener('click', () => this.markPageDone());
 
     const completeBtn = document.getElementById('btn-complete-page');
     if (completeBtn) {
@@ -1020,6 +1034,71 @@ const HifzPage = {
       this.updateCounterDom();
       if (window.AudioEngine && typeof AudioEngine.playUndo === 'function') AudioEngine.playUndo();
     }
+  },
+
+  markRepDone() {
+    if (!this.state) return;
+
+    const phase = this.state.phase;
+    const index = this.state.current;
+    const target = phase === 'link' ? HIFZ_PAIR_TARGET : HIFZ_REPS_TARGET;
+
+    if (phase === 'repeat') {
+      this.state.reps[index] = HIFZ_REPS_TARGET;
+
+      if (index === 0) {
+        if (this.verses.length === 1) {
+          this.state.phase = 'page';
+        } else {
+          this.state.current = 1;
+          this.state.phase = 'repeat';
+        }
+        showToast(
+          hifzT('hifz_next_verse_toast', { target: HIFZ_REPS_TARGET }, `Completed ${HIFZ_REPS_TARGET} repetitions. Moving to the next verse.`),
+          false
+        );
+      } else {
+        this.state.phase = 'link';
+        showToast(hifzT('hifz_pair_ready_toast', {}, 'Now join the two verses.'), false);
+      }
+    } else if (phase === 'link') {
+      this.state.links[index] = HIFZ_PAIR_TARGET;
+
+      if (index < this.verses.length - 1) {
+        this.state.current = index + 1;
+        this.state.phase = 'repeat';
+        showToast(hifzT('hifz_link_done_toast', {}, 'Adjacent pair completed ✓'), false);
+      } else {
+        this.state.phase = 'page';
+        showToast(hifzT('hifz_pair_done_toast', {}, 'All pairs completed — recite the whole page.'), false);
+      }
+    }
+
+    this.writeLocal();
+    this.persistNow();
+    if (window.AudioEngine && typeof AudioEngine.playSuccess === 'function') AudioEngine.playSuccess();
+    this.paint();
+  },
+
+  markPageDone() {
+    if (!this.state) return;
+
+    const confirmed = typeof window.confirm === 'function'
+      ? window.confirm(hifzT('hifz_mark_page_confirm', { page: this.page }, `Mark page ${this.page} as done?`))
+      : true;
+    if (!confirmed) return;
+
+    const total = this.verses.length;
+    this.state.reps = new Array(total).fill(HIFZ_REPS_TARGET);
+    this.state.links = new Array(total).fill(HIFZ_PAIR_TARGET);
+    this.state.links[0] = 0;
+    this.state.page_pass = HIFZ_PAGE_PASS_TARGET;
+    this.state.complete = true;
+    this.state.phase = 'complete';
+    this.state.current = total - 1;
+
+    this.writeLocal();
+    void this.completeTask();
   },
 
   finishPage() {

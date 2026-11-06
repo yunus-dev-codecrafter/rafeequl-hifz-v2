@@ -79,7 +79,7 @@ if (!function_exists('rh_migrate_v12')) {
                 `session_id` INT NOT NULL,
                 `user_id` INT NOT NULL,
                 `rub_id` INT NOT NULL,
-                `exercise` ENUM('WORD_ORDER','MISSING_WORDS','CONTINUE_AYAH','MUTASHABIHAT','PROGRESSIVE_HIDE') NOT NULL,
+                `exercise` ENUM('WORD_ORDER','MISSING_WORDS','CONTINUE_AYAH','MUTASHABIHAT','PROGRESSIVE_HIDE','INTERRUPT','RANDOM_START','CONNECTION','REVERSE','ERROR_DETECT','NO_PREVIEW') NOT NULL,
                 `item_id` VARCHAR(80) NOT NULL,
                 `verse_key` VARCHAR(20) NOT NULL,
                 `surah_number` SMALLINT UNSIGNED NOT NULL,

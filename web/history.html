@@ -493,7 +493,7 @@
         const pageLabel = window.I18N ? (I18N.t('page_prefix') + item.page_number) : ('صفحة ' + item.page_number);
         const loggedDate = window.I18N ? I18N.t('history_logged_date', { date: dateStr }) : ('سُجل بتاريخ: ' + dateStr);
         const practiceCount = Number(item.practice_count) || 0;
-        const practiceTarget = Number(item.practice_target) || 40;
+        const practiceTarget = Number(item.practice_target) || 15;
         const masteryLabel = window.I18N
           ? I18N.t('history_practice', { count: practiceCount, target: practiceTarget })
           : ('التكرار: ' + practiceCount + ' / ' + practiceTarget);

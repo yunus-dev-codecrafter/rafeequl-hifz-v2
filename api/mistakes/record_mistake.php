@@ -13,7 +13,7 @@ declare(strict_types=1);
  *
  * Deduplicates by (user, page, surah, ayah, type). Logging the same mistake
  * again while a card is active bumps `occurrence_count` and resets the
- * 40-practice counter to 0. Once the card is hard-deleted at 40/40, logging the
+ * 15-practice counter to 0. Once the card is hard-deleted at 15/15, logging the
  * same mistake again creates a fresh card.
  */
 
@@ -201,7 +201,7 @@ try {
         $merged    = true;
         $restarted = ($existing['status'] === 'ARCHIVED');
 
-        // Logging the same mistake again restarts the 40-practice counter.
+        // Logging the same mistake again restarts the 15-practice counter.
         $stmt = $pdo->prepare(
             "UPDATE `mistakes`
              SET `occurrence_count` = `occurrence_count` + 1,
@@ -212,7 +212,7 @@ try {
                  `confused_with_surah` = COALESCE(:cs, `confused_with_surah`),
                  `confused_with_ayah`  = COALESCE(:ca, `confused_with_ayah`),
                  `practice_count` = 0,
-                 `practice_target` = GREATEST(`practice_target`, 40),
+                 `practice_target` = 15,
                  `status`         = 'ACTIVE',
                  `graduated_at`   = NULL,
                  `interval_days`  = 0,
@@ -237,7 +237,7 @@ try {
                  `notes`, `severity`, `confused_with_surah`, `confused_with_ayah`, `source_task`,
                  `status`, `practice_count`, `practice_target`, `occurrence_count`, `due_at`)
              VALUES (:u, :p, :s, :a, :t, :n, :sev, :cs, :ca, :src,
-                     'ACTIVE', 0, 40, 1, NOW())"
+                     'ACTIVE', 0, 15, 1, NOW())"
         );
         $stmt->execute([
             ':u' => $userId, ':p' => $pageNumber, ':s' => $surahNumber, ':a' => $ayahNumber,
@@ -272,7 +272,7 @@ json_out(200, [
     'restarted' => $restarted,
     'message'   => $merged
         ? ($restarted
-            ? 'Mistake reactivated with a fresh 40-practice counter.'
+            ? 'Mistake reactivated with a fresh 15-practice counter.'
             : 'Mistake recurrence recorded (practice counter restarted).')
         : 'Mistake logged successfully.',
     'mistake' => [
