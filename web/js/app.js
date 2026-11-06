@@ -1885,7 +1885,7 @@ function renderTaskPage(taskType) {
       <div class="task-page-head">
         <h2>${headText}</h2>
         <p class="hint">${descText}</p>
-        <div style="display:flex; gap:0.75rem; margin-top:1rem; flex-wrap:wrap;">
+        <div style="display:flex; gap:0.75rem; margin-top:1rem; flex-wrap:wrap; justify-content:center;">
           <a href="dashboard.html" class="btn btn-primary">${window.I18N ? I18N.t('back_to_home') : 'العودة للرئيسية'}</a>
           <a href="hifz.html" class="btn btn-ghost">${window.I18N ? I18N.t('card_hifz_title') : 'الحفظ الجديد'}</a>
           <a href="rabt.html" class="btn btn-ghost">${window.I18N ? I18N.t('card_rabt_title') : 'الربط'}</a>

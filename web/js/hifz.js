@@ -579,14 +579,18 @@ const HifzPage = {
     const fill = Math.max(0, Math.min(100, Math.round((rep / target) * 100)));
     return `
       <div class="hifz-counter" aria-live="polite">
-        <div class="hifz-counter-num" id="hifz-rep-number">${rep}</div>
-        <div class="hifz-counter-body">
-          <div class="hifz-counter-label">
-            <span>${hifzEsc(label)}</span>
-            <span>${hifzEsc(hifzT('hifz_reps_of', { target }, `of ${target}`))}</span>
+        <div class="hifz-counter-stats">
+          <div class="hifz-counter-head">
+            <div class="hifz-counter-label-group">
+              <span class="hifz-counter-title">${hifzEsc(label)}</span>
+              <span class="hifz-counter-meta">${hifzEsc(hint)}</span>
+            </div>
+            <div class="hifz-counter-stat-badge">
+              <span class="hifz-counter-num" id="hifz-rep-number">${rep}</span>
+              <span class="hifz-counter-target">/ ${target}</span>
+            </div>
           </div>
           <div class="hifz-meter"><div class="hifz-meter-fill" id="hifz-rep-fill" style="width:${fill}%;"></div></div>
-          <div class="hifz-counter-meta">${hifzEsc(hint)}</div>
         </div>
         <button type="button" id="btn-mark-rep-done" class="btn btn-success hifz-counter-action" title="${hifzEsc(hifzT('hifz_mark_rep_done', {}, 'Mark this repetition as memorized'))}">
           ✓ ${hifzEsc(hifzT('hifz_mark_rep_done', {}, 'Mark this repetition as memorized'))}
