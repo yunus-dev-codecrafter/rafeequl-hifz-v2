@@ -983,23 +983,30 @@ const RubPage = {
   updateHeroCompletionUI(isDone) {
     const btn = document.getElementById('btn-complete-rub');
     if (btn) {
-      btn.disabled = !!isDone;
+      btn.disabled = false;
       const label = btn.querySelector('[data-i18n]') || btn;
-      label.textContent = isDone
-        ? '✓ ' + this.t('rub_summary_task_done', {}, 'تم تسجيل إتمام مهمة تثبيت الربع لليوم')
-        : this.t('rub_summary_mark_done', {}, 'تم تثبيت الربع الحالي');
+      const icon = btn.querySelector('[aria-hidden="true"]');
+      if (isDone) {
+        if (icon) icon.textContent = '➔';
+        label.textContent = this.t('rub_next_rub', {}, 'الربع التالي ←');
+        btn.setAttribute('title', this.t('rub_next_rub', {}, 'الربع التالي ←'));
+      } else {
+        if (icon) icon.textContent = '✓';
+        label.textContent = this.t('rub_summary_mark_done', {}, 'تم تثبيت الربع الحالي');
+        btn.setAttribute('title', this.t('rub_summary_mark_done', {}, 'تم تثبيت الربع الحالي'));
+      }
     }
     const sessionMarkDone = document.getElementById('rub-session-mark-done');
     if (sessionMarkDone) {
-      sessionMarkDone.disabled = !!isDone;
+      sessionMarkDone.disabled = false;
       sessionMarkDone.textContent = isDone
-        ? '✓ ' + this.t('rub_summary_task_done', {}, 'تم تسجيل إتمام مهمة تثبيت الربع لليوم')
+        ? this.t('rub_next_rub', {}, 'الربع التالي ←')
         : this.t('rub_summary_mark_done', {}, 'تم تثبيت الربع الحالي');
     }
     const hero = document.getElementById('rub-hero');
-    if (hero && isDone) hero.classList.add('is-complete');
+    if (hero) hero.classList.toggle('is-complete', !!isDone);
     const step3 = document.getElementById('rub-step-3');
-    if (step3 && isDone) step3.classList.add('is-on');
+    if (step3) step3.classList.toggle('is-on', !!isDone);
   },
 
   async markDone() {
@@ -1020,6 +1027,18 @@ const RubPage = {
       });
 
       if (data && data.success) {
+        if (window.AudioEngine && typeof AudioEngine.playCelebration === 'function') {
+          try { AudioEngine.playCelebration(); } catch (e) {}
+        }
+
+        // If a new rub was generated, load it immediately!
+        if (data.has_next && data.task && data.task.id && data.task.id !== this.taskId) {
+          showToast(this.t('rub_completed_next_loaded', {}, 'بارك الله فيك، تم إتمام الربع والانتقال إلى ربع جديد!'));
+          await this.loadNewRub(data.task.id, data);
+          return;
+        }
+
+        // Fallback: no different rub available
         this.taskCompletedOnServer = true;
         if (this.task) {
           this.task.is_completed = true;
@@ -1038,15 +1057,57 @@ const RubPage = {
         }
         this.updateProgress();
         this.updateHeroCompletionUI(true);
-        if (window.AudioEngine && typeof AudioEngine.playCelebration === 'function') {
-          try { AudioEngine.playCelebration(); } catch (e) {}
-        }
         showToast(this.t('rub_summary_mark_done_success', {}, 'تم تسجيل إتمام الربع الحالي'));
       }
     } catch (err) {
       if (btn) btn.disabled = false;
       if (sessionBtn) sessionBtn.disabled = false;
       showToast((err && err.message) || 'Error completing rub', true);
+    }
+  },
+
+  async loadNewRub(newTaskId, serverData) {
+    this.showLoading();
+    try {
+      const data = await API.call('tasks/get_rub_verses.php?task_id=' + encodeURIComponent(newTaskId), {
+        redirectOn401: true,
+      });
+      if (!data) {
+        this.showInactive();
+        return;
+      }
+      this.cacheData(data);
+      this.applyData(data);
+      this.render();
+      this.hideLoading();
+
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.set('task', String(newTaskId));
+        window.history.replaceState({}, '', url.toString());
+      } catch (e) {}
+
+      if (window.RubSession) {
+        RubSession.session = null;
+        RubSession.plan = null;
+        RubSession.answers = {};
+        RubSession.itemStates = {};
+        RubSession.pending = [];
+        RubSession.attachedTaskId = newTaskId;
+        RubSession.lastSummary = null;
+        if (serverData && serverData.state) {
+          RubSession.applyState(serverData.state);
+        } else {
+          RubSession.loadState();
+        }
+        RubSession.syncHeroProgress();
+        if (RubSession.activeTab === 'session') {
+          RubSession.renderHome(true);
+        }
+      }
+    } catch (err) {
+      this.hideLoading();
+      showToast((err && err.message) || this.t('rub_load_error', {}, 'تعذر تحميل الربع الجديد'), true);
     }
   },
 

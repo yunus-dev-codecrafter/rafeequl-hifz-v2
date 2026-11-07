@@ -15,6 +15,8 @@ declare(strict_types=1);
  * at runtime.
  */
 
+require_once __DIR__ . '/_rollover.php';
+
 /* -------------------------------------------------------------------------
  * Waqf (stop) signs in the Uthmani text.
  *
@@ -895,4 +897,87 @@ function rh_unmark_rub_done(PDO $pdo, int $userId, int $rubId, string $taskDate)
 function rh_rub_label(int $rubId): string
 {
     return 'الربع ' . $rubId;
+}
+
+/**
+ * Insert a new RUB_TAMKIN task row for a user.
+ */
+function rh_insert_rub_task(PDO $pdo, int $userId, array $rub, string $date): array
+{
+    $hasRollover = rh_task_has_rollover($pdo);
+    $extraColumns = $hasRollover ? ', `rollover_count`, `last_rollover_date`' : '';
+    $extraValues  = $hasRollover ? ', 0, :rollover_date' : '';
+
+    $stmt = $pdo->prepare(
+        'INSERT INTO `daily_task_logs`
+            (`user_id`, `task_date`, `task_type`, `start_page`, `end_page`, `rub_id`, `is_completed`' . $extraColumns . ')
+         VALUES (:u, :d, \'RUB_TAMKIN\', :s, :e, :rub, 0' . $extraValues . ')'
+    );
+    $params = [
+        ':u'   => $userId,
+        ':d'   => $date,
+        ':s'   => (int) $rub['start_page'],
+        ':e'   => (int) $rub['end_page'],
+        ':rub' => (int) $rub['id'],
+    ];
+    if ($hasRollover) {
+        $params[':rollover_date'] = $date;
+    }
+    $stmt->execute($params);
+
+    return [
+        'id'                 => (int) $pdo->lastInsertId(),
+        'task_date'          => $date,
+        'task_type'          => 'RUB_TAMKIN',
+        'start_page'         => (int) $rub['start_page'],
+        'end_page'           => (int) $rub['end_page'],
+        'rub_id'             => (int) $rub['id'],
+        'is_completed'       => 0,
+        'completed_stations' => null,
+        'rollover_count'     => 0,
+        'last_rollover_date' => $date,
+    ];
+}
+
+/**
+ * Pick and create the next rub task for a user.
+ */
+function rh_pick_and_create_next_rub(PDO $pdo, int $userId, string $today): ?array
+{
+    // First check if there is already an uncompleted RUB_TAMKIN task for today
+    $checkStmt = $pdo->prepare(
+        "SELECT `id`, `task_date`, `task_type`, `start_page`, `end_page`, `rub_id`, `is_completed`
+         FROM `daily_task_logs`
+         WHERE `user_id` = :u AND `task_type` = 'RUB_TAMKIN' AND `task_date` = :d AND `is_completed` = 0
+         ORDER BY `id` DESC LIMIT 1"
+    );
+    $checkStmt->execute([':u' => $userId, ':d' => $today]);
+    $existingActive = $checkStmt->fetch();
+    if ($existingActive) {
+        return $existingActive;
+    }
+
+    $userStmt = $pdo->prepare('SELECT `user_type`, `memorized_page`, `current_page` FROM `users` WHERE `id` = :u LIMIT 1');
+    $userStmt->execute([':u' => $userId]);
+    $userRow = $userStmt->fetch() ?: [];
+
+    $utype = (string) ($userRow['user_type'] ?? 'CONTINUOUS');
+    $memPage = (int) ($userRow['memorized_page'] ?? 0);
+    $curPage = (int) ($userRow['current_page'] ?? $memPage);
+    $rubFrontier = $utype === 'COMPLETE' ? 604 : max(0, $memPage);
+
+    $pickedRub = rh_pick_rub(
+        $pdo,
+        $userId,
+        $rubFrontier,
+        $utype,
+        $today,
+        $utype === 'COMPLETE' ? 604 : $curPage
+    );
+
+    if ($pickedRub === null) {
+        return null;
+    }
+
+    return rh_insert_rub_task($pdo, $userId, $pickedRub, $today);
 }

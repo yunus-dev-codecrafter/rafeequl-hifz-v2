@@ -45,7 +45,8 @@ function findExistingTask(PDO $pdo, int $userId, string $type, string $today): ?
              FROM `daily_task_logs`
              WHERE `user_id` = :u AND `task_type` = :t';
 
-    $stmt = $pdo->prepare($base . ' AND `task_date` = :d ORDER BY `id` ASC LIMIT 1');
+    // Prioritize active (uncompleted) task for today, then latest task for today.
+    $stmt = $pdo->prepare($base . ' AND `task_date` = :d ORDER BY `is_completed` ASC, `id` DESC LIMIT 1');
     $stmt->execute([':u' => $userId, ':t' => $type, ':d' => $today]);
     $row = $stmt->fetch();
     if ($row) {
@@ -142,39 +143,7 @@ function insertTask(PDO $pdo, int $userId, string $type, array $bounds, string $
 
 function insertRubTask(PDO $pdo, int $userId, array $rub, string $date): array
 {
-    $hasRollover = rh_task_has_rollover($pdo);
-    $extraColumns = $hasRollover ? ', `rollover_count`, `last_rollover_date`' : '';
-    $extraValues  = $hasRollover ? ', 0, :rollover_date' : '';
-
-    $stmt = $pdo->prepare(
-        'INSERT INTO `daily_task_logs`
-            (`user_id`, `task_date`, `task_type`, `start_page`, `end_page`, `rub_id`, `is_completed`' . $extraColumns . ')
-         VALUES (:u, :d, \'RUB_TAMKIN\', :s, :e, :rub, 0' . $extraValues . ')'
-    );
-    $params = [
-        ':u'   => $userId,
-        ':d'   => $date,
-        ':s'   => (int) $rub['start_page'],
-        ':e'   => (int) $rub['end_page'],
-        ':rub' => (int) $rub['id'],
-    ];
-    if ($hasRollover) {
-        $params[':rollover_date'] = $date;
-    }
-    $stmt->execute($params);
-
-    return [
-        'id'                 => (int) $pdo->lastInsertId(),
-        'task_date'          => $date,
-        'task_type'          => 'RUB_TAMKIN',
-        'start_page'         => (int) $rub['start_page'],
-        'end_page'           => (int) $rub['end_page'],
-        'rub_id'             => (int) $rub['id'],
-        'completed_stations' => null,
-        'is_completed'       => 0,
-        'rollover_count'     => 0,
-        'last_rollover_date' => $date,
-    ];
+    return rh_insert_rub_task($pdo, $userId, $rub, $date);
 }
 
 function formatTask(array $row, string $today, ?PDO $pdo = null, int $userId = 0): array

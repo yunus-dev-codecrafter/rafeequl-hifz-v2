@@ -424,7 +424,7 @@ try {
         ]);
     }
 
-    if ($action === 'COMPLETE') {
+    if ($action === 'COMPLETE' || $action === 'NEXT_RUB') {
         $taskId = (int) ($input['task_id'] ?? 0);
         if ($taskId <= 0) {
             json_out(400, ['success' => false, 'errors' => ['task_id' => 'task_id is required.']]);
@@ -432,20 +432,37 @@ try {
 
         $task = rh_rub_session_task($pdo, $userId, $taskId);
         $rubId = (int) $task['rub_id'];
-        rh_rub_mark_task_complete($pdo, $userId, $taskId, $rubId, (string) $task['task_date']);
-        $task = rh_rub_session_task($pdo, $userId, $taskId);
-        $state = rh_rub_state_payload($pdo, $userId, $task);
+        $taskDate = (string) ($task['task_date'] ?? date('Y-m-d'));
+
+        // 1. Mark this rub complete if not yet marked
+        if ((int) ($task['is_completed'] ?? 0) !== 1) {
+            rh_rub_mark_task_complete($pdo, $userId, $taskId, $rubId, $taskDate);
+        }
+
+        // 2. Automatically pick and insert the next rub task for today
+        $today = date('Y-m-d');
+        $newTaskRow = rh_pick_and_create_next_rub($pdo, $userId, $today);
+
+        // If a next rub was created and differs from completed one, load state for it; otherwise use the completed task state
+        $activeTask = ($newTaskRow && (int) $newTaskRow['id'] !== $taskId)
+            ? rh_rub_session_task($pdo, $userId, (int) $newTaskRow['id'])
+            : rh_rub_session_task($pdo, $userId, $taskId);
+        $hasNext = $newTaskRow !== null && (int) $activeTask['id'] !== $taskId;
+        $state = rh_rub_state_payload($pdo, $userId, $activeTask);
 
         json_out(200, [
-            'success' => true,
-            'task'    => [
-                'id'       => (int) $task['id'],
-                'task_date' => (string) $task['task_date'],
-                'rub_id'   => (int) $task['rub_id'],
-                'is_completed' => (int) ($task['is_completed'] ?? 0) === 1,
-                'rollover_count' => (int) ($task['rollover_count'] ?? 0),
+            'success'   => true,
+            'completed_task_id' => $taskId,
+            'has_next'  => $hasNext,
+            'task'      => [
+                'id'             => (int) $activeTask['id'],
+                'task_date'      => (string) $activeTask['task_date'],
+                'rub_id'         => (int) $activeTask['rub_id'],
+                'is_completed'   => (int) ($activeTask['is_completed'] ?? 0) === 1,
+                'rollover_count' => (int) ($activeTask['rollover_count'] ?? 0),
             ],
-            'state'   => $state,
+            'rub'       => rh_rub_by_id((int) $activeTask['rub_id']),
+            'state'     => $state,
         ]);
     }
 

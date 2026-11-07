@@ -581,6 +581,24 @@
       } catch (e) {}
     },
 
+    applyState(data) {
+      this.state = data || null;
+      this.schemaMissing = false;
+      this.offline = false;
+      this.applySettings((data && data.settings) || {});
+      this.renderExerciseToggles();
+      this.applySettingsToControls();
+      this.renderHome();
+      if (data && data.active_session) {
+        this.beginSession(data.active_session, (data && data.settings) || {});
+        this.mergeCachedPending(data.active_session);
+      } else {
+        this.session = null;
+        this.showSetup();
+        this.renderHome();
+      }
+    },
+
     async loadState() {
       const taskId = this.taskId();
       if (!taskId) return;
@@ -590,21 +608,7 @@
         const data = await API.call('tasks/rub_session.php?task_id=' + encodeURIComponent(taskId), {
           redirectOn401: true,
         });
-        this.state = data || null;
-        this.schemaMissing = false;
-        this.offline = false;
-        this.applySettings((data && data.settings) || {});
-        this.renderExerciseToggles();
-        this.applySettingsToControls();
-        this.renderHome();
-        if (data && data.active_session) {
-          this.beginSession(data.active_session, (data && data.settings) || {});
-          this.mergeCachedPending(data.active_session);
-        } else {
-          this.session = null;
-          this.showSetup();
-          this.renderHome();
-        }
+        this.applyState(data);
       } catch (err) {
         if (err && err.status === 401) return;
         const payload = err && err.data ? err.data : null;
@@ -713,10 +717,14 @@
       const isTaskDone = !!(this.state && this.state.task && this.state.task.is_completed) ||
         !!(this.page && this.page.taskCompletedOnServer);
       if (this.els.markDone) {
-        this.els.markDone.disabled = isTaskDone;
-        this.els.markDone.textContent = isTaskDone
-          ? '✓ ' + this.t('rub_summary_task_done', {}, 'تم تسجيل إتمام مهمة تثبيت الربع لليوم')
-          : this.t('rub_summary_mark_done', {}, 'تم تثبيت الربع الحالي');
+        this.els.markDone.disabled = false;
+        if (isTaskDone) {
+          this.els.markDone.classList.add('is-completed');
+          this.els.markDone.textContent = '➔ ' + this.t('rub_next_rub', {}, 'الربع التالي ←');
+        } else {
+          this.els.markDone.classList.remove('is-completed');
+          this.els.markDone.textContent = this.t('rub_summary_mark_done', {}, 'تم تثبيت الربع الحالي');
+        }
       }
 
       if (this.els.last) {
@@ -2913,9 +2921,8 @@
         '<div class="rub-summary-section"><h3>' + this.esc(this.t('rub_summary_history', {}, 'سجل الجلسات')) + '</h3>' +
         '<div class="rub-summary-history">' + historyHtml + '</div></div>' +
         '<div class="rub-summary-actions">' +
-        '<button type="button" class="btn btn-success" data-summary-action="mark-done"' +
-        (task && task.is_completed ? ' disabled' : '') + '>' +
-        (task && task.is_completed ? '✓ ' + this.esc(this.t('rub_summary_task_done', {}, 'تم تسجيل إتمام مهمة تثبيت الربع لليوم')) : this.esc(this.t('rub_summary_mark_done', {}, 'Mark current rub as done'))) +
+        '<button type="button" class="btn btn-success' + (task && task.is_completed ? ' is-completed' : '') + '" data-summary-action="mark-done">' +
+        (task && task.is_completed ? '➔ ' + this.esc(this.t('rub_next_rub', {}, 'الربع التالي ←')) : this.esc(this.t('rub_summary_mark_done', {}, 'تم تثبيت الربع الحالي'))) +
         '</button>' +
         '<button type="button" class="btn btn-primary" data-summary-action="repeat-weak"' +
         (this.hasWeak() ? '' : ' disabled') + '>' + this.esc(this.t('rub_summary_repeat_weak', {}, 'أعد التمارين الضعيفة')) + '</button>' +
@@ -2926,6 +2933,9 @@
     },
 
     async markTaskDone() {
+      if (this.page && typeof this.page.markDone === 'function') {
+        return this.page.markDone();
+      }
       const taskId = this.taskId();
       if (!taskId) {
         this.toast(this.t('rub_session_no_task', {}, 'لا يوجد ربع نشط لهذه الجلسة.'), true);
@@ -2941,6 +2951,14 @@
             task_id: taskId,
           },
         });
+        if (data && data.has_next && data.task && data.task.id && data.task.id !== taskId) {
+          if (this.page && typeof this.page.loadNewRub === 'function') {
+            await this.page.loadNewRub(data.task.id, data);
+            return;
+          }
+          window.location.reload();
+          return;
+        }
         const nextState = data && data.state ? data.state : this.state;
         this.state = nextState;
         if (this.state && this.state.task) {
@@ -2975,48 +2993,11 @@
       if (!button) return;
       event.preventDefault();
       const action = button.dataset.summaryAction;
-      if (action === 'mark-done') {
-        const taskId = this.taskId();
-        if (!taskId) {
-          this.toast(this.t('rub_session_no_task', {}, 'لا يوجد ربع نشط لهذه الجلسة.'), true);
-          return;
+      if (action === 'mark-done' || action === 'next-rub') {
+        if (this.page && typeof this.page.markDone === 'function') {
+          return this.page.markDone();
         }
-        button.disabled = true;
-        try {
-          const data = await API.call('tasks/rub_session.php', {
-            method: 'POST',
-            redirectOn401: true,
-            body: {
-              action: 'COMPLETE',
-              task_id: taskId,
-            },
-          });
-          const nextState = data && data.state ? data.state : this.state;
-          this.state = nextState;
-          if (this.state && this.state.task) {
-            this.state.task.is_completed = true;
-          }
-          if (this.page) {
-            this.page.taskCompletedOnServer = true;
-            if (this.page.task) this.page.task.is_completed = true;
-            if (typeof this.page.updateHeroCompletionUI === 'function') {
-              this.page.updateHeroCompletionUI(true);
-            }
-            if (typeof this.page.updateProgress === 'function') {
-              this.page.updateProgress();
-            }
-          }
-          this.syncHeroProgress();
-          this.showSummary(this.session, nextState);
-          if (window.AudioEngine && typeof AudioEngine.playCelebration === 'function') {
-            try { AudioEngine.playCelebration(); } catch (e) {}
-          }
-          this.toast(this.t('rub_summary_mark_done_success', {}, 'Current rub marked done'));
-        } catch (err) {
-          button.disabled = false;
-          this.toast((err && err.message) || 'Error completing rub', true);
-        }
-        return;
+        return this.markTaskDone();
       }
       if (action === 'repeat-weak') {
         if (!this.hasWeak()) {
