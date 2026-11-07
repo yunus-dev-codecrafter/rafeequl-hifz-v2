@@ -150,6 +150,8 @@ function rh_rub_state_payload(PDO $pdo, int $userId, array $task): array
 
     $weak = rh_rub_weak_verses($pdo, $userId, $rubId, 20);
     $weakWords = rh_rub_weak_words($pdo, $userId, $rubId, 12);
+    $performance = rh_rub_exercise_performance($pdo, $userId, $rubId);
+    $rubMastery = rh_rub_assess_rub_mastery($pdo, $userId, $rubId);
 
     return [
         'success'       => true,
@@ -171,6 +173,8 @@ function rh_rub_state_payload(PDO $pdo, int $userId, array $task): array
             'weak_words'  => $weakWords,
             'due_count'   => rh_rub_due_count($pdo, $userId, $rubId),
             'has_weak'    => count($weak) > 0 || count($weakWords) > 0,
+            'performance' => $performance,
+            'mastery'     => $rubMastery,
         ],
     ];
 }
@@ -266,12 +270,25 @@ try {
         $attemptNo = max(1, (int) $attemptStmt->fetchColumn());
 
         $stats = rh_rub_verse_stats_map($pdo, $userId, $rubId);
+        $history = [
+            // Each advanced challenge prioritises the exact ayat where that
+            // challenge was missed before. Connection also borrows verified
+            // similar-ayah misses, because part B of that challenge tests them.
+            'RANDOM_START'  => rh_rub_exercise_miss_map($pdo, $userId, $rubId, ['RANDOM_START']),
+            'INTERRUPT'     => rh_rub_exercise_miss_map($pdo, $userId, $rubId, ['INTERRUPT']),
+            'CONNECTION'    => rh_rub_combine_miss_maps([
+                rh_rub_exercise_miss_map($pdo, $userId, $rubId, ['CONNECTION']),
+                rh_rub_exercise_miss_map($pdo, $userId, $rubId, ['MUTASHABIHAT']),
+            ]),
+            'MUTASHABIHAT'  => rh_rub_exercise_miss_map($pdo, $userId, $rubId, ['MUTASHABIHAT']),
+            'CONTINUE_AYAH' => rh_rub_exercise_miss_map($pdo, $userId, $rubId, ['CONTINUE_AYAH']),
+        ];
         $seed = abs((int) crc32($taskId . ':' . $attemptNo . ':' . $rubId . ':' . $focus . ':' . $difficulty));
         if ($seed === 0) {
             $seed = 1;
         }
 
-        $plan = rh_rub_build_plan($rubId, $difficulty, $exercises, $sampleSize, $allowOutside, $focus, $stats, $seed);
+        $plan = rh_rub_build_plan($rubId, $difficulty, $exercises, $sampleSize, $allowOutside, $focus, $stats, $seed, $history);
         $available = 0;
         foreach (($plan['exercises'] ?? []) as $stage) {
             if (is_array($stage) && !empty($stage['available'])) {

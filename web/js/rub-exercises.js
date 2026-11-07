@@ -93,20 +93,17 @@
   /**
    * Does a placed token answer the expected word position?
    *
-   * Tokens always keep their own occurrence id and original position. When an
-   * ayah repeats the exact same word, either occurrence is accepted for the
-   * matching position (the two tiles are visually indistinguishable), while a
-   * genuinely different word or a decoy is still rejected. Comparison is exact
-   * after removing only harakat/tatweel, never letter folding.
+   * Each occurrence has its own id and original wordIndex. Validation uses the
+   * occurrence identity only: repeated Arabic words are NOT interchangeable,
+   * because that would let an already-used/duplicate occurrence satisfy a
+   * different slot. Decoys and similar-looking words (different letters before
+   * diacritic removal) never match.
    */
   function tokenMatchesPosition(tokens, tokenId, expected) {
     const list = Array.isArray(tokens) ? tokens : [];
     const token = list.find((entry) => entry && entry.id === tokenId);
     if (!token || token.decoy || !Number.isInteger(token.wordIndex) || token.wordIndex < 0) return false;
-    if (token.wordIndex === expected) return true;
-    const expectedToken = list.find((entry) => entry && entry.id === 'w' + expected);
-    if (!expectedToken) return false;
-    return normalizeStrict(token.text) === normalizeStrict(expectedToken.text);
+    return token.wordIndex === expected;
   }
 
   function refLabel(surah, ayah, ctx) {
@@ -560,6 +557,26 @@
     }).join('') + '</div>';
   }
 
+  /* Local-only optional audio controls shared by the advanced challenges. */
+  function audioControls(state, ctx, locked) {
+    const recording = state.audioState === 'recording';
+    const recorded = state.audioState === 'recorded';
+    const starting = !!state.audioStarting;
+    return '<div class="rub-rec-controls">' +
+      '<button type="button" class="btn btn-ghost" data-audio-record' +
+      (recording || starting || locked ? ' disabled' : '') + '>' +
+      esc(ctx.t(recording ? 'rub_np_recording' : 'rub_np_record', {}, recording ? 'جارٍ التسجيل…' : 'تسجيل صوتي (اختياري)')) +
+      '</button>' +
+      '<button type="button" class="btn btn-ghost" data-audio-stop' + (recording ? '' : ' disabled') + '>' +
+      esc(ctx.t('rub_np_stop', {}, 'أوقف التسجيل')) + '</button>' +
+      '<button type="button" class="btn btn-ghost" data-audio-play' + (recorded ? '' : ' disabled') + '>' +
+      esc(ctx.t('rub_np_play', {}, 'استمع للتسجيل')) + '</button>' +
+      '<audio class="rub-np-audio" data-audio controls' + (recorded ? '' : ' hidden') + '></audio>' +
+      '<small class="rub-rec-note">' + esc(ctx.t('rub_rec_local_note', {},
+        'التسجيل اختياري ويبقى في متصفحك للمقارنة اليدوية؛ لا يُرفع ولا يُعد تحققاً آلياً.')) + '</small>' +
+      '</div>';
+  }
+
   /* ---------------------------------------------------------------------
    * 6. Sudden interruption
    * ------------------------------------------------------------------ */
@@ -567,6 +584,13 @@
     const locked = !!state.recorded && !state.practiceRetry;
     const revealed = !!state.reveal;
     const value = state.value != null ? String(state.value) : '';
+    const position = String(item.stop_position || 'middle');
+    const positionLabels = {
+      beginning: ctx.t('rub_int_pos_beginning', {}, 'أول الآية'),
+      middle: ctx.t('rub_int_pos_middle', {}, 'وسط الآية'),
+      end: ctx.t('rub_int_pos_end', {}, 'آخر الآية'),
+    };
+    const showRef = !item.hide_reference;
     const input = revealed
       ? ''
       : '<input class="rub-typed-answer" data-int-input value="' + esc(value) + '"' +
@@ -575,16 +599,21 @@
         (locked ? ' disabled' : '') + '>';
     return '<article class="rub-ex-card" data-exercise="INTERRUPT">' +
       exerciseHead(ctx, 'rub_ex_int_kicker', 'rub_ex_int_title', 'التوقف المفاجئ',
-        'rub_ex_int_sub', 'توقف الاستماع/التسميع في موضع عشوائي، ثم أكمل من حيث توقف.', '') +
+        'rub_ex_int_sub', 'توقف الاستماع/التسميع في موضع عشوائي، ثم أكمل من حيث توقف.',
+        '<span class="rub-ex-tag">' + esc(positionLabels[position] || position) + '</span>') +
       '<div class="rub-ex-prompt"><span class="rub-ex-prompt-label">' +
       esc(ctx.t('rub_int_prompt', {}, 'توقف عند')) + '</span>' +
       arabicBlock(item.prompt_text) +
-      '<div class="rub-option-meta">' + (ctx.advanced ? '' : '<span class="rub-option-ref">' + esc(refLabel(item.surah, item.ayah, ctx)) + '</span>') + '</div></div>' +
+      (showRef
+        ? '<div class="rub-option-meta"><span class="rub-option-ref">' +
+          esc(item.prompt_ref || refLabel(item.surah, item.ayah, ctx)) + '</span></div>'
+        : '') + '</div>' +
       '<div class="rub-interrupt-caret" aria-hidden="true">…</div>' +
       '<p class="rub-ex-prompt-label">' + esc(ctx.t('rub_int_ask', {}, 'أكمل من حيث توقف:')) + '</p>' +
       (revealed
         ? '<div class="rub-ex-verse" dir="rtl" lang="ar">' + esc(item.full_text) + '</div>'
         : input) +
+      (ctx.advanced ? audioControls(state, ctx, locked) : '') +
       (locked
         ? '<div class="rub-ex-tools">' + retryButton(ctx) + '</div>'
         : '<div class="rub-ex-tools">' +
@@ -601,46 +630,166 @@
     const locked = !!state.recorded && !state.practiceRetry;
     const revealed = !!state.reveal;
     const value = state.value != null ? String(state.value) : '';
-    const length = Number(item.length) || 2;
-    const passage = Array.isArray(item.passage)
-      ? item.passage.map((entry) => '<div class="rub-ex-verse" dir="rtl" lang="ar">' + esc(entry.text) + '</div>').join('')
-      : '<div class="rub-ex-verse" dir="rtl" lang="ar">' + esc(item.passage || '') + '</div>';
+    const passages = item.passages && typeof item.passages === 'object' ? item.passages : {};
+    const optionKeys = Array.isArray(item.continuation_options) && item.continuation_options.length
+      ? item.continuation_options.map(String)
+      : Object.keys(passages);
+    const defaultKey = String(item.default_length != null ? item.default_length : (optionKeys[0] || '2'));
+    const selectedKey = state.continuationLength != null ? String(state.continuationLength) : defaultKey;
+    const passage = passages[selectedKey] || passages[defaultKey] || passages[optionKeys[0]] || null;
+    const requiredWords = String(item.expected_text || '').trim().split(/\s+/).filter(Boolean).length || 2;
+    const lengthLabel = selectedKey === 'all'
+      ? ctx.t('rub_rs_length_all', {}, 'إلى نهاية الربع')
+      : ctx.t('rub_rs_length_value', { count: Number(selectedKey) || 1 }, '{count} آية/آيات');
+    const lengthButtons = optionKeys.length
+      ? '<div class="rub-segmented rub-rs-lengths" role="group" aria-label="' +
+        esc(ctx.t('rub_rs_length_label', {}, 'طول المتابعة')) + '">' +
+        optionKeys.map((key) => '<button type="button" data-rs-length="' + esc(key) + '"' +
+          (String(key) === selectedKey ? ' class="is-active"' : '') +
+          (locked ? ' disabled' : '') + '>' +
+          esc(key === 'all'
+            ? ctx.t('rub_rs_length_all', {}, 'إلى نهاية الربع')
+            : ctx.t('rub_rs_length_value', { count: Number(key) || 1 }, '{count} آية/آيات')) +
+          '</button>').join('') + '</div>'
+      : '';
+    const passageHtml = passage
+      ? (selectedKey === 'all'
+        ? '<div class="rub-ex-verse" dir="rtl" lang="ar">' + esc(passage.text || '') + '</div>'
+        : (Array.isArray(passage.ayahs) ? passage.ayahs : []).map((entry) =>
+          '<div class="rub-ex-verse" dir="rtl" lang="ar">' + esc(entry.text || '') + '</div>').join(''))
+      : '';
+    const revealAnswer = passage
+      ? ((passage.range ? passage.range + '\n' : '') + (passage.text || ''))
+      : item.text;
     return '<article class="rub-ex-card" data-exercise="RANDOM_START">' +
       exerciseHead(ctx, 'rub_ex_rs_kicker', 'rub_ex_rs_title', 'بداية عشوائية',
         'rub_ex_rs_sub', 'ابدأ التسميع من آية عشوائية دون النظر إلى النص.', '') +
       '<div class="rub-random-start"><span class="rub-ex-prompt-label">' +
       esc(ctx.t('rub_rs_start_from', {}, 'ابدأ من')) + '</span>' +
-      '<strong class="rub-random-ref" dir="rtl" lang="ar">' + esc(item.prompt_ref || refLabel(item.surah, item.ayah, ctx)) + '</strong>' +
-      '<span class="rub-random-length">' + esc(ctx.t('rub_rs_continue', { count: length }, 'ثم تابع {count} آية/آيات')) + '</span></div>' +
+      '<strong class="rub-random-ref" dir="rtl" lang="ar">' +
+      esc(item.prompt_ref || refLabel(item.surah, item.ayah, ctx)) + '</strong>' +
+      '<span class="rub-random-length">' + esc(lengthLabel) + '</span></div>' +
+      lengthButtons +
       (revealed
-        ? passage
-        : '<p class="rub-ex-prompt-label">' + esc(ctx.t('rub_rs_ask', {}, 'اكتب أول كلمتين من الآية بعد التسميع من الذاكرة:')) + '</p>' +
+        ? passageHtml
+        : '<p class="rub-ex-prompt-label">' +
+          esc(ctx.t('rub_rs_ask_words', { count: requiredWords },
+            'اكتب الكلمات {count} الأولى من الآية بعد التسميع من الذاكرة:')) + '</p>' +
           '<input class="rub-typed-answer" data-rs-input value="' + esc(value) + '"' +
           ' inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" dir="rtl" lang="ar"' +
-          ' placeholder="' + esc(ctx.t('rub_rs_placeholder', {}, 'أول كلمتين…')) + '"' + (locked ? ' disabled' : '') + '>') +
+          ' placeholder="' + esc(ctx.t('rub_rs_placeholder', {}, 'أول كلمات الآية…')) + '"' +
+          (locked ? ' disabled' : '') + '>') +
+      (ctx.advanced ? audioControls(state, ctx, locked) : '') +
       (locked
         ? '<div class="rub-ex-tools">' + retryButton(ctx) + '</div>'
         : '<div class="rub-ex-tools">' +
           '<button type="button" class="btn btn-ghost" data-rs-reveal>' + esc(ctx.t('rub_ex_reveal', {}, 'أظهر الحل')) + '</button>' +
           '</div>') +
-      feedbackHtml(state, ctx, { answer: item.passage && typeof item.passage === 'string' ? item.passage : item.text }) +
+      feedbackHtml(state, ctx, { answer: revealAnswer }) +
       '</article>';
   }
 
   /* ---------------------------------------------------------------------
-   * 8. Ayah connection
+   * 8. Ayah connection + verified similar ayat
    * ------------------------------------------------------------------ */
-  function renderConnection(item, state, ctx) {
+  function renderConnectionSimilar(item, state, ctx) {
+    const mode = String(item.mode || 'rub_membership');
+    const locked = !!state.recorded && !state.practiceRetry;
+    const selected = state.selected != null ? String(state.selected) : '';
+    const showMeta = !!state.checked;
+    const options = Array.isArray(item.options) ? item.options : [];
+
+    let question = ctx.t('rub_mt_question_rub', {}, 'أي الآيتين من الربع الحالي؟');
+    let promptHtml = '<div class="rub-ex-prompt"><span class="rub-ex-prompt-label">' +
+      esc(ctx.t('rub_mt_prompt_rub', {}, 'الربع الحالي')) + '</span>' +
+      arabicBlock(ctx.rubLabel || '', 'rub-ex-prompt-text') + '</div>';
+    if (mode === 'context_after' || mode === 'context_before' || mode === 'continuation') {
+      question = mode === 'context_after'
+        ? ctx.t('rub_mt_question_after', {}, 'أي الآيتين تسبق الآية المعروضة؟')
+        : (mode === 'context_before'
+          ? ctx.t('rub_mt_question_before', {}, 'أي الآيتين تلي الآية المعروضة؟')
+          : ctx.t('rub_mt_question_continuation', {}, 'أي التكملتين الصحيحة لبداية الآية؟'));
+      promptHtml = '<div class="rub-ex-prompt"><span class="rub-ex-prompt-label">' +
+        esc(ctx.t(mode === 'continuation' ? 'rub_mt_prompt_prefix' : 'rub_mt_prompt_context', {},
+          mode === 'continuation' ? 'بداية الآية' : 'الآية المعروضة')) + '</span>' +
+        arabicBlock(item.prompt_text) +
+        (!item.hide_reference && !ctx.advanced
+          ? '<div class="rub-option-meta"><span class="rub-option-ref">' + esc(item.prompt_ref || '') + '</span></div>'
+          : '') + '</div>';
+    }
+
+    const optionsHtml = '<div class="rub-options" data-cn-options>' + options.map((option) => {
+      const id = String(option.id || '');
+      const isSelected = selected === id;
+      const isCorrect = !!option.correct;
+      let cls = 'rub-option';
+      if (isSelected) cls += ' is-selected';
+      if (showMeta && isCorrect) cls += ' is-correct';
+      if (showMeta && isSelected && !isCorrect) cls += ' is-wrong';
+      const meta = [];
+      if (showMeta && option.ref) {
+        meta.push('<span class="rub-option-ref' + (item.outside_rub && !isCorrect ? ' is-outside' : '') + '">' +
+          esc(option.ref) + '</span>');
+      }
+      if (showMeta && item.outside_rub && !isCorrect) {
+        meta.push('<span class="rub-option-ref is-outside">' + esc(ctx.t('rub_outside_rub', {}, 'خارج الربع')) + '</span>');
+      }
+      const text = showMeta && Array.isArray(option.segments)
+        ? diffSegments(option.segments, mode === 'continuation' ? item.prompt_text : '')
+        : esc(option.text || '');
+      return '<button type="button" class="' + cls + '" data-cn-option="' + esc(id) + '"' +
+        (locked ? ' disabled' : '') + '>' +
+        '<span class="rub-option-mark" aria-hidden="true">' + esc(id.toUpperCase()) + '</span>' +
+        '<span class="rub-option-body"><span class="rub-option-text" dir="rtl" lang="ar">' + text + '</span>' +
+        (meta.length ? '<span class="rub-option-meta">' + meta.join('') + '</span>' : '') +
+        '</span></button>';
+    }).join('') + '</div>';
+
     return '<article class="rub-ex-card" data-exercise="CONNECTION">' +
-      exerciseHead(ctx, 'rub_ex_cn_kicker', 'rub_ex_cn_title', 'ربط الآيات',
-        'rub_ex_cn_sub', 'اختر بداية الآية التي تأتي مباشرة بعد هذا الموضع.', '') +
-      '<div class="rub-ex-prompt"><span class="rub-ex-prompt-label">' +
-      esc(ctx.t('rub_cn_prompt', {}, 'آخر ما وقفت عنده')) + '</span>' +
+      exerciseHead(ctx, 'rub_ex_cn_kicker', 'rub_ex_cn_title', 'ربط الآيات والمتشابهات',
+        'rub_ex_cn_similar_sub', 'الجزء الثاني: ميّز الآية الصحيحة من بين آيتين متشابهتين موثقتين.',
+        '<span class="rub-ex-tag' + (showMeta && item.outside_rub ? ' is-outside' : '') + '">' +
+        esc(showMeta && item.outside_rub ? ctx.t('rub_outside_rub', {}, 'خارج الربع') : ctx.t('rub_mt_verified', {}, 'موثّق')) +
+        '</span>') +
+      '<p class="rub-ex-question">' + esc(question) + '</p>' +
+      promptHtml + optionsHtml +
+      (showMeta && item.diff_count
+        ? '<p class="rub-ex-prompt-label">' + esc(ctx.t('rub_mt_diff_note', { count: item.diff_count }, 'مواضع الاختلاف: {count}')) + '</p>'
+        : '') +
+      (locked ? '<div class="rub-ex-tools">' + retryButton(ctx) + '</div>' : '') +
+      feedbackHtml(state, ctx, {
+        answer: item.prompt_full || '',
+        note: item.outside_rub
+          ? ctx.t('rub_mt_feedback_outside', {}, 'إحدى الآيتين من خارج الربع؛ وُسمت بعد الإجابة.')
+          : '',
+      }) +
+      '</article>';
+  }
+
+  function renderConnection(item, state, ctx) {
+    if (String(item.kind || '') === 'similar') {
+      return renderConnectionSimilar(item, state, ctx);
+    }
+    const mode = String(item.mode || 'next_opening');
+    const locked = !!state.recorded && !state.practiceRetry;
+    const promptLabel = mode === 'current_ending'
+      ? ctx.t('rub_cn_prompt_opening', {}, 'بداية الآية')
+      : ctx.t('rub_cn_prompt_ending', {}, 'نهاية الآية');
+    const question = mode === 'current_ending'
+      ? ctx.t('rub_cn_question_ending', {}, 'أي نهاية آية تنتمي إلى هذه البداية؟')
+      : ctx.t('rub_cn_question_opening', {}, 'أي بداية آية تأتي مباشرة بعدها؟');
+    return '<article class="rub-ex-card" data-exercise="CONNECTION">' +
+      exerciseHead(ctx, 'rub_ex_cn_kicker', 'rub_ex_cn_title', 'ربط الآيات والمتشابهات',
+        'rub_ex_cn_sub', 'اربط نهاية الآية ببداية التالية، وميّز المتشابهات الموثقة.',
+        '<span class="rub-ex-tag">' + esc(ctx.t('rub_cn_part_transition', {}, 'ربط انتقالي')) + '</span>') +
+      '<div class="rub-ex-prompt"><span class="rub-ex-prompt-label">' + esc(promptLabel) + '</span>' +
       arabicBlock(item.prompt_text) +
-      '<div class="rub-option-meta">' + (ctx.advanced ? '' : '<span class="rub-option-ref">' + esc(item.prompt_ref || '') + '</span>') + '</div></div>' +
-      '<p class="rub-ex-question">' + esc(ctx.t('rub_cn_question', {}, 'أي آية تأتي بعدها مباشرة؟')) + '</p>' +
+      (!item.hide_reference
+        ? '<div class="rub-option-meta"><span class="rub-option-ref">' + esc(item.prompt_ref || '') + '</span></div>'
+        : '') + '</div>' +
+      '<p class="rub-ex-question">' + esc(question) + '</p>' +
       renderChallengeOptions(item, state, ctx, 'cn') +
-      (state.recorded && !state.practiceRetry
+      (locked
         ? '<div class="rub-ex-tools">' + retryButton(ctx) + '</div>' : '') +
       feedbackHtml(state, ctx, { answer: item.text }) +
       '</article>';

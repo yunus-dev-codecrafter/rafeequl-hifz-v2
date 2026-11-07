@@ -559,7 +559,14 @@ try {
     if ($rubEligible) {
         $rubRow = findExistingTask($pdo, $userId, 'RUB_TAMKIN', $today);
         if ($rubRow === null) {
-            $pickedRub = rh_pick_rub($pdo, $userId, $utype === 'COMPLETE' ? 604 : $rubFrontier, $utype, $today);
+            $pickedRub = rh_pick_rub(
+                $pdo,
+                $userId,
+                $utype === 'COMPLETE' ? 604 : $rubFrontier,
+                $utype,
+                $today,
+                $utype === 'COMPLETE' ? 604 : $current
+            );
             if ($pickedRub !== null) {
                 $rubRow = insertRubTask($pdo, $userId, $pickedRub, $today);
             }

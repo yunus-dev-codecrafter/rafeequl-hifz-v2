@@ -3,7 +3,7 @@
 /* ==========================================================================
    Rafeequl Hifz — Rub' Consolidation session controller (v13)
 
-   Runs the five core revision exercises plus the six optional advanced
+   Runs the five core revision exercises plus the three optional advanced
    challenges inside the existing rub' page:
      • server-generated plan, client-side rendering + first-attempt validation;
      • immediate local persistence and a small offline retry queue;
@@ -55,26 +55,31 @@
       sub: 'أخفِ الكلمات تدريجياً وسمّع الآية من حفظك.',
     },
     {
-      key: 'INTERRUPT',
-      titleKey: 'rub_ex_int_title',
-      title: 'التوقف المفاجئ',
-      subKey: 'rub_ex_int_setup',
-      sub: 'أكمل الآية من موضع توقف عشوائي.',
-    },
-    {
       key: 'RANDOM_START',
       titleKey: 'rub_ex_rs_title',
       title: 'بداية عشوائية',
       subKey: 'rub_ex_rs_setup',
-      sub: 'سمّع من آية عشوائية دون معاينة النص.',
+      sub: 'سمّع من آية عشوائية دون معاينة النص، واختر طول المتابعة.',
+    },
+    {
+      key: 'INTERRUPT',
+      titleKey: 'rub_ex_int_title',
+      title: 'التوقف المفاجئ',
+      subKey: 'rub_ex_int_setup',
+      sub: 'أكمل الآية من موضع توقف في أولها أو وسطها أو آخرها.',
     },
     {
       key: 'CONNECTION',
       titleKey: 'rub_ex_cn_title',
-      title: 'ربط الآيات',
+      title: 'ربط الآيات والمتشابهات',
       subKey: 'rub_ex_cn_setup',
-      sub: 'اختر الآية التي تأتي بعد الموضع المعروض.',
+      sub: 'اربط نهاية الآية ببداية التالية، وميّز المتشابهات الموثقة.',
     },
+  ];
+
+  // Retired challenges remain readable in old sessions/results. They are never
+  // offered in the new-session setup and are not part of advanced mode.
+  const LEGACY_EXERCISE_META = [
     {
       key: 'REVERSE',
       titleKey: 'rub_ex_rv_title',
@@ -99,7 +104,15 @@
   ];
 
   const CORE_EXERCISES = ['WORD_ORDER', 'MISSING_WORDS', 'CONTINUE_AYAH', 'MUTASHABIHAT', 'PROGRESSIVE_HIDE'];
+  const ADVANCED_EXERCISES = ['RANDOM_START', 'INTERRUPT', 'CONNECTION'];
   const ALL_EXERCISES = EXERCISE_META.map((item) => item.key);
+  const ADVANCED_MODE_EXERCISES = CORE_EXERCISES.concat(ADVANCED_EXERCISES);
+  const LEGACY_EXERCISES = LEGACY_EXERCISE_META.map((item) => item.key);
+  const KNOWN_EXERCISES = ALL_EXERCISES.concat(LEGACY_EXERCISES);
+  const META_BY_KEY = EXERCISE_META.concat(LEGACY_EXERCISE_META).reduce((map, item) => {
+    map[item.key] = item;
+    return map;
+  }, {});
 
   function clamp(value, min, max) {
     return Math.max(min, Math.min(max, value));
@@ -212,7 +225,7 @@
           if (!button) return;
           this.settings.difficulty = button.dataset.difficulty;
           if (this.settings.difficulty === 'ADVANCED') {
-            this.settings.exercises = ALL_EXERCISES.slice();
+            this.settings.exercises = ADVANCED_MODE_EXERCISES.slice();
           } else {
             const kept = this.settings.exercises.filter((key) => CORE_EXERCISES.includes(key));
             this.settings.exercises = kept.length ? kept : CORE_EXERCISES.slice();
@@ -225,7 +238,7 @@
         this.els.advanced.addEventListener('change', () => {
           if (this.els.advanced.checked) {
             this.settings.difficulty = 'ADVANCED';
-            this.settings.exercises = ALL_EXERCISES.slice();
+            this.settings.exercises = ADVANCED_MODE_EXERCISES.slice();
           } else {
             if (this.settings.difficulty === 'ADVANCED') this.settings.difficulty = 'INTERMEDIATE';
             const kept = this.settings.exercises.filter((key) => CORE_EXERCISES.includes(key));
@@ -475,7 +488,7 @@
       if (this.els.advanced) {
         const selected = new Set(this.settings.exercises);
         this.els.advanced.checked = this.settings.difficulty === 'ADVANCED' &&
-          ALL_EXERCISES.every((key) => selected.has(key));
+          ADVANCED_MODE_EXERCISES.every((key) => selected.has(key));
       }
       if (this.els.exercises) {
         const selected = new Set(this.settings.exercises);
@@ -685,19 +698,41 @@
 
       if (this.els.last) {
         const last = this.state && this.state.last_session;
-        if (last && last.status === 'COMPLETED') {
-          const accuracy = Number(last.accuracy) || 0;
-          const when = this.formatDate(last.completed_at || last.updated_at || '');
-          const duration = this.formatDuration(last.duration_seconds || 0);
+        const mastery = stats.mastery && typeof stats.mastery === 'object' ? stats.mastery : null;
+        const masteryStatus = mastery ? String(mastery.status || '') : '';
+        const showMastery = mastery && masteryStatus !== 'NOT_STARTED';
+        if ((last && last.status === 'COMPLETED') || showMastery) {
+          const accuracy = last && last.status === 'COMPLETED' ? Number(last.accuracy) || 0 : 0;
+          const when = last ? this.formatDate(last.completed_at || last.updated_at || '') : '';
+          const duration = last ? this.formatDuration(last.duration_seconds || 0) : '';
+          const labels = {
+            MASTERED: this.t('rub_mastery_mastered', {}, 'متقن تراكمياً'),
+            DEVELOPING: this.t('rub_mastery_developing', {}, 'قيد التثبيت'),
+            NEEDS_REVIEW: this.t('rub_mastery_needs_review', {}, 'يحتاج إعادة'),
+          };
+          const masteryLine = showMastery
+            ? '<div class="rub-session-last-grid">' +
+              '<span>' + this.esc(this.t('rub_session_mastery_status', { status: labels[masteryStatus] || masteryStatus }, 'الإتقان التراكمي: {status}')) + '</span>' +
+              '<span>' + this.esc(this.t('rub_mastery_sessions_progress', {
+                done: Number(mastery.qualified_sessions) || 0,
+                required: Number(mastery.required_sessions) || 3,
+              }, 'الجلسات المؤهلة: {done}/{required}')) + '</span>' +
+              (mastery.next_review_at
+                ? '<span>' + this.esc(this.t('rub_mastery_next_review', { date: mastery.next_review_at }, 'المراجعة الدورية: {date}')) + '</span>'
+                : '') +
+              '</div>'
+            : '';
           this.els.last.classList.remove('hidden');
           this.els.last.innerHTML =
-            '<div><strong>' + this.esc(this.t('rub_session_last_title', {}, 'آخر جلسة مكتملة')) + '</strong></div>' +
-            '<div class="rub-session-last-grid">' +
-            '<span>' + this.esc(this.t('rub_session_last_when', { date: when }, 'التاريخ: {date}')) + '</span>' +
-            '<span>' + this.esc(this.t('rub_session_last_accuracy', { percent: accuracy }, 'الدقة: {percent}%')) + '</span>' +
-            '<span>' + this.esc(this.t('rub_session_last_time', { time: duration }, 'الوقت: {time}')) + '</span>' +
-            '<span>' + this.esc(this.t('rub_session_last_attempt', { n: last.attempt_no || 1 }, 'المحاولة: {n}')) + '</span>' +
-            '</div>';
+            (last && last.status === 'COMPLETED'
+              ? '<div><strong>' + this.esc(this.t('rub_session_last_title', {}, 'آخر جلسة مكتملة')) + '</strong></div>' +
+                '<div class="rub-session-last-grid">' +
+                '<span>' + this.esc(this.t('rub_session_last_when', { date: when }, 'التاريخ: {date}')) + '</span>' +
+                '<span>' + this.esc(this.t('rub_session_last_accuracy', { percent: accuracy }, 'الدقة: {percent}%')) + '</span>' +
+                '<span>' + this.esc(this.t('rub_session_last_time', { time: duration }, 'الوقت: {time}')) + '</span>' +
+                '<span>' + this.esc(this.t('rub_session_last_attempt', { n: last.attempt_no || 1 }, 'المحاولة: {n}')) + '</span>' +
+                '</div>'
+              : '') + masteryLine;
         } else {
           this.els.last.classList.add('hidden');
           this.els.last.innerHTML = '';
@@ -808,7 +843,7 @@
       const keys = Array.isArray(session.exercises) && session.exercises.length
         ? session.exercises
         : this.settings.exercises.slice();
-      this.exercises = keys.filter((key) => ALL_EXERCISES.includes(key));
+      this.exercises = keys.filter((key) => KNOWN_EXERCISES.includes(key));
       if (!this.exercises.length) this.exercises = ALL_EXERCISES.slice();
       this.applySettings(settings || {
         difficulty: session.difficulty,
@@ -943,6 +978,14 @@
         npChunks: [],
         npUrl: '',
         npDiscard: false,
+        continuationLength: item && item.default_length != null ? item.default_length : null,
+        audioState: 'idle',
+        audioStarting: false,
+        audioRecorder: null,
+        audioStream: null,
+        audioChunks: [],
+        audioUrl: '',
+        audioDiscard: false,
       };
       if (exercise === 'MISSING_WORDS') state.values = {};
       this.itemStates[key] = state;
@@ -966,6 +1009,7 @@
       if (details.selected_index != null) state.selectedIndex = Number(details.selected_index);
       if (details.self_report != null) state.selfReport = String(details.self_report);
       if (details.stage != null) state.stage = clamp(Number(details.stage) || 0, 0, 5);
+      if (details.continuation_length != null) state.continuationLength = details.continuation_length;
       if (Array.isArray(details.wrong_words)) state.wrongWords = uniqueInts(details.wrong_words);
     },
 
@@ -1032,7 +1076,7 @@
         }).length;
         const isDone = available && required.length > 0 && answered >= required.length;
         const isActive = index === this.exerciseIndex;
-        const meta = EXERCISE_META.find((item) => item.key === exercise) || { title: exercise };
+        const meta = META_BY_KEY[exercise] || { title: exercise };
         let cls = 'rub-session-step';
         if (isActive) cls += ' is-active';
         if (isDone) cls += ' is-done';
@@ -1390,6 +1434,11 @@
         active.state.npDiscard = true;
         try { active.state.npRecorder.stop(); } catch (err) {}
       }
+      if (active && active.state && active.state.audioRecorder &&
+          active.state.audioRecorder.state === 'recording') {
+        active.state.audioDiscard = true;
+        try { active.state.audioRecorder.stop(); } catch (err) {}
+      }
       let ei = this.exerciseIndex;
       let ii = this.itemIndex + direction;
       if (ii < 0) {
@@ -1544,6 +1593,24 @@
       });
     },
 
+    randomStartPassage(item, state) {
+      const passages = item && item.passages && typeof item.passages === 'object' ? item.passages : {};
+      const key = state && state.continuationLength != null
+        ? String(state.continuationLength)
+        : String(item && item.default_length != null ? item.default_length : 'all');
+      if (passages[key]) return passages[key];
+      const keys = Object.keys(passages);
+      return keys.length ? passages[keys[0]] : null;
+    },
+
+    /** Accept the required opening words, or a longer correct continuation. */
+    typedMatchesOpening(value, expected) {
+      const answer = RubExercises.normalizeArabic(value);
+      const wanted = RubExercises.normalizeArabic(expected);
+      if (!answer || !wanted) return false;
+      return answer === wanted || answer.indexOf(wanted + ' ') === 0;
+    },
+
     checkInterrupt(context) {
       const item = context.item;
       const state = context.state;
@@ -1551,16 +1618,19 @@
         this.toast(this.t('rub_int_empty', {}, 'اكتب تكملة الآية أولاً'), true);
         return;
       }
-      const correct = RubExercises.normalizeArabic(state.value) ===
-        RubExercises.normalizeArabic(item.expected_text);
+      const correct = this.typedMatchesOpening(state.value, item.expected_text);
       this.record(context.exercise, item, state, correct, {
         attempts: 1,
-        wrong_words: correct ? [] : [Number(item.stop_index) || 0],
+        wrong_words: [],
         hint_used: state.reveal,
         details: {
           stop_index: Number(item.stop_index) || 0,
+          stop_position: item.stop_position || 'middle',
+          start_ref: item.start_ref || '',
           expected: item.expected_text || '',
+          remaining_text: item.continuation_text || '',
           answer: String(state.value || ''),
+          recorded: state.audioState === 'recorded',
         },
       });
     },
@@ -1569,18 +1639,24 @@
       const item = context.item;
       const state = context.state;
       if (!String(state.value || '').trim()) {
-        this.toast(this.t('rub_rs_empty', {}, 'اكتب أول كلمتين من الآية أولاً'), true);
+        this.toast(this.t('rub_rs_empty', {}, 'اكتب أول كلمات الآية أولاً'), true);
         return;
       }
-      const correct = RubExercises.normalizeArabic(state.value) ===
-        RubExercises.normalizeArabic(item.expected_text);
+      const correct = this.typedMatchesOpening(state.value, item.expected_text);
+      const passage = this.randomStartPassage(item, state);
       this.record(context.exercise, item, state, correct, {
         attempts: 1,
         wrong_words: [],
         hint_used: state.reveal,
         details: {
+          start_ref: item.start_ref || item.prompt_ref || '',
+          start_index: Number(item.start_index) || 0,
+          continuation_length: state.continuationLength != null ? state.continuationLength : (item.default_length || 2),
+          passage_refs: passage && Array.isArray(passage.refs) ? passage.refs : [],
+          passage_range: passage ? passage.range || '' : '',
           expected: item.expected_text || '',
           answer: String(state.value || ''),
+          recorded: state.audioState === 'recorded',
         },
       });
     },
@@ -1588,14 +1664,31 @@
     checkConnection(context) {
       const state = context.state;
       if (state.selected == null) {
-        this.toast(this.t('rub_cn_choose', {}, 'اختر الآية التالية أولاً'), true);
+        this.toast(this.t('rub_cn_choose', {}, 'اختر الإجابة أولاً'), true);
         return;
       }
-      const correct = String(state.selected) === String(context.item.correct_id);
-      this.record(context.exercise, context.item, state, correct, {
+      const item = context.item;
+      const similar = String(item.kind || '') === 'similar';
+      const options = Array.isArray(item.options) ? item.options : [];
+      const selectedOption = options.find((option) =>
+        String(option && option.id != null ? option.id : '') === String(state.selected)) || null;
+      const correct = similar
+        ? !!(selectedOption && selectedOption.correct)
+        : String(state.selected) === String(item.correct_id);
+      this.record(context.exercise, item, state, correct, {
         attempts: 1,
         wrong_words: [],
         selected: state.selected,
+        details: {
+          kind: similar ? 'similar' : 'transition',
+          mode: item.mode || '',
+          correct_text: similar
+            ? (item.prompt_full || '')
+            : (item.correct_text || item.text || ''),
+          target_ref: item.target_ref || item.next_ref || '',
+          twin_ref: item.twin_ref || '',
+          diff_count: Number(item.diff_count) || 0,
+        },
       });
     },
 
@@ -1842,28 +1935,81 @@
       }
 
       if (context.exercise === 'INTERRUPT') {
-        if (locked) return;
-        if (target.closest('[data-int-reveal]')) {
+        if (target.closest('[data-audio-play]')) {
           event.preventDefault();
-          state.reveal = true;
-          this.record(context.exercise, context.item, state, false, {
-            attempts: 1,
-            wrong_words: [Number(context.item.stop_index) || 0],
-            hint_used: true,
-          });
+          this.playAudioRecording(context);
+          return;
         }
-        return;
-      }
-
-      if (context.exercise === 'RANDOM_START') {
         if (locked) return;
-        if (target.closest('[data-rs-reveal]')) {
+        if (target.closest('[data-audio-record]')) {
+          event.preventDefault();
+          this.startAudioRecording(context);
+          return;
+        }
+        if (target.closest('[data-audio-stop]')) {
+          event.preventDefault();
+          this.stopAudioRecording(context);
+          return;
+        }
+        if (target.closest('[data-int-reveal]')) {
           event.preventDefault();
           state.reveal = true;
           this.record(context.exercise, context.item, state, false, {
             attempts: 1,
             wrong_words: [],
             hint_used: true,
+            details: {
+              stop_index: Number(context.item.stop_index) || 0,
+              stop_position: context.item.stop_position || 'middle',
+              expected: context.item.expected_text || '',
+              recorded: state.audioState === 'recorded',
+            },
+          });
+        }
+        return;
+      }
+
+      if (context.exercise === 'RANDOM_START') {
+        if (target.closest('[data-audio-play]')) {
+          event.preventDefault();
+          this.playAudioRecording(context);
+          return;
+        }
+        if (locked) return;
+        const lengthButton = target.closest('[data-rs-length]');
+        if (lengthButton) {
+          event.preventDefault();
+          const raw = lengthButton.dataset.rsLength;
+          state.continuationLength = raw === 'all' ? 'all' : Number(raw);
+          this.renderStage();
+          return;
+        }
+        if (target.closest('[data-audio-record]')) {
+          event.preventDefault();
+          this.startAudioRecording(context);
+          return;
+        }
+        if (target.closest('[data-audio-stop]')) {
+          event.preventDefault();
+          this.stopAudioRecording(context);
+          return;
+        }
+        if (target.closest('[data-rs-reveal]')) {
+          event.preventDefault();
+          state.reveal = true;
+          const passage = this.randomStartPassage(context.item, state);
+          this.record(context.exercise, context.item, state, false, {
+            attempts: 1,
+            wrong_words: [],
+            hint_used: true,
+            details: {
+              start_ref: context.item.start_ref || '',
+              continuation_length: state.continuationLength != null
+                ? state.continuationLength : context.item.default_length,
+              passage_refs: passage && Array.isArray(passage.refs) ? passage.refs : [],
+              expected: context.item.expected_text || '',
+              recorded: state.audioState === 'recorded',
+            },
           });
         }
         return;
@@ -2035,6 +2181,89 @@
       if (played && typeof played.catch === 'function') played.catch(() => {});
     },
 
+    /* Optional audio capture for random-start/interruption. The recording is
+       local-only; it is never uploaded and never claimed as automatic proof. */
+    startAudioRecording(context) {
+      const state = context.state;
+      if (state.audioState === 'recording' || state.audioStarting) return;
+      if (!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== 'function' || !window.MediaRecorder) {
+        this.toast(this.t('rub_np_unsupported', {}, 'المتصفح لا يدعم التسجيل الصوتي. يمكنك التسميع ثم المتابعة.'), true);
+        return;
+      }
+      state.audioStarting = true;
+      navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
+        state.audioStarting = false;
+        const current = this.currentContext();
+        if (!current || current.state !== state) {
+          stream.getTracks().forEach((track) => track.stop());
+          return;
+        }
+        if (state.audioUrl && String(state.audioUrl).startsWith('blob:')) {
+          try { URL.revokeObjectURL(state.audioUrl); } catch (err) {}
+          state.audioUrl = '';
+        }
+        state.audioDiscard = false;
+        const recorder = new MediaRecorder(stream);
+        state.audioChunks = [];
+        state.audioRecorder = recorder;
+        state.audioStream = stream;
+        recorder.ondataavailable = (event) => {
+          if (event.data && event.data.size > 0) state.audioChunks.push(event.data);
+        };
+        recorder.onstop = () => {
+          try { stream.getTracks().forEach((track) => track.stop()); } catch (err) {}
+          state.audioRecorder = null;
+          state.audioStream = null;
+          if (state.audioDiscard) {
+            state.audioDiscard = false;
+            state.audioState = 'idle';
+            return;
+          }
+          const blob = new Blob(state.audioChunks || [], { type: recorder.mimeType || 'audio/webm' });
+          if (state.audioUrl && String(state.audioUrl).startsWith('blob:')) {
+            try { URL.revokeObjectURL(state.audioUrl); } catch (err) {}
+          }
+          state.audioUrl = URL.createObjectURL(blob);
+          state.audioState = 'recorded';
+          state.audioChunks = [];
+          if (this.els.stage) {
+            const audio = this.els.stage.querySelector('[data-audio]');
+            if (audio) {
+              audio.src = state.audioUrl;
+              audio.hidden = false;
+            }
+          }
+          this.renderStage();
+        };
+        recorder.start();
+        state.audioState = 'recording';
+        this.renderStage();
+      }).catch(() => {
+        state.audioStarting = false;
+        state.audioState = 'idle';
+        this.toast(this.t('rub_np_mic_denied', {}, 'تعذر الوصول إلى الميكروفون. اسمح بالتسجيل أو تابع بدون تسجيل.'), true);
+        this.renderStage();
+      });
+    },
+
+    stopAudioRecording(context) {
+      const state = context.state;
+      if (state.audioRecorder && state.audioRecorder.state === 'recording') {
+        state.audioRecorder.stop();
+      }
+    },
+
+    playAudioRecording(context) {
+      const state = context.state;
+      if (!state.audioUrl) return;
+      const audio = this.els.stage ? this.els.stage.querySelector('[data-audio]') : null;
+      if (!audio) return;
+      audio.src = state.audioUrl;
+      audio.hidden = false;
+      const played = audio.play();
+      if (played && typeof played.catch === 'function') played.catch(() => {});
+    },
+
     onStageInput(event) {
       const target = event.target;
       if (!target || !target.matches) return;
@@ -2141,14 +2370,9 @@
       const expected = state.placed.length;
       if (new Set(state.placed).has(tokenId)) return;
 
-      // Repeated words are interchangeable at the matching position, but the
-      // token keeps its own occurrence id so remove/reselect is lossless.
-      const clicked = words[index];
-      const wanted = words[expected];
-      const matched = index === expected || (
-        clicked && wanted &&
-        RubExercises.wordStrict(clicked) === RubExercises.wordStrict(wanted)
-      );
+      // Each token is a specific word occurrence. A repeated word at another
+      // original position must not satisfy this slot.
+      const matched = index === expected;
       if (matched) {
         state.placed.push(tokenId);
         this.playFeedback(true);
@@ -2246,6 +2470,23 @@
       }
       state.npUrl = '';
       state.npChunks = [];
+      state.audioState = 'idle';
+      state.audioStarting = false;
+      if (state.audioRecorder && state.audioRecorder.state === 'recording') {
+        state.audioDiscard = true;
+        try { state.audioRecorder.stop(); } catch (err) {}
+      }
+      if (state.audioStream) {
+        try { state.audioStream.getTracks().forEach((track) => track.stop()); } catch (err) {}
+      }
+      state.audioRecorder = null;
+      state.audioStream = null;
+      if (state.audioUrl) {
+        try { URL.revokeObjectURL(state.audioUrl); } catch (err) {}
+      }
+      state.audioUrl = '';
+      state.audioChunks = [];
+      state.audioDiscard = false;
       state.skipped = false;
       this.renderActive();
     },
@@ -2285,6 +2526,13 @@
         return;
       }
 
+      const active = this.currentContext();
+      if (active && active.state && active.state.audioRecorder &&
+          active.state.audioRecorder.state === 'recording') {
+        active.state.audioDiscard = true;
+        try { active.state.audioRecorder.stop(); } catch (err) {}
+      }
+
       this.finishing = true;
       this.renderActive();
       const flushed = await this.flush();
@@ -2319,7 +2567,7 @@
           this.itemStates = {};
           this.clearCache();
           this.showSummary(data.session, data.state || this.state);
-          const masteryResult = data.mastery || (data.session && data.session.mastery);
+          const masteryResult = data.rub_mastery || (data.session && data.session.rub_mastery);
           if (masteryResult && masteryResult.mastered &&
               window.AudioEngine && typeof AudioEngine.playCelebration === 'function') {
             try { AudioEngine.playCelebration(); } catch (e) {}
@@ -2387,7 +2635,7 @@
         const exSkipped = results.filter((result) => result && result.exercise === exercise && result.status === 'SKIPPED').length;
         const exAccuracy = exResults.length ? Math.round((exCorrect / exResults.length) * 100) : 0;
         const exDuration = exResults.reduce((sum, result) => sum + (Number(result.duration_seconds) || 0), 0);
-        const meta = EXERCISE_META.find((item) => item.key === exercise) || { title: exercise };
+        const meta = META_BY_KEY[exercise] || { title: exercise };
         return {
           exercise,
           title: this.t(meta.titleKey || '', {}, meta.title),
@@ -2416,9 +2664,9 @@
           recommendations: [],
         };
       const masteryLabels = {
-        MASTERED: this.t('rub_mastery_mastered', {}, 'متقن أداءً'),
-        DEVELOPING: this.t('rub_mastery_developing', {}, 'قيد التثبيت'),
-        NEEDS_REVIEW: this.t('rub_mastery_needs_review', {}, 'يحتاج إعادة'),
+        MASTERED: this.t('rub_session_status_mastered', {}, 'أداء متميز'),
+        DEVELOPING: this.t('rub_session_status_developing', {}, 'أداء متوسط'),
+        NEEDS_REVIEW: this.t('rub_session_status_needs_review', {}, 'يحتاج إعادة'),
       };
       const masteryStatus = String(mastery.status || (mastery.mastered ? 'MASTERED' : 'DEVELOPING'));
       const masteryRecommendation = (code) => {
@@ -2444,7 +2692,7 @@
               'لا تتجاوز التمارين غير المتقنة؛ أعدها في جلسة قريبة.');
           case 'mastered':
             return this.t('rub_mastery_rec_mastered', {},
-              'أتقنت هذا الربع أداءً؛ يمكنك الانتقال إلى ربع جديد مع مراجعة دورية.');
+              'أداء هذه الجلسة قوي. واصل التحديات الثلاثة في جلسات متعددة لبناء الإتقان التراكمي قبل الانتقال.');
           default:
             return '';
         }
@@ -2478,13 +2726,13 @@
         ? mastery.needs_review_exercises
         : needsReviewRows.map((row) => row.exercise))
         .map((key) => {
-          const meta = EXERCISE_META.find((item) => item.key === key);
+          const meta = META_BY_KEY[key];
           return meta ? this.t(meta.titleKey || '', {}, meta.title) : key;
         })
         .filter((value, index, list) => list.indexOf(value) === index);
       const masteryHtml = '<div class="rub-mastery-card is-' + this.esc(masteryStatus.toLowerCase()) + '">' +
         '<div class="rub-mastery-head"><div><span class="rub-eyebrow">' +
-        this.esc(this.t('rub_mastery_title', {}, 'تقييم الإتقان')) + '</span><h3>' +
+        this.esc(this.t('rub_mastery_session_title', {}, 'تقييم أداء هذه الجلسة')) + '</span><h3>' +
         this.esc(masteryLabels[masteryStatus] || masteryStatus) + '</h3></div>' +
         '<strong class="rub-mastery-badge">' + this.esc((mastery.mastered ? '✓ ' : '') + (masteryLabels[masteryStatus] || masteryStatus)) + '</strong></div>' +
         '<p class="rub-mastery-note">' + this.esc(this.t('rub_mastery_completion_note', {},
@@ -2522,6 +2770,52 @@
           : '') +
         '<ul class="rub-mastery-recommendations">' + recommendationList.map((line) =>
           '<li>' + this.esc(String(line)) + '</li>').join('') + '</ul></div>';
+
+      const rubMastery = session.rub_mastery && typeof session.rub_mastery === 'object'
+        ? session.rub_mastery
+        : ((stats.mastery && typeof stats.mastery === 'object') ? stats.mastery : null);
+      const cumulativeStatus = rubMastery ? String(rubMastery.status || 'NOT_STARTED') : 'NOT_STARTED';
+      const cumulativeLabels = {
+        MASTERED: this.t('rub_mastery_mastered', {}, 'متقن تراكمياً'),
+        DEVELOPING: this.t('rub_mastery_developing', {}, 'قيد التثبيت'),
+        NEEDS_REVIEW: this.t('rub_mastery_needs_review', {}, 'يحتاج إعادة'),
+        NOT_STARTED: this.t('rub_mastery_not_started', {}, 'لم تبدأ بعد'),
+      };
+      const advancedKeys = ['RANDOM_START', 'INTERRUPT', 'CONNECTION'];
+      const challengeRows = advancedKeys.map((key) => {
+        const meta = META_BY_KEY[key] || { title: key };
+        const row = rubMastery && rubMastery.challenge_accuracy ? rubMastery.challenge_accuracy[key] : null;
+        const passed = row && Number(row.answered) > 0 && Number(row.accuracy) >= 80;
+        return '<span class="rub-summary-chip ' + (passed ? 'is-good' : 'is-bad') + '">' +
+          this.esc(this.t(meta.titleKey || '', {}, meta.title)) +
+          '<small>' + this.esc(row ? (Number(row.accuracy) || 0) + '%' : '—') + '</small></span>';
+      }).join('');
+      const cumulativeHtml = rubMastery
+        ? '<div class="rub-mastery-card is-cumulative is-' + this.esc(cumulativeStatus.toLowerCase()) + '">' +
+          '<div class="rub-mastery-head"><div><span class="rub-eyebrow">' +
+          this.esc(this.t('rub_mastery_cumulative_title', {}, 'الإتقان التراكمي للربع')) + '</span><h3>' +
+          this.esc(cumulativeLabels[cumulativeStatus] || cumulativeStatus) + '</h3></div>' +
+          '<strong class="rub-mastery-badge">' +
+          this.esc(cumulativeLabels[cumulativeStatus] || cumulativeStatus) + '</strong></div>' +
+          '<p class="rub-mastery-note">' + this.esc(this.t('rub_mastery_requires_advanced', {},
+            'يشترط اجتياز التحديات الثلاثة في جلسات متعددة، وليس إكمال التمارين وحده.')) + '</p>' +
+          '<div class="rub-mastery-grid">' +
+          '<div><strong>' + this.esc(String(rubMastery.qualified_sessions || 0)) + '/' +
+          this.esc(String(rubMastery.required_sessions || 3)) + '</strong><span>' +
+          this.esc(this.t('rub_mastery_sessions_label', {}, 'الجلسات المؤهلة')) + '</span></div>' +
+          '<div><strong>' + this.esc(String(rubMastery.distinct_days || 0)) + '/' +
+          this.esc(String(rubMastery.required_days || 2)) + '</strong><span>' +
+          this.esc(this.t('rub_mastery_days_label', {}, 'أيام مستقلة')) + '</span></div>' +
+          '<div><strong>' + this.esc(String(rubMastery.challenges_complete ? 3 : 0)) + '/3</strong><span>' +
+          this.esc(this.t('rub_mastery_challenges_progress', {}, 'التحديات المتقدمة')) + '</span></div>' +
+          '<div><strong dir="ltr">' + this.esc(rubMastery.next_review_at || '—') + '</strong><span>' +
+          this.esc(rubMastery.review_due
+            ? this.t('rub_mastery_review_due', {}, 'حان وقت المراجعة الدورية')
+            : this.t('rub_mastery_next_review_short', {}, 'المراجعة الدورية')) + '</span></div>' +
+          '</div>' +
+          '<div class="rub-mastery-chips">' + challengeRows + '</div>' +
+          '</div>'
+        : '';
 
       const exerciseRows = perExercise.map((row) => {
         const resultText = row.answered + row.wrong + row.skipped > 0
@@ -2574,6 +2868,7 @@
         this.esc(this.t('rub_summary_accuracy', {}, 'دقة المحاولة الأولى')) + '</span></div></div>' +
         taskDone +
         masteryHtml +
+        cumulativeHtml +
         '<div class="rub-summary-grid">' +
         '<div class="rub-summary-stat is-good"><strong>' + correct + '</strong><span>' + this.esc(this.t('rub_summary_correct', {}, 'إجابة صحيحة')) + '</span></div>' +
         '<div class="rub-summary-stat is-bad"><strong>' + wrong + '</strong><span>' + this.esc(this.t('rub_summary_wrong', {}, 'إجابة خاطئة')) + '</span></div>' +
@@ -2658,6 +2953,13 @@
 
     switchTab(tab) {
       const next = tab === 'practice' ? 'practice' : 'session';
+      const activeContext = this.currentContext();
+      if (next === 'practice' && activeContext && activeContext.state &&
+          activeContext.state.audioRecorder &&
+          activeContext.state.audioRecorder.state === 'recording') {
+        activeContext.state.audioDiscard = true;
+        try { activeContext.state.audioRecorder.stop(); } catch (err) {}
+      }
       this.activeTab = next;
       document.querySelectorAll('[data-rub-tab]').forEach((button) => {
         const active = button.dataset.rubTab === next;

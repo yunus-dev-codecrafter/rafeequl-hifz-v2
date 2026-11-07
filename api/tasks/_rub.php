@@ -722,29 +722,68 @@ function rh_rub_distractors(int $rubId, array $verse, int $count = 3): array
  * ---------------------------------------------------------------------- */
 
 /**
+ * Build the eligible rub' pool for automatic selection.
+ *
+ * The pool is never allowed past the memorisation/consolidation frontier. For
+ * normal users only rub's whose end page is in the latter half of the currently
+ * memorised range are preferred. The pool falls back to every eligible rub'
+ * when the latter half is too small (new/short memorisation), so selection
+ * never gets stuck.
+ *
+ * @param array<int,array<string,mixed>> $rubs
+ * @return array<int,array<string,mixed>>
+ */
+function rh_rub_selection_pool(array $rubs, int $frontier, int $memorizedPage, string $userType): array
+{
+    $base = [];
+    foreach ($rubs as $rub) {
+        if ($userType === 'COMPLETE' || ($frontier >= 1 && (int) $rub['end_page'] <= $frontier)) {
+            $base[] = $rub;
+        }
+    }
+    if (!$base) {
+        return [];
+    }
+
+    $memorizedEnd = $userType === 'COMPLETE'
+        ? 604
+        : ($memorizedPage > 0 ? $memorizedPage : $frontier);
+    if ($memorizedEnd < 1) {
+        return $base;
+    }
+
+    $midpoint = (int) ceil($memorizedEnd / 2);
+    $lastHalf = [];
+    foreach ($base as $rub) {
+        if ((int) $rub['end_page'] > $midpoint) {
+            $lastHalf[] = $rub;
+        }
+    }
+
+    // A one-rub latter half cannot support fair rotation; use the full
+    // eligible pool so the user is not forced to repeat the same rub'.
+    if (count($lastHalf) >= 2) {
+        return $lastHalf;
+    }
+    return $base;
+}
+
+/**
  * Pick a fair random rub' for the user.
  *
- * @param int    $frontier  Highest consolidated page (last_tikrar_page).
- * @param string $userType  NEW | EXISTING | COMPLETE
- * @param string $today     Y-m-d (server day)
+ * @param int    $frontier      Highest consolidated page (last_tikrar_page).
+ * @param string $userType      NEW | EXISTING | COMPLETE
+ * @param string $today         Y-m-d (server day)
+ * @param int    $memorizedPage Highest memorised page (current_hifz_page)
  */
-function rh_pick_rub(PDO $pdo, int $userId, int $frontier, string $userType, string $today): ?array
+function rh_pick_rub(PDO $pdo, int $userId, int $frontier, string $userType, string $today, int $memorizedPage = 0): ?array
 {
     $catalog = rh_rub_catalog();
     if (empty($catalog['rubs'])) {
         return null;
     }
 
-    $pool = [];
-    foreach ($catalog['rubs'] as $rub) {
-        if ($userType === 'COMPLETE') {
-            $pool[] = $rub;
-            continue;
-        }
-        if ($frontier >= 1 && (int) $rub['end_page'] <= $frontier) {
-            $pool[] = $rub;
-        }
-    }
+    $pool = rh_rub_selection_pool($catalog['rubs'], $frontier, $memorizedPage, $userType);
     if (!$pool) {
         return null;
     }

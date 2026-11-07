@@ -173,6 +173,68 @@ if ($checked > 0) {
     $ok('checked distractors for ' . $checked . ' verse(s)');
 }
 
+// Automatic rub' selection: random but restricted to the latter half of the
+// currently memorised range, with a graceful fallback for small pools.
+echo "\n== Automatic rub' selection pool ==\n";
+$selectionRubs = [
+    ['id' => 1, 'end_page' => 5],
+    ['id' => 2, 'end_page' => 15],
+    ['id' => 3, 'end_page' => 25],
+    ['id' => 4, 'end_page' => 35],
+    ['id' => 5, 'end_page' => 45],
+];
+$pool = rh_rub_selection_pool($selectionRubs, 50, 40, 'EXISTING');
+$poolIds = array_map(static fn(array $rub): int => (int) $rub['id'], $pool);
+if ($poolIds === [3, 4, 5]) {
+    $ok('latter-half pool uses rub\'s whose end page is after the midpoint');
+} else {
+    $fail('latter-half pool = [' . implode(',', $poolIds) . '] (expected [3,4,5])');
+}
+
+$pool = rh_rub_selection_pool($selectionRubs, 30, 30, 'EXISTING');
+$poolIds = array_map(static fn(array $rub): int => (int) $rub['id'], $pool);
+if ($poolIds === [1, 2, 3]) {
+    $ok('small latter-half pool falls back to every eligible rub\'');
+} else {
+    $fail('small-pool fallback = [' . implode(',', $poolIds) . '] (expected [1,2,3])');
+}
+
+$pool = rh_rub_selection_pool($selectionRubs, 30, 40, 'EXISTING');
+$poolIds = array_map(static fn(array $rub): int => (int) $rub['id'], $pool);
+if ($poolIds === [1, 2, 3]) {
+    $ok('selection never includes rub\'s beyond the memorisation frontier');
+} else {
+    $fail('frontier pool = [' . implode(',', $poolIds) . '] (expected [1,2,3])');
+}
+
+$pool = rh_rub_selection_pool($selectionRubs, 5, 5, 'EXISTING');
+$poolIds = array_map(static fn(array $rub): int => (int) $rub['id'], $pool);
+if ($poolIds === [1]) {
+    $ok('single-rub memorisation still yields a selection');
+} else {
+    $fail('single-rub pool = [' . implode(',', $poolIds) . '] (expected [1])');
+}
+
+$completeRubs = [
+    ['id' => 1, 'end_page' => 100],
+    ['id' => 2, 'end_page' => 400],
+    ['id' => 3, 'end_page' => 500],
+    ['id' => 4, 'end_page' => 600],
+];
+$pool = rh_rub_selection_pool($completeRubs, 604, 604, 'COMPLETE');
+$poolIds = array_map(static fn(array $rub): int => (int) $rub['id'], $pool);
+if ($poolIds === [2, 3, 4]) {
+    $ok('COMPLETE users use the latter half of the whole Qur\'an');
+} else {
+    $fail('COMPLETE latter-half pool = [' . implode(',', $poolIds) . '] (expected [2,3,4])');
+}
+
+if (count(rh_rub_selection_pool($selectionRubs, 0, 0, 'EXISTING')) === 0) {
+    $ok('no consolidated frontier yields no automatic rub\' selection');
+} else {
+    $fail('selection should be empty when no page has graduated Tikrar Ams');
+}
+
 echo "\n";
 if ($errors) {
     echo 'FAILED: ' . count($errors) . " problem(s).\n";

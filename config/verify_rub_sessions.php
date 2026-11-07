@@ -2,14 +2,18 @@
 declare(strict_types=1);
 
 /**
- * Rafeequl Hifz — Rub' Consolidation plan verification (v12).
+ * Rafeequl Hifz — Rub' Consolidation plan verification (v13).
  *
- * CLI only. Builds the five-exercise plan for every rub' (and for both
- * outside-rub modes) and asserts that:
+ * CLI only. Builds the five core exercises plus the three advanced challenges
+ * for every rub' (and for both outside-rub modes) and asserts that:
  *   - every prompt/item belongs to the selected rub';
  *   - word order / missing words / progressive hide preserve the verse words;
  *   - continue-the-ayah points at the real next ayah and handles the rub' end;
  *   - mutashabihat only uses the corrected curated CC0 data;
+ *   - random start hides text and offers 2/3/5/all continuations;
+ *   - interruption stops only on word boundaries with a valid position;
+ *   - connection alternates real transitions and curated similar ayat;
+ *   - cross-session mastery needs 3 qualifying sessions on 2+ days;
  *   - Arabic diacritics survive the plan;
  *   - item ids are unique and required-item counts are sane.
  *
@@ -118,6 +122,92 @@ foreach ($normalisation as $input => $expected) {
 // ---------------------------------------------------------------------------
 $difficulties = rh_rub_difficulties();
 $exerciseKeys = rh_rub_exercise_keys();
+
+if (rh_rub_core_exercise_keys() !== ['WORD_ORDER', 'MISSING_WORDS', 'CONTINUE_AYAH', 'MUTASHABIHAT', 'PROGRESSIVE_HIDE']) {
+    verify_fail($errors, 'core exercise catalog changed unexpectedly');
+}
+if (rh_rub_advanced_exercise_keys() !== ['RANDOM_START', 'INTERRUPT', 'CONNECTION']) {
+    verify_fail($errors, 'advanced catalog must contain exactly RANDOM_START, INTERRUPT, CONNECTION');
+}
+foreach (rh_rub_legacy_exercise_keys() as $legacy) {
+    if (in_array($legacy, $exerciseKeys, true)) {
+        verify_fail($errors, "retired exercise {$legacy} is still offered in new plans");
+    }
+}
+
+// Cross-session mastery reducer (pure): completing one session is never enough.
+$masterySession = static function (int $id, string $date, float $accuracy, array $advanced = [], int $skipped = 0): array {
+    $advanced = $advanced ?: ['RANDOM_START' => 90, 'INTERRUPT' => 90, 'CONNECTION' => 90];
+    $per = [];
+    foreach ($advanced as $key => $value) {
+        $per[] = [
+            'exercise' => $key,
+            'answered' => 4,
+            'correct'  => (int) round(4 * ($value / 100)),
+            'accuracy' => (int) $value,
+        ];
+    }
+    return [
+        'id'           => $id,
+        'completed_at' => $date . ' 10:00:00',
+        'exercises'    => array_keys($advanced),
+        'assessment'   => [
+            'accuracy'               => $accuracy,
+            'skipped_ratio'          => $skipped,
+            'needs_review_exercises' => [],
+            'per_exercise'           => $per,
+        ],
+    ];
+};
+$one = rh_rub_mastery_from_sessions([
+    $masterySession(1, '2026-01-03', 95),
+], '2026-01-10');
+if (!empty($one['mastered']) || $one['status'] !== 'DEVELOPING' || $one['remaining_sessions'] !== 2) {
+    verify_fail($errors, 'mastery: one strong session must not mark the rub mastered');
+}
+$three = rh_rub_mastery_from_sessions([
+    $masterySession(3, '2026-01-03', 95),
+    $masterySession(2, '2026-01-02', 93),
+    $masterySession(1, '2026-01-01', 90),
+], '2026-01-10');
+if (empty($three['mastered']) || $three['status'] !== 'MASTERED' || (int) $three['distinct_days'] < 2) {
+    verify_fail($errors, 'mastery: three consistent sessions across multiple days should be mastered');
+}
+if (($three['next_review_at'] ?? '') !== '2026-01-24') {
+    verify_fail($errors, 'mastery: periodic review date should be 21 days after the latest qualifying session');
+}
+$sameDay = rh_rub_mastery_from_sessions([
+    $masterySession(3, '2026-01-03', 95),
+    $masterySession(2, '2026-01-03', 93),
+    $masterySession(1, '2026-01-03', 90),
+], '2026-01-10');
+if (!empty($sameDay['mastered']) || $sameDay['distinct_days'] !== 1) {
+    verify_fail($errors, 'mastery: sessions must span at least two distinct days');
+}
+$missingChallenge = rh_rub_mastery_from_sessions([
+    $masterySession(3, '2026-01-03', 95, ['RANDOM_START' => 95, 'INTERRUPT' => 95]),
+    $masterySession(2, '2026-01-02', 95),
+    $masterySession(1, '2026-01-01', 95),
+], '2026-01-10');
+if (!empty($missingChallenge['mastered']) || $missingChallenge['qualified_sessions'] !== 0) {
+    verify_fail($errors, 'mastery: a session missing an advanced challenge must break the qualifying streak');
+}
+$lowChallenge = rh_rub_mastery_from_sessions([
+    $masterySession(3, '2026-01-03', 95, ['RANDOM_START' => 95, 'INTERRUPT' => 60, 'CONNECTION' => 95]),
+    $masterySession(2, '2026-01-02', 95),
+    $masterySession(1, '2026-01-01', 95),
+], '2026-01-10');
+if (!empty($lowChallenge['mastered'])) {
+    verify_fail($errors, 'mastery: weak advanced-challenge accuracy must prevent mastery');
+}
+$recentReview = rh_rub_mastery_from_sessions([
+    $masterySession(3, '2026-01-20', 95),
+    $masterySession(2, '2026-01-19', 93),
+    $masterySession(1, '2026-01-18', 90),
+], '2026-02-20');
+if (empty($recentReview['review_due'])) {
+    verify_fail($errors, 'mastery: a mastered rub\' must remain eligible for periodic review when due');
+}
 
 for ($rubId = 1; $rubId <= $maxRub; $rubId++) {
     $payload = rh_rub_verse_list($rubId);
@@ -347,6 +437,111 @@ for ($rubId = 1; $rubId <= $maxRub; $rubId++) {
                         if ((int) ($item['stages'] ?? 0) !== 5) {
                             verify_fail($errors, "rub {$rubId} {$mode} {$difficulty} {$exercise} {$itemId}: wrong stage count");
                         }
+                    } elseif ($exercise === 'INTERRUPT') {
+                        $position = (string) ($item['stop_position'] ?? '');
+                        if (!in_array($position, ['beginning', 'middle', 'end'], true)) {
+                            verify_fail($errors, "rub {$rubId} {$mode} {$difficulty} {$exercise} {$itemId}: invalid stop position");
+                        }
+                        foreach (['prompt_text', 'expected_text', 'continuation_text', 'full_text'] as $field) {
+                            if (trim((string) ($item[$field] ?? '')) === '') {
+                                verify_fail($errors, "rub {$rubId} {$mode} {$difficulty} {$exercise} {$itemId}: empty {$field}");
+                            }
+                        }
+                        $expectedWords = preg_split('/\s+/u', trim((string) ($item['expected_text'] ?? '')), -1, PREG_SPLIT_NO_EMPTY);
+                        if (!$expectedWords) {
+                            verify_fail($errors, "rub {$rubId} {$mode} {$difficulty} {$exercise} {$itemId}: no expected continuation");
+                        }
+                        if (!array_key_exists('hide_reference', $item)) {
+                            verify_fail($errors, "rub {$rubId} {$mode} {$difficulty} {$exercise} {$itemId}: missing hide_reference flag");
+                        }
+                    } elseif ($exercise === 'RANDOM_START') {
+                        $passages = is_array($item['passages'] ?? null) ? $item['passages'] : [];
+                        if (!isset($passages['2'])) {
+                            verify_fail($errors, "rub {$rubId} {$mode} {$difficulty} {$exercise} {$itemId}: missing 2-ayah passage");
+                        }
+                        foreach ($passages as $passageKey => $passage) {
+                            if (!is_array($passage)) {
+                                verify_fail($errors, "rub {$rubId} {$mode} {$difficulty} {$exercise} {$itemId}: invalid passage {$passageKey}");
+                                continue;
+                            }
+                            if (empty($passage['refs']) || empty($passage['ayahs']) || trim((string) ($passage['text'] ?? '')) === '') {
+                                verify_fail($errors, "rub {$rubId} {$mode} {$difficulty} {$exercise} {$itemId}: empty passage {$passageKey}");
+                            }
+                            if ((int) ($passage['length'] ?? 0) !== count($passage['ayahs'])) {
+                                verify_fail($errors, "rub {$rubId} {$mode} {$difficulty} {$exercise} {$itemId}: passage {$passageKey} length mismatch");
+                            }
+                        }
+                        if ((string) ($passages['2']['refs'][0] ?? '') !== (string) ($item['start_ref'] ?? '')) {
+                            verify_fail($errors, "rub {$rubId} {$mode} {$difficulty} {$exercise} {$itemId}: passage does not start at the selected ayah");
+                        }
+                        if (trim((string) ($item['expected_text'] ?? '')) === '') {
+                            verify_fail($errors, "rub {$rubId} {$mode} {$difficulty} {$exercise} {$itemId}: missing opening words");
+                        }
+                        if (empty($item['hide_text'])) {
+                            verify_fail($errors, "rub {$rubId} {$mode} {$difficulty} {$exercise} {$itemId}: random start must hide the text");
+                        }
+                        $defaultLength = $item['default_length'] ?? null;
+                        if (!in_array($defaultLength, [2, 3, 5, 'all'], true)) {
+                            verify_fail($errors, "rub {$rubId} {$mode} {$difficulty} {$exercise} {$itemId}: invalid default length");
+                        }
+                    } elseif ($exercise === 'CONNECTION') {
+                        $kind = (string) ($item['kind'] ?? 'transition');
+                        if (!in_array($kind, ['transition', 'similar'], true)) {
+                            verify_fail($errors, "rub {$rubId} {$mode} {$difficulty} {$exercise} {$itemId}: invalid connection kind");
+                        }
+                        if ($kind === 'transition') {
+                            if (!in_array((string) ($item['mode'] ?? ''), ['next_opening', 'current_ending'], true)) {
+                                verify_fail($errors, "rub {$rubId} {$mode} {$difficulty} {$exercise} {$itemId}: invalid transition mode");
+                            }
+                            $options = is_array($item['options'] ?? null) ? $item['options'] : [];
+                            $ids = array_map(static fn(array $option): string => (string) ($option['id'] ?? ''), $options);
+                            if (count($options) < 2 || !in_array((string) ($item['correct_id'] ?? ''), $ids, true)) {
+                                verify_fail($errors, "rub {$rubId} {$mode} {$difficulty} {$exercise} {$itemId}: invalid transition options");
+                            }
+                            if (trim((string) ($item['correct_text'] ?? '')) === '') {
+                                verify_fail($errors, "rub {$rubId} {$mode} {$difficulty} {$exercise} {$itemId}: missing transition answer text");
+                            }
+                        } else {
+                            $options = is_array($item['options'] ?? null) ? $item['options'] : [];
+                            $correct = 0;
+                            $correctId = '';
+                            foreach ($options as $option) {
+                                if (!empty($option['correct'])) {
+                                    $correct++;
+                                    $correctId = (string) ($option['id'] ?? '');
+                                }
+                            }
+                            if (count($options) !== 2 || $correct !== 1 || $correctId !== (string) ($item['correct_id'] ?? '')) {
+                                verify_fail($errors, "rub {$rubId} {$mode} {$difficulty} {$exercise} {$itemId}: invalid similar options");
+                            }
+                            $curated = rh_rub_curated_mutashabihat();
+                            $refs = $curated[$verseKey] ?? [];
+                            $twinRef = (string) ($item['twin_ref'] ?? '');
+                            $found = false;
+                            foreach ($refs as $ref) {
+                                if (rh_rub_verse_key((int) $ref[0], (int) $ref[1]) === $twinRef) {
+                                    $found = true;
+                                    break;
+                                }
+                            }
+                            if (!$found) {
+                                verify_fail($errors, "rub {$rubId} {$mode} {$difficulty} {$exercise} {$itemId}: similar twin is not curated");
+                            }
+                        }
+                    }
+                }
+
+                if ($exercise === 'RANDOM_START' && count($items) >= 2 && count($payload['verses']) >= 2) {
+                    $mid = (int) floor(count($payload['verses']) / 2);
+                    $hasFar = false;
+                    foreach ($items as $item) {
+                        if ((int) ($item['start_index'] ?? -1) >= $mid) {
+                            $hasFar = true;
+                            break;
+                        }
+                    }
+                    if (!$hasFar) {
+                        verify_fail($errors, "rub {$rubId} {$mode} {$difficulty} {$exercise}: no random start in the second half");
                     }
                 }
 

@@ -1140,6 +1140,13 @@
   color: var(--muted);
   font-size: .88rem;
 }
+.rub-rs-lengths {
+  margin: 6px 0 12px;
+  flex-wrap: wrap;
+}
+.rub-rs-lengths button.is-active {
+  font-weight: 700;
+}
 
 .rub-ed-verse {
   display: flex;
@@ -1203,6 +1210,38 @@
 .rub-np-audio {
   width: 100%;
   margin: 8px 0 14px;
+}
+
+.rub-rec-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0;
+  padding: 10px 0;
+  border-top: 1px dashed var(--line);
+}
+.rub-rec-controls .rub-np-audio {
+  flex: 1 1 220px;
+  margin: 0;
+}
+.rub-rec-note {
+  flex: 1 1 100%;
+  color: var(--muted);
+  font-size: .8rem;
+  line-height: 1.7;
+}
+
+.rub-mastery-card.is-cumulative {
+  border-style: dashed;
+  background: linear-gradient(135deg, var(--line-subtle, #f8fafc), var(--card));
+}
+.rub-mastery-card.is-cumulative.is-mastered {
+  border-style: solid;
+  border-color: #86efac;
+}
+.rub-mastery-card.is-not_started {
+  opacity: .92;
 }
 
 .rub-mastery-card {
