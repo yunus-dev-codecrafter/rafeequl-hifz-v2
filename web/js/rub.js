@@ -213,6 +213,7 @@ const RubPage = {
     this.taskId = data.task ? data.task.id : 0;
     this.taskDate = data.task ? data.task.task_date : (data.today || '');
     this.task = data.task || null;
+    this.taskCompletedOnServer = !!(data.task && data.task.is_completed);
     this.rub = data.rub;
     this.verses = Array.isArray(data.verses) ? data.verses : [];
     this.verseByKey = {};
@@ -386,6 +387,7 @@ const RubPage = {
     this.renderRail();
     this.renderStage();
     this.updateProgress();
+    this.updateHeroCompletionUI(!!(this.taskCompletedOnServer || (this.task && this.task.is_completed)));
 
     const dock = document.getElementById('rub-dock');
     if (dock) {
@@ -686,7 +688,8 @@ const RubPage = {
   updateProgress() {
     const total = this.verses.length;
     const done = this.completed.size;
-    const percent = total > 0 ? Math.round((done / total) * 100) : 0;
+    const isTaskDone = (total > 0 && done >= total) || !!this.taskCompletedOnServer || !!(this.task && this.task.is_completed);
+    const percent = isTaskDone ? 100 : (total > 0 ? Math.round((done / total) * 100) : 0);
     const allDone = total > 0 && done >= total;
 
     const percentEl = document.getElementById('rub-percent');
@@ -700,7 +703,7 @@ const RubPage = {
     }
 
     const hero = document.getElementById('rub-hero');
-    if (hero) hero.classList.toggle('is-complete', allDone);
+    if (hero) hero.classList.toggle('is-complete', isTaskDone);
 
     const endCard = document.getElementById('rub-end-card');
     if (endCard) endCard.classList.toggle('hidden', !allDone);
@@ -709,10 +712,11 @@ const RubPage = {
     const step2 = document.getElementById('rub-step-2');
     const step3 = document.getElementById('rub-step-3');
     if (step1) step1.classList.add('is-on');
-    if (step2) step2.classList.toggle('is-on', done > 0);
-    if (step3) step3.classList.toggle('is-on', allDone);
+    if (step2) step2.classList.toggle('is-on', done > 0 || isTaskDone);
+    if (step3) step3.classList.toggle('is-on', isTaskDone);
 
     this.updateDock();
+    this.updateHeroCompletionUI(isTaskDone);
 
     if (!allDone) {
       this.completedShown = false;
@@ -976,6 +980,76 @@ const RubPage = {
     if (modal) modal.classList.add('hidden');
   },
 
+  updateHeroCompletionUI(isDone) {
+    const btn = document.getElementById('btn-complete-rub');
+    if (btn) {
+      btn.disabled = !!isDone;
+      const label = btn.querySelector('[data-i18n]') || btn;
+      label.textContent = isDone
+        ? '✓ ' + this.t('rub_summary_task_done', {}, 'تم تسجيل إتمام مهمة تثبيت الربع لليوم')
+        : this.t('rub_summary_mark_done', {}, 'تم تثبيت الربع الحالي');
+    }
+    const sessionMarkDone = document.getElementById('rub-session-mark-done');
+    if (sessionMarkDone) {
+      sessionMarkDone.disabled = !!isDone;
+      sessionMarkDone.textContent = isDone
+        ? '✓ ' + this.t('rub_summary_task_done', {}, 'تم تسجيل إتمام مهمة تثبيت الربع لليوم')
+        : this.t('rub_summary_mark_done', {}, 'تم تثبيت الربع الحالي');
+    }
+    const hero = document.getElementById('rub-hero');
+    if (hero && isDone) hero.classList.add('is-complete');
+    const step3 = document.getElementById('rub-step-3');
+    if (step3 && isDone) step3.classList.add('is-on');
+  },
+
+  async markDone() {
+    if (!this.taskId) return;
+    const btn = document.getElementById('btn-complete-rub');
+    const sessionBtn = document.getElementById('rub-session-mark-done');
+    if (btn) btn.disabled = true;
+    if (sessionBtn) sessionBtn.disabled = true;
+
+    try {
+      const data = await API.call('tasks/rub_session.php', {
+        method: 'POST',
+        redirectOn401: true,
+        body: {
+          action: 'COMPLETE',
+          task_id: this.taskId,
+        },
+      });
+
+      if (data && data.success) {
+        this.taskCompletedOnServer = true;
+        if (this.task) {
+          this.task.is_completed = true;
+        }
+        if (window.RubSession) {
+          if (RubSession.state && RubSession.state.task) {
+            RubSession.state.task.is_completed = true;
+          }
+          if (data.state) {
+            RubSession.state = data.state;
+          }
+          RubSession.syncHeroProgress();
+          if (RubSession.activeTab === 'session') {
+            RubSession.renderHome();
+          }
+        }
+        this.updateProgress();
+        this.updateHeroCompletionUI(true);
+        if (window.AudioEngine && typeof AudioEngine.playCelebration === 'function') {
+          try { AudioEngine.playCelebration(); } catch (e) {}
+        }
+        showToast(this.t('rub_summary_mark_done_success', {}, 'تم تسجيل إتمام الربع الحالي'));
+      }
+    } catch (err) {
+      if (btn) btn.disabled = false;
+      if (sessionBtn) sessionBtn.disabled = false;
+      showToast((err && err.message) || 'Error completing rub', true);
+    }
+  },
+
   /* ---------------- Sync ---------------- */
 
   completedList() {
@@ -1141,6 +1215,11 @@ const RubPage = {
         const verse = this.activeVerse();
         if (verse && this.isVerseDone(verse)) this.nextVerse();
       });
+    }
+
+    const completeRub = document.getElementById('btn-complete-rub');
+    if (completeRub) {
+      completeRub.addEventListener('click', () => this.markDone());
     }
 
     const resetAll = document.getElementById('btn-reset-rub');

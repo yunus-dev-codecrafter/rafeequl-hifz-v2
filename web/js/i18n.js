@@ -1777,6 +1777,8 @@ const I18N_DICTIONARY = {
     rub_summary_no_weak_words: 'No weak words recorded',
     rub_summary_no_history: 'No previous sessions for this rub\'.',
     rub_summary_task_done: "Today's rub' consolidation task is marked complete",
+    rub_summary_mark_done: 'Mark current rub as done',
+    rub_summary_mark_done_success: 'Current rub marked done',
     rub_summary_history_accuracy: 'Accuracy {percent}%',
     rub_summary_history_time: 'Time {time}',
     rub_summary_history_attempt: 'Attempt {n}',
