@@ -2890,6 +2890,8 @@
         '<div class="rub-summary-section"><h3>' + this.esc(this.t('rub_summary_history', {}, 'سجل الجلسات')) + '</h3>' +
         '<div class="rub-summary-history">' + historyHtml + '</div></div>' +
         '<div class="rub-summary-actions">' +
+        '<button type="button" class="btn btn-primary" data-summary-action="mark-done"' +
+        (task && task.is_completed ? ' disabled' : '') + '>' + this.esc(this.t('rub_summary_mark_done', {}, 'Mark current rub as done')) + '</button>' +
         '<button type="button" class="btn btn-primary" data-summary-action="repeat-weak"' +
         (this.hasWeak() ? '' : ' disabled') + '>' + this.esc(this.t('rub_summary_repeat_weak', {}, 'أعد التمارين الضعيفة')) + '</button>' +
         '<button type="button" class="btn btn-ghost" data-summary-action="new-session">' + this.esc(this.t('rub_summary_new_session', {}, 'جلسة جديدة')) + '</button>' +
@@ -2898,13 +2900,33 @@
         '</div>';
     },
 
-    onSummaryClick(event) {
+    async onSummaryClick(event) {
       const target = event.target;
       if (!target || typeof target.closest !== 'function') return;
       const button = target.closest('[data-summary-action]');
       if (!button) return;
       event.preventDefault();
       const action = button.dataset.summaryAction;
+      if (action === 'mark-done') {
+        const taskId = this.taskId();
+        if (!taskId) {
+          this.toast(this.t('rub_session_no_task', {}, 'لا يوجد ربع نشط لهذه الجلسة.'), true);
+          return;
+        }
+        const data = await API.call('tasks/rub_session.php', {
+          method: 'POST',
+          redirectOn401: true,
+          body: {
+            action: 'COMPLETE',
+            task_id: taskId,
+          },
+        });
+        const nextState = data && data.state ? data.state : this.state;
+        this.state = nextState;
+        this.showSummary(this.session, nextState);
+        this.toast(this.t('rub_summary_mark_done_success', {}, 'Current rub marked done'));
+        return;
+      }
       if (action === 'repeat-weak') {
         if (!this.hasWeak()) {
           this.toast(this.t('rub_session_no_weak', {}, 'لا توجد آيات أو كلمات ضعيفة مسجلة بعد'), true);

@@ -564,6 +564,8 @@ const I18N_DICTIONARY = {
     rub_summary_no_weak_words: 'لا توجد كلمات ضعيفة مسجلة',
     rub_summary_no_history: 'لا توجد جلسات سابقة لهذا الربع.',
     rub_summary_task_done: 'تم تسجيل إتمام مهمة تثبيت الربع لليوم',
+    rub_summary_mark_done: 'تم تثبيت الربع الحالي',
+    rub_summary_mark_done_success: 'تم تسجيل إتمام الربع الحالي',
     rub_summary_history_accuracy: 'الدقة {percent}%',
     rub_summary_history_time: 'الوقت {time}',
     rub_summary_history_attempt: 'محاولة {n}',

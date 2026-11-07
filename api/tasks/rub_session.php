@@ -13,6 +13,7 @@ declare(strict_types=1);
  *                      allow_outside_rub, focus ("ALL"|"WEAK"), force?, resume?
  *   action = "save"    session_id, results[] (idempotent upserts)
  *   action = "finish"  session_id, duration_seconds
+ *   action = "COMPLETE" task_id  (manual close: satisfied users may end a rub' task)
  *   action = "reset"   task_id  (abandons the active session, keeps history)
  *
  * The plan itself is generated server-side by _rub_session.php. The client only
@@ -419,6 +420,31 @@ try {
         json_out(200, [
             'success' => true,
             'session' => $finished,
+            'state'   => $state,
+        ]);
+    }
+
+    if ($action === 'COMPLETE') {
+        $taskId = (int) ($input['task_id'] ?? 0);
+        if ($taskId <= 0) {
+            json_out(400, ['success' => false, 'errors' => ['task_id' => 'task_id is required.']]);
+        }
+
+        $task = rh_rub_session_task($pdo, $userId, $taskId);
+        $rubId = (int) $task['rub_id'];
+        rh_rub_mark_task_complete($pdo, $userId, $taskId, $rubId, (string) $task['task_date']);
+        $task = rh_rub_session_task($pdo, $userId, $taskId);
+        $state = rh_rub_state_payload($pdo, $userId, $task);
+
+        json_out(200, [
+            'success' => true,
+            'task'    => [
+                'id'       => (int) $task['id'],
+                'task_date' => (string) $task['task_date'],
+                'rub_id'   => (int) $task['rub_id'],
+                'is_completed' => (int) ($task['is_completed'] ?? 0) === 1,
+                'rollover_count' => (int) ($task['rollover_count'] ?? 0),
+            ],
             'state'   => $state,
         ]);
     }
