@@ -80,7 +80,7 @@ try {
         'catalog_ok' => $catalogOk,
         'locked' => $locked ? kal_word_payload([], $locked) : null,
         'target' => KALIMAAT_TARGET,
-        'entry_min' => 10,
+        'entry_min' => 25,
         'test_mastery_correct' => KALIMAAT_TEST_MASTERY_CORRECT,
         'stats' => $stats,
         'zone_pages' => $zonePages,

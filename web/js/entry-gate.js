@@ -3,7 +3,7 @@
 /* ==========================================================================
    Rafeequl Hifz - entry gate
    A single blocking overlay with two sequential steps:
-     1. معاني كلمات القرآن (10 repetitions per entry, 500 lifetime)
+     1. معاني كلمات القرآن (25 repetitions per entry, 500 lifetime)
      2. بطاقة خطأ واحدة (15 repetitions per entry, 15 lifetime)
    The gate is re-armed once per browser app-session. It fails open only when
    the API or the optional catalog is unavailable, so a server problem never
@@ -176,7 +176,7 @@
 
     const word = payload.locked;
     const remaining = Math.max(0, Number(word.remaining) || 0);
-    const target = Math.max(1, Math.min(10, remaining));
+    const target = Math.max(1, Math.min(25, remaining));
 
     state.step = 'kalimaat';
     state.kalimaat = {

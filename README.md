@@ -392,8 +392,8 @@ a direct bookmark cannot bypass it. It opens **once per browser app session**
 (`sessionStorage`) before the daily tasks are usable:
 
 1. **معاني كلمات القرآن** — the currently locked word is shown with its meaning
-   and reference. The user must record **10 repetitions** for this entry, or the
-   remaining lifetime count if fewer than 10 are left before 500.
+   and reference. The user must record **25 repetitions** for this entry, or the
+   remaining lifetime count if fewer than 25 are left before 500.
 2. **بطاقة خطأ** — the mistake card locked in `users.gate_mistake_id` is shown
    with its mistake type. `AYAH_MISTAKE` shows the single ayah;
    `TRANSITION_FAILURE` shows the ayah where the user stopped plus the next ayah;
