@@ -124,5 +124,11 @@ try {
     json_out(200, rh_pg_state($pdo, $userId, $today, $taskId));
 } catch (Throwable $e) {
     error_log('[PageConsolidation] ' . $e->getMessage());
-    json_out(500, ['success' => false, 'error' => 'Server error. Please try again.']);
+    json_out(500, [
+        'success' => false,
+        'error'   => 'Server error. Please try again.',
+        'exception' => $e->getMessage(),
+        'file'    => $e->getFile(),
+        'line'    => $e->getLine(),
+    ]);
 }

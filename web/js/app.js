@@ -101,6 +101,7 @@ const API = {
 
 function apiMessage(data) {
   if (!data) return 'حدث خطأ غير متوقع.';
+  if (data.exception) return data.exception;
   if (data.error) return data.error;
   if (data.errors) {
     const list = Object.values(data.errors);

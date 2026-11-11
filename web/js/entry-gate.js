@@ -362,7 +362,7 @@
         body: { action: 'result', task_id: c.task.id, result },
       });
       if (!ok || !data || !data.success) {
-        if (status) status.textContent = (data && data.error) || t('entry_gate_error', 'تعذر الحفظ. أعد المحاولة.');
+        if (status) status.textContent = (data && (data.exception || data.error)) || t('entry_gate_error', 'تعذر الحفظ. أعد المحاولة.');
         if (done) done.disabled = false;
         if (improve) improve.disabled = false;
         return;
@@ -500,7 +500,7 @@
         k.done = k.target;
         showKalimaatDone();
       } else {
-        if (status) status.textContent = (data && data.error) || t('entry_gate_error', 'تعذر الحفظ. أعد المحاولة.');
+        if (status) status.textContent = (data && (data.exception || data.error)) || t('entry_gate_error', 'تعذر الحفظ. أعد المحاولة.');
         if (btn) btn.disabled = false;
       }
     } catch (e) {
@@ -743,7 +743,7 @@
         showMistakeDone();
       } else {
         m.lastResult = result === 'CORRECT' ? '' : 'slip';
-        if (status) status.textContent = (data && data.error) || t('entry_gate_error', 'تعذر الحفظ. أعد المحاولة.');
+        if (status) status.textContent = (data && (data.exception || data.error)) || t('entry_gate_error', 'تعذر الحفظ. أعد المحاولة.');
         if (correctBtn) correctBtn.disabled = false;
         if (slipBtn) slipBtn.disabled = false;
       }

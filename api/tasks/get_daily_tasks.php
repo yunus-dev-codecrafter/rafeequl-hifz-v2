@@ -559,5 +559,5 @@ try {
         $pdo->rollBack();
     }
     error_log('[DailyTasks Failed] ' . $e->getMessage());
-    json_out(500, ['success' => false, 'error' => 'Server error. Please try again.']);
+    json_out(500, ['success' => false, 'error' => 'Server error. Please try again.', 'exception' => $e->getMessage()]);
 }
