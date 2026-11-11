@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'rafeequl-hifz-v32';
+const CACHE_NAME = 'rafeequl-hifz-v34';
 const AUDIO_CACHE = 'rafeequl-hifz-audio-v1';
 const PRECACHE_TIMEOUT_MS = 12000;
 

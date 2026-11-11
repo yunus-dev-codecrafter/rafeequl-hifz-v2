@@ -31,6 +31,15 @@
     playingIndex: -1,
     playing: false,
     activeTab: 'SURAH',
+    // Voice recording
+    mediaRecorder: null,
+    mediaStream: null,
+    recordingChunks: [],
+    recordingTimerId: null,
+    recordingStartTime: 0,
+    recordedAudioUrl: null,
+    recordedDuration: 0,
+    recordingState: 'idle', // 'idle' | 'recording' | 'playback'
   };
 
   function $(id) {
@@ -113,7 +122,11 @@
   }
 
   async function api(path, options) {
-    return window.API.call(path, options || {});
+    const client = (typeof API !== 'undefined' ? API : null) || (typeof window !== 'undefined' ? window.API : null);
+    if (!client || typeof client.call !== 'function') {
+      throw new Error('API client not ready');
+    }
+    return client.call(path, options || {});
   }
 
   function setStatus(id, message, isError) {
@@ -134,6 +147,8 @@
     state.targets = data && data.targets ? data.targets : null;
 
     if (resetStage) {
+      cleanupRecording();
+      state.recordingState = 'idle';
       state.revealed = false;
       state.chunkStart = 0;
       state.placed = [];
@@ -575,8 +590,182 @@
   }
 
   /* ---------------------------------------------------------------------
-   * Stage 2 — recitation, reveal and listen
+   * Stage 2 — recitation, recording, playback and verification
    * ------------------------------------------------------------------ */
+
+  function isRecordingSupported() {
+    return typeof navigator !== 'undefined'
+      && !!navigator.mediaDevices
+      && typeof navigator.mediaDevices.getUserMedia === 'function'
+      && typeof MediaRecorder !== 'undefined';
+  }
+
+  function getBestMimeType() {
+    if (typeof MediaRecorder === 'undefined' || typeof MediaRecorder.isTypeSupported !== 'function') {
+      return '';
+    }
+    const candidates = [
+      'audio/webm;codecs=opus',
+      'audio/webm',
+      'audio/mp4',
+      'audio/aac',
+      'audio/ogg;codecs=opus',
+      'audio/ogg',
+    ];
+    for (const t of candidates) {
+      if (MediaRecorder.isTypeSupported(t)) {
+        return t;
+      }
+    }
+    return '';
+  }
+
+  function formatTime(sec) {
+    const s = Math.max(0, Math.floor(sec || 0));
+    const m = Math.floor(s / 60);
+    const rem = s % 60;
+    return String(m).padStart(2, '0') + ':' + String(rem).padStart(2, '0');
+  }
+
+  function cleanupRecording() {
+    if (state.recordingTimerId) {
+      clearInterval(state.recordingTimerId);
+      state.recordingTimerId = null;
+    }
+    if (state.mediaRecorder && state.mediaRecorder.state !== 'inactive') {
+      try { state.mediaRecorder.stop(); } catch (e) {}
+    }
+    state.mediaRecorder = null;
+    if (state.mediaStream) {
+      state.mediaStream.getTracks().forEach((track) => track.stop());
+      state.mediaStream = null;
+    }
+    state.recordingChunks = [];
+    const recordedAudio = $('recorded-audio');
+    if (recordedAudio) {
+      try { recordedAudio.pause(); } catch (e) {}
+      recordedAudio.src = '';
+    }
+    if (state.recordedAudioUrl) {
+      URL.revokeObjectURL(state.recordedAudioUrl);
+      state.recordedAudioUrl = null;
+    }
+  }
+
+  async function startRecording() {
+    if (state.busy) return;
+    if (!isRecordingSupported()) {
+      setStatus('recitation-status', t('page_mic_unsupported', 'التسجيل الصوتي غير مدعوم في هذا المتصفح.'), true);
+      return;
+    }
+    stopAudio();
+    if (state.recordedAudioUrl) {
+      URL.revokeObjectURL(state.recordedAudioUrl);
+      state.recordedAudioUrl = null;
+    }
+    state.recordedDuration = 0;
+
+    try {
+      state.mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (err) {
+      setStatus('recitation-status', t('page_mic_permission_denied', 'تعذر الوصول إلى الميكروفون. يرجى السماح بالإذن في المتصفح أو المتابعة بدون تسجيل.'), true);
+      return;
+    }
+
+    state.recordingChunks = [];
+    const mimeType = getBestMimeType();
+    const options = mimeType ? { mimeType } : {};
+    try {
+      state.mediaRecorder = new MediaRecorder(state.mediaStream, options);
+    } catch (e) {
+      state.mediaRecorder = new MediaRecorder(state.mediaStream);
+    }
+
+    state.mediaRecorder.ondataavailable = (event) => {
+      if (event.data && event.data.size > 0) {
+        state.recordingChunks.push(event.data);
+      }
+    };
+
+    state.mediaRecorder.onstop = () => {
+      if (state.mediaStream) {
+        state.mediaStream.getTracks().forEach((track) => track.stop());
+        state.mediaStream = null;
+      }
+      const finalMime = (state.mediaRecorder && state.mediaRecorder.mimeType) || mimeType || 'audio/webm';
+      const blob = new Blob(state.recordingChunks, { type: finalMime });
+      if (blob.size > 0) {
+        state.recordedAudioUrl = URL.createObjectURL(blob);
+        state.recordingState = 'playback';
+        state.revealed = true;
+        renderRecitation();
+        const player = $('recorded-audio');
+        if (player) {
+          player.src = state.recordedAudioUrl;
+          const p = player.play();
+          if (p && typeof p.catch === 'function') p.catch(() => {});
+        }
+      }
+    };
+
+    state.recordingStartTime = Date.now();
+    state.recordingState = 'recording';
+    state.revealed = false;
+    state.mediaRecorder.start(250);
+    renderRecitation();
+
+    const timerEl = $('recording-timer');
+    if (timerEl) timerEl.textContent = '00:00';
+    if (state.recordingTimerId) clearInterval(state.recordingTimerId);
+    state.recordingTimerId = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - state.recordingStartTime) / 1000);
+      state.recordedDuration = elapsed;
+      const el = $('recording-timer');
+      if (el) el.textContent = formatTime(elapsed);
+    }, 500);
+  }
+
+  function stopRecording(reveal = true) {
+    if (state.recordingTimerId) {
+      clearInterval(state.recordingTimerId);
+      state.recordingTimerId = null;
+    }
+    state.recordedDuration = Math.round((Date.now() - (state.recordingStartTime || Date.now())) / 1000);
+    if (state.mediaRecorder && state.mediaRecorder.state !== 'inactive') {
+      try {
+        state.mediaRecorder.stop();
+      } catch (e) {}
+    } else {
+      if (state.mediaStream) {
+        state.mediaStream.getTracks().forEach((track) => track.stop());
+        state.mediaStream = null;
+      }
+      if (reveal) {
+        state.recordingState = 'playback';
+        state.revealed = true;
+        renderRecitation();
+      }
+    }
+  }
+
+  function rerecord() {
+    stopAudio();
+    cleanupRecording();
+    state.recordingState = 'idle';
+    state.revealed = false;
+    renderRecitation();
+    startRecording();
+  }
+
+  function revealDirectly() {
+    stopAudio();
+    if (state.recordingState === 'recording') {
+      stopRecording(false);
+    }
+    state.recordingState = 'playback';
+    state.revealed = true;
+    renderRecitation();
+  }
 
   function renderRecitation() {
     if (!state.task) return;
@@ -586,6 +775,38 @@
         ? state.task.intro_words
         : (state.task.words || []).slice(0, 5).map((w) => w.text);
       prompt.innerHTML = intro.map((word) => `<span>${escHtml(word)}</span>`).join('');
+    }
+
+    const idleBox = $('recorder-state-idle');
+    const activeBox = $('recorder-state-active');
+    const playbackBox = $('recorder-state-playback');
+
+    if (state.recordingState === 'recording') {
+      if (idleBox) idleBox.classList.add('hidden');
+      if (activeBox) activeBox.classList.remove('hidden');
+      if (playbackBox) playbackBox.classList.add('hidden');
+    } else if (state.revealed || state.recordingState === 'playback') {
+      if (idleBox) idleBox.classList.add('hidden');
+      if (activeBox) activeBox.classList.add('hidden');
+      if (playbackBox) playbackBox.classList.remove('hidden');
+
+      const audioWrap = $('playback-audio-wrap');
+      const audioEl = $('recorded-audio');
+      const badge = $('record-duration-badge');
+      if (state.recordedAudioUrl) {
+        if (audioWrap) audioWrap.classList.remove('hidden');
+        if (audioEl && audioEl.src !== state.recordedAudioUrl) {
+          audioEl.src = state.recordedAudioUrl;
+        }
+        if (badge) badge.textContent = formatTime(state.recordedDuration);
+      } else {
+        if (audioWrap) audioWrap.classList.add('hidden');
+        if (badge) badge.textContent = '';
+      }
+    } else {
+      if (idleBox) idleBox.classList.remove('hidden');
+      if (activeBox) activeBox.classList.add('hidden');
+      if (playbackBox) playbackBox.classList.add('hidden');
     }
 
     const pageEl = $('recitation-page');
@@ -601,24 +822,14 @@
       pageEl.innerHTML = '';
     }
 
-    const revealBtn = $('btn-reveal-page');
-    if (revealBtn) {
-      revealBtn.textContent = state.revealed
-        ? t('page_listen_again', 'إعادة الاستماع')
-        : t('page_reveal_listen', 'أظهر الصفحة واستمع');
-    }
-    const stopBtn = $('btn-stop-audio');
-    if (stopBtn) stopBtn.classList.toggle('hidden', !state.playing);
+    const stopQariBtn = $('btn-stop-qari');
+    if (stopQariBtn) stopQariBtn.classList.toggle('hidden', !state.playing);
+    const qariBtn = $('btn-qari-audio');
+    if (qariBtn) qariBtn.classList.toggle('hidden', state.playing);
+
     const resultActions = $('recitation-result-actions');
     if (resultActions) resultActions.classList.toggle('hidden', !state.revealed);
     setStatus('recitation-status', '');
-  }
-
-  function revealAndPlay() {
-    if (!state.task) return;
-    state.revealed = true;
-    renderRecitation();
-    playPage();
   }
 
   function ensureAudio() {
@@ -637,20 +848,34 @@
       state.audio.onerror = null;
       try { state.audio.pause(); } catch (e) {}
     }
+    const recPlayer = $('recorded-audio');
+    if (recPlayer) {
+      try { recPlayer.pause(); } catch (e) {}
+    }
     document.querySelectorAll('.consolidation-ayah.is-playing').forEach((el) => {
       el.classList.remove('is-playing');
     });
-    const stopBtn = $('btn-stop-audio');
-    if (stopBtn) stopBtn.classList.add('hidden');
+    const stopQariBtn = $('btn-stop-qari');
+    if (stopQariBtn) stopQariBtn.classList.add('hidden');
+    const qariBtn = $('btn-qari-audio');
+    if (qariBtn) qariBtn.classList.remove('hidden');
   }
 
-  function playPage() {
+  function playQariAudio() {
     const verses = state.task && Array.isArray(state.task.verses) ? state.task.verses : [];
     if (!verses.length) return;
-    stopAudio();
+    const recPlayer = $('recorded-audio');
+    if (recPlayer) {
+      try { recPlayer.pause(); } catch (e) {}
+    }
     state.playing = true;
     state.playingIndex = 0;
     const audio = ensureAudio();
+
+    const qariBtn = $('btn-qari-audio');
+    if (qariBtn) qariBtn.classList.add('hidden');
+    const stopQariBtn = $('btn-stop-qari');
+    if (stopQariBtn) stopQariBtn.classList.remove('hidden');
 
     const playAt = (index) => {
       if (!state.playing || index >= verses.length) {
@@ -678,8 +903,6 @@
           stopAudio();
         });
       }
-      const stopBtn = $('btn-stop-audio');
-      if (stopBtn) stopBtn.classList.remove('hidden');
     };
 
     playAt(0);
@@ -865,10 +1088,18 @@
     const reset = $('btn-arrangement-reset');
     if (reset) reset.addEventListener('click', resetChunkWords);
 
-    const reveal = $('btn-reveal-page');
-    if (reveal) reveal.addEventListener('click', revealAndPlay);
-    const stop = $('btn-stop-audio');
-    if (stop) stop.addEventListener('click', stopAudio);
+    const startRecord = $('btn-start-record');
+    if (startRecord) startRecord.addEventListener('click', startRecording);
+    const stopRecord = $('btn-stop-record');
+    if (stopRecord) stopRecord.addEventListener('click', () => stopRecording(true));
+    const revealDirect = $('btn-reveal-direct');
+    if (revealDirect) revealDirect.addEventListener('click', revealDirectly);
+    const rerecordBtn = $('btn-rerecord');
+    if (rerecordBtn) rerecordBtn.addEventListener('click', rerecord);
+    const qariBtn = $('btn-qari-audio');
+    if (qariBtn) qariBtn.addEventListener('click', playQariAudio);
+    const stopQariBtn = $('btn-stop-qari');
+    if (stopQariBtn) stopQariBtn.addEventListener('click', stopAudio);
     const done = $('btn-page-done');
     if (done) done.addEventListener('click', () => markResult('DONE'));
     const improve = $('btn-page-improve');
@@ -876,7 +1107,10 @@
     const practice = $('btn-practice-again');
     if (practice) practice.addEventListener('click', practiceAgain);
 
-    window.addEventListener('beforeunload', stopAudio);
+    window.addEventListener('beforeunload', () => {
+      stopAudio();
+      cleanupRecording();
+    });
 
     if (window.I18N && typeof I18N.onChange === 'function') {
       I18N.onChange(() => {

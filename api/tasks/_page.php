@@ -482,13 +482,18 @@ function rh_pg_repoint_today_task(PDO $pdo, int $userId, string $today, int $pag
     try {
         $stmt = $pdo->prepare(
             "UPDATE `daily_task_logs`
-             SET `start_page` = :p, `end_page` = :p, `is_completed` = 0,
+             SET `start_page` = :p_start, `end_page` = :p_end, `is_completed` = 0,
                  `completed_stations` = NULL
              WHERE `user_id` = :u AND `task_type` = 'PAGE_TAMKIN'
                AND `task_date` = :d AND `is_completed` = 0
              ORDER BY `id` DESC LIMIT 1"
         );
-        $stmt->execute([':p' => $page, ':u' => $userId, ':d' => $today]);
+        $stmt->execute([
+            ':p_start' => $page,
+            ':p_end'   => $page,
+            ':u'       => $userId,
+            ':d'       => $today,
+        ]);
     } catch (Throwable $t) {
         error_log('[PageRepoint] ' . $t->getMessage());
     }
@@ -794,9 +799,14 @@ function rh_pg_ensure_task(PDO $pdo, int $userId, string $today): ?array
         $stmt = $pdo->prepare(
             "INSERT INTO `daily_task_logs`
                 (`user_id`, `task_date`, `task_type`, `start_page`, `end_page`, `is_completed`" . $extraColumns . ")
-             VALUES (:u, :d, 'PAGE_TAMKIN', :p, :p, 0" . $extraValues . ")"
+             VALUES (:u, :d, 'PAGE_TAMKIN', :p_start, :p_end, 0" . $extraValues . ")"
         );
-        $params = [':u' => $userId, ':d' => $today, ':p' => $page];
+        $params = [
+            ':u'       => $userId,
+            ':d'       => $today,
+            ':p_start' => $page,
+            ':p_end'   => $page,
+        ];
         if ($hasRollover) {
             $params[':rollover_date'] = $today;
         }

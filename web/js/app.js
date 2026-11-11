@@ -12,7 +12,7 @@
 
 /* ---------------- 1. API Helper ---------------- */
 
-const API = {
+const API = window.API = {
   async call(path, { method = 'GET', body = null, redirectOn401 = false } = {}) {
     const opts = {
       method,

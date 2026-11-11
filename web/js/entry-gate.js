@@ -31,6 +31,13 @@
     consolidation: null,
     consolidationAudio: null,
     consolidationPlaying: false,
+    consolidationAudioUrl: null,
+    consolidationRecording: false,
+    consolidationMediaRecorder: null,
+    consolidationStream: null,
+    consolidationChunks: [],
+    consolidationTimerId: null,
+    consolidationStartTime: 0,
     kalimaat: null,
     mistake: null,
     overlay: null,
@@ -99,6 +106,7 @@
 
   function markDone() {
     stopGateAudio();
+    cleanupGateRecording();
     try { sessionStorage.setItem(SESSION_KEY, '1'); } catch (e) {}
     if (state.overlay && state.overlay.parentNode) {
       state.overlay.parentNode.removeChild(state.overlay);
@@ -187,6 +195,27 @@
     return 'https://everyayah.com/data/Alafasy_128kbps/' + pad(Number(surah)) + pad(Number(ayah)) + '.mp3';
   }
 
+  function cleanupGateRecording() {
+    if (state.consolidationTimerId) {
+      clearInterval(state.consolidationTimerId);
+      state.consolidationTimerId = null;
+    }
+    if (state.consolidationMediaRecorder && state.consolidationMediaRecorder.state !== 'inactive') {
+      try { state.consolidationMediaRecorder.stop(); } catch (e) {}
+    }
+    state.consolidationMediaRecorder = null;
+    if (state.consolidationStream) {
+      state.consolidationStream.getTracks().forEach((track) => track.stop());
+      state.consolidationStream = null;
+    }
+    if (state.consolidationAudioUrl) {
+      URL.revokeObjectURL(state.consolidationAudioUrl);
+      state.consolidationAudioUrl = null;
+    }
+    state.consolidationRecording = false;
+    state.consolidationChunks = [];
+  }
+
   function stopGateAudio() {
     state.consolidationPlaying = false;
     if (state.consolidationAudio) {
@@ -194,16 +223,117 @@
       state.consolidationAudio.onerror = null;
       try { state.consolidationAudio.pause(); } catch (e) {}
     }
+    const recPlayer = document.getElementById('entry-gate-recorded-audio');
+    if (recPlayer) {
+      try { recPlayer.pause(); } catch (e) {}
+    }
     document.querySelectorAll('.entry-gate-ayah-block.is-playing').forEach((el) => {
       el.classList.remove('is-playing');
     });
-    const stop = document.getElementById('entry-gate-page-stop');
+    const stop = document.getElementById('entry-gate-qari-stop');
     if (stop) stop.classList.add('hidden');
-    const reveal = document.getElementById('entry-gate-page-reveal');
-    if (reveal) {
-      reveal.textContent = state.consolidation && state.consolidation.revealed
-        ? t('entry_gate_page_listen_again', 'إعادة الاستماع')
-        : t('entry_gate_page_reveal', 'أظهر الصفحة واستمع');
+    const play = document.getElementById('entry-gate-qari-play');
+    if (play) play.classList.remove('hidden');
+  }
+
+  async function startGateRecording() {
+    const c = state.consolidation;
+    if (!c || c.busy) return;
+    if (typeof navigator === 'undefined' || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof MediaRecorder === 'undefined') {
+      const status = document.getElementById('entry-gate-consolidation-status');
+      if (status) status.textContent = t('page_mic_unsupported', 'التسجيل الصوتي غير مدعوم في هذا المتصفح.');
+      return;
+    }
+    stopGateAudio();
+    if (state.consolidationAudioUrl) {
+      URL.revokeObjectURL(state.consolidationAudioUrl);
+      state.consolidationAudioUrl = null;
+    }
+    try {
+      state.consolidationStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (err) {
+      const status = document.getElementById('entry-gate-consolidation-status');
+      if (status) status.textContent = t('page_mic_permission_denied', 'تعذر الوصول إلى الميكروفون. يرجى السماح بالإذن أو كشف الصفحة مباشرة.');
+      return;
+    }
+
+    state.consolidationChunks = [];
+    let mimeType = '';
+    const candidates = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg'];
+    if (MediaRecorder.isTypeSupported) {
+      for (const cand of candidates) {
+        if (MediaRecorder.isTypeSupported(cand)) {
+          mimeType = cand;
+          break;
+        }
+      }
+    }
+    try {
+      state.consolidationMediaRecorder = new MediaRecorder(state.consolidationStream, mimeType ? { mimeType } : {});
+    } catch (e) {
+      state.consolidationMediaRecorder = new MediaRecorder(state.consolidationStream);
+    }
+
+    state.consolidationMediaRecorder.ondataavailable = (e) => {
+      if (e.data && e.data.size > 0) state.consolidationChunks.push(e.data);
+    };
+
+    state.consolidationMediaRecorder.onstop = () => {
+      if (state.consolidationStream) {
+        state.consolidationStream.getTracks().forEach((track) => track.stop());
+        state.consolidationStream = null;
+      }
+      const finalMime = (state.consolidationMediaRecorder && state.consolidationMediaRecorder.mimeType) || mimeType || 'audio/webm';
+      const blob = new Blob(state.consolidationChunks, { type: finalMime });
+      if (blob.size > 0) {
+        state.consolidationAudioUrl = URL.createObjectURL(blob);
+        c.revealed = true;
+        renderConsolidation();
+        const player = document.getElementById('entry-gate-recorded-audio');
+        if (player) {
+          player.src = state.consolidationAudioUrl;
+          const p = player.play();
+          if (p && typeof p.catch === 'function') p.catch(() => {});
+        }
+      }
+    };
+
+    state.consolidationStartTime = Date.now();
+    state.consolidationRecording = true;
+    c.revealed = false;
+    state.consolidationMediaRecorder.start(250);
+    renderConsolidation();
+
+    if (state.consolidationTimerId) clearInterval(state.consolidationTimerId);
+    state.consolidationTimerId = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - state.consolidationStartTime) / 1000);
+      const m = Math.floor(elapsed / 60);
+      const s = elapsed % 60;
+      const timerEl = document.getElementById('entry-gate-rec-timer');
+      if (timerEl) {
+        timerEl.textContent = String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+      }
+    }, 500);
+  }
+
+  function stopGateRecording() {
+    if (state.consolidationTimerId) {
+      clearInterval(state.consolidationTimerId);
+      state.consolidationTimerId = null;
+    }
+    state.consolidationRecording = false;
+    if (state.consolidationMediaRecorder && state.consolidationMediaRecorder.state !== 'inactive') {
+      try { state.consolidationMediaRecorder.stop(); } catch (e) {}
+    } else {
+      if (state.consolidationStream) {
+        state.consolidationStream.getTracks().forEach((track) => track.stop());
+        state.consolidationStream = null;
+      }
+      const c = state.consolidation;
+      if (c) {
+        c.revealed = true;
+        renderConsolidation();
+      }
     }
   }
 
@@ -217,6 +347,11 @@
     const audio = state.consolidationAudio || new Audio();
     state.consolidationAudio = audio;
     audio.preload = 'none';
+
+    const play = document.getElementById('entry-gate-qari-play');
+    if (play) play.classList.add('hidden');
+    const stop = document.getElementById('entry-gate-qari-stop');
+    if (stop) stop.classList.remove('hidden');
 
     const playAt = (index) => {
       if (!state.consolidationPlaying || index >= verses.length) {
@@ -245,8 +380,6 @@
           if (status) status.textContent = t('entry_gate_page_audio_error', 'تعذر تشغيل التلاوة. تأكد من الاتصال ثم أعد المحاولة.');
         });
       }
-      const stop = document.getElementById('entry-gate-page-stop');
-      if (stop) stop.classList.remove('hidden');
     };
 
     playAt(0);
@@ -259,6 +392,7 @@
       nextAfterConsolidation();
       return;
     }
+    cleanupGateRecording();
     state.step = 'consolidation';
     state.consolidation = {
       done: false,
@@ -287,6 +421,67 @@
         </div>`
       : '';
 
+    let actionsHtml = '';
+    if (state.consolidationRecording) {
+      actionsHtml = `
+        <div class="recording-pulse-badge" style="margin: 0.6rem auto; display: inline-flex;">
+          <span class="recording-dot"></span>
+          <span>${esc(t('page_recording_active', 'جارٍ التسجيل... سمّع الصفحة غيبًا'))}</span>
+          <span class="recording-timer" id="entry-gate-rec-timer">00:00</span>
+        </div>
+        <div class="entry-gate-actions">
+          <button type="button" class="btn btn-danger entry-gate-main-btn" id="entry-gate-record-stop">
+            ⏹️ ${esc(t('page_stop_recording', 'إيقاف التسجيل وعرض الصفحة'))}
+          </button>
+        </div>`;
+    } else if (!c.revealed) {
+      actionsHtml = `
+        <div class="entry-gate-actions entry-gate-actions-split">
+          <button type="button" class="btn btn-primary entry-gate-main-btn" id="entry-gate-record-start">
+            🎙️ ${esc(t('page_start_recording', 'ابدأ تسجيل التلاوة'))}
+          </button>
+          <button type="button" class="btn btn-ghost entry-gate-main-btn" id="entry-gate-page-reveal">
+            ${esc(t('page_reveal_without_record', 'كشف الصفحة مباشرة'))}
+          </button>
+        </div>`;
+    } else {
+      actionsHtml = `
+        <div class="playback-card" style="margin: 0.6rem 0; padding: 0.65rem; border-radius: 12px; background: rgba(15, 118, 110, 0.05); border: 1px solid rgba(15, 118, 110, 0.15);">
+          ${state.consolidationAudioUrl ? `
+            <div style="font-size: 0.88rem; font-weight: 700; color: var(--primary, #0f766e); margin-bottom: 0.4rem;">
+              🎙️ ${esc(t('page_my_recording_label', 'تسجيل تلاوتك:'))}
+            </div>
+            <audio controls class="recorded-audio-player" id="entry-gate-recorded-audio" src="${state.consolidationAudioUrl}" style="width: 100%; height: 40px;"></audio>
+            <div class="playback-sub-actions" style="margin-top: 0.4rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <button type="button" class="btn btn-ghost btn-sm" id="entry-gate-record-rerecord">
+                🔄 ${esc(t('page_rerecord', 'إعادة التسجيل'))}
+              </button>
+              <button type="button" class="btn btn-ghost btn-sm" id="entry-gate-qari-play">
+                🔊 ${esc(t('page_listen_qari', 'استمع للقارئ'))}
+              </button>
+              <button type="button" class="btn btn-ghost btn-sm hidden" id="entry-gate-qari-stop">
+                ⏹️ ${esc(t('page_stop_qari', 'إيقاف تلاوة القارئ'))}
+              </button>
+            </div>
+          ` : `
+            <div class="entry-gate-actions entry-gate-actions-split">
+              <button type="button" class="btn btn-ghost entry-gate-main-btn" id="entry-gate-record-rerecord">
+                🎙️ ${esc(t('page_start_recording', 'ابدأ تسجيل التلاوة'))}
+              </button>
+              <button type="button" class="btn btn-ghost entry-gate-main-btn" id="entry-gate-qari-play">
+                🔊 ${esc(t('page_listen_qari', 'استمع للقارئ'))}
+              </button>
+              <button type="button" class="btn btn-ghost entry-gate-main-btn hidden" id="entry-gate-qari-stop">
+                ⏹️ ${esc(t('page_stop_qari', 'إيقاف تلاوة القارئ'))}
+              </button>
+            </div>
+          `}
+        </div>
+        <p class="consolidation-review-notice" style="margin: 0.5rem 0;" data-i18n="page_review_check_hint">
+          ${esc(t('page_review_check_hint', 'استمع لتسجيلك وقارنه بنص المصحف أدناه لرصد أي سقط أو خطأ:'))}
+        </p>`;
+    }
+
     const body = `
       <div class="entry-gate-page-head">
         <span class="entry-gate-page-badge">${esc(t('entry_gate_page_badge', 'صفحة {page}').replace('{page}', page))}</span>
@@ -298,15 +493,8 @@
           ${intro.map((word) => `<span>${esc(word)}</span>`).join('') || `<span class="entry-gate-loading">${esc(t('entry_gate_page_loading', 'جارٍ تحميل الصفحة...'))}</span>`}
         </div>
       </div>
-      <p class="entry-gate-hint">${esc(t('entry_gate_page_hint', 'سمّع الصفحة من حفظك أولًا، ثم أظهرها واستمع إليها، ثم اختر النتيجة.'))}</p>
-      <div class="entry-gate-actions entry-gate-actions-split">
-        <button type="button" class="btn btn-primary entry-gate-main-btn" id="entry-gate-page-reveal">
-          ${esc(c.revealed ? t('entry_gate_page_listen_again', 'إعادة الاستماع') : t('entry_gate_page_reveal', 'أظهر الصفحة واستمع'))}
-        </button>
-        <button type="button" class="btn btn-ghost entry-gate-main-btn hidden" id="entry-gate-page-stop">
-          ${esc(t('entry_gate_page_stop', 'إيقاف الاستماع'))}
-        </button>
-      </div>
+      <p class="entry-gate-hint">${esc(t('page_recitation_hint', 'اقرأ الصفحة غيبًا من الكلمات الظاهرة أثناء التسجيل، ثم أوقف التسجيل لتستمع إلى تلاوتك وأنت تنظر في المصحف لكشف أي خطأ.'))}</p>
+      ${actionsHtml}
       ${versesHtml}
       <div class="entry-gate-actions entry-gate-actions-split ${c.revealed ? '' : 'hidden'}" id="entry-gate-page-result">
         <button type="button" class="btn btn-success entry-gate-main-btn" id="entry-gate-page-done">
@@ -321,22 +509,33 @@
     render(shell(
       t('entry_gate_kicker', 'بوابة الدخول'),
       t('entry_gate_page_title', 'تثبيت صفحة من حفظك'),
-      t('entry_gate_page_sub', 'صفحة واحدة كل دخول: تسميع ثم كشف واستماع'),
+      t('entry_gate_page_sub', 'صفحة واحدة كل دخول: تسميع وتسجيل ثم كشف واستماع'),
       body
     ));
 
+    const startRec = document.getElementById('entry-gate-record-start');
+    if (startRec) startRec.addEventListener('click', startGateRecording);
+    const stopRec = document.getElementById('entry-gate-record-stop');
+    if (stopRec) stopRec.addEventListener('click', stopGateRecording);
+    const rerecord = document.getElementById('entry-gate-record-rerecord');
+    if (rerecord) {
+      rerecord.addEventListener('click', () => {
+        cleanupGateRecording();
+        startGateRecording();
+      });
+    }
     const reveal = document.getElementById('entry-gate-page-reveal');
     if (reveal) {
       reveal.addEventListener('click', () => {
-        if (!c.revealed) {
-          c.revealed = true;
-          renderConsolidation();
-        }
-        playGateAudio();
+        c.revealed = true;
+        renderConsolidation();
       });
     }
-    const stop = document.getElementById('entry-gate-page-stop');
-    if (stop) stop.addEventListener('click', stopGateAudio);
+    const qariPlay = document.getElementById('entry-gate-qari-play');
+    if (qariPlay) qariPlay.addEventListener('click', playGateAudio);
+    const qariStop = document.getElementById('entry-gate-qari-stop');
+    if (qariStop) qariStop.addEventListener('click', stopGateAudio);
+
     const done = document.getElementById('entry-gate-page-done');
     if (done) done.addEventListener('click', () => reviewConsolidation('DONE'));
     const improve = document.getElementById('entry-gate-page-improve');
@@ -349,6 +548,7 @@
     state.busy = true;
     c.busy = true;
     stopGateAudio();
+    cleanupGateRecording();
     const done = document.getElementById('entry-gate-page-done');
     const improve = document.getElementById('entry-gate-page-improve');
     if (done) done.disabled = true;
