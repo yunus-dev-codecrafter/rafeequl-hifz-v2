@@ -769,8 +769,8 @@ function rh_pg_ensure_task(PDO $pdo, int $userId, string $today): ?array
     $lockName = 'rh_pg_task_' . $userId . '_' . preg_replace('/\D/', '', $today);
     $locked = false;
     try {
-        $lock = $pdo->prepare('SELECT GET_LOCK(:name, 5)');
-        $lock->execute([':name' => $lockName]);
+        $lock = $pdo->prepare('SELECT GET_LOCK(?, 5)');
+        $lock->execute([$lockName]);
         $locked = (int) $lock->fetchColumn() === 1;
     } catch (Throwable $t) {
         $locked = false;
@@ -808,8 +808,8 @@ function rh_pg_ensure_task(PDO $pdo, int $userId, string $today): ?array
         // connection closes so a second request cannot miss the uncommitted row.
         if ($locked && !$pdo->inTransaction()) {
             try {
-                $release = $pdo->prepare('SELECT RELEASE_LOCK(:name)');
-                $release->execute([':name' => $lockName]);
+                $release = $pdo->prepare('SELECT RELEASE_LOCK(?)');
+                $release->execute([$lockName]);
             } catch (Throwable $t) {
                 // The lock is released automatically when the connection closes.
             }
