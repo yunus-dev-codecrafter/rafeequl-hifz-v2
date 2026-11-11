@@ -1347,7 +1347,7 @@ function renderDashboardUI() {
         const wordCount = Number(task.word_count) || 0;
         statusPill = task.is_completed
           ? `<span class="task-status done">${window.I18N ? I18N.t('task_status_done_today') : '✓ مكتمل اليوم'}</span>`
-          : `<span class="task-status">${window.I18N ? I18N.t('page_word_pill', { count: wordsDone, total: wordCount }) : `${wordsDone} / ${wordCount} كلمة`}</span>`;
+          : `<span class="task-status">${task.is_continuous ? (window.I18N ? I18N.t('task_status_continuous', 'تثبيت مستمر') : 'تثبيت مستمر') + ' • ' : ''}${window.I18N ? I18N.t('page_word_pill', { count: wordsDone, total: wordCount }) : `${wordsDone} / ${wordCount} كلمة`}</span>`;
 
         progressHtml = `
           <div class="progress-wrap">
@@ -1388,7 +1388,7 @@ function renderDashboardUI() {
     }
 
     return `
-      <a href="${meta.url}" class="task-card ${meta.cls} ${task && task.is_completed ? 'is-completed' : ''} ${isDisabled ? 'is-disabled' : ''}">
+      <a href="${meta.url}" class="task-card ${meta.cls} ${task && task.is_completed && !task.is_continuous ? 'is-completed' : ''} ${isDisabled ? 'is-disabled' : ''}">
         <div class="task-top">
           <div class="task-title-wrap">
             <span class="task-dot"></span>

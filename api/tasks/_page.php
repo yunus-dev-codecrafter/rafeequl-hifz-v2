@@ -485,14 +485,13 @@ function rh_pg_repoint_today_task(PDO $pdo, int $userId, string $today, int $pag
              SET `start_page` = :p_start, `end_page` = :p_end, `is_completed` = 0,
                  `completed_stations` = NULL
              WHERE `user_id` = :u AND `task_type` = 'PAGE_TAMKIN'
-               AND `task_date` = :d AND `is_completed` = 0
+               AND `is_completed` = 0
              ORDER BY `id` DESC LIMIT 1"
         );
         $stmt->execute([
             ':p_start' => $page,
             ':p_end'   => $page,
             ':u'       => $userId,
-            ':d'       => $today,
         ]);
     } catch (Throwable $t) {
         error_log('[PageRepoint] ' . $t->getMessage());
@@ -641,21 +640,32 @@ function rh_pg_clear_selections(PDO $pdo, int $userId, int $frontier): void
     }
 }
 
-/** @return array<string,mixed>|null */
-function rh_pg_find_today_task(PDO $pdo, int $userId, string $today): ?array
+/**
+ * Find the current active (uncompleted) consolidation task for the user.
+ * Consolidation is continuous and not bound to a daily lockout.
+ *
+ * @return array<string,mixed>|null
+ */
+function rh_pg_find_active_task(PDO $pdo, int $userId): ?array
 {
     try {
         $stmt = $pdo->prepare(
             "SELECT * FROM `daily_task_logs`
-             WHERE `user_id` = :u AND `task_type` = 'PAGE_TAMKIN' AND `task_date` = :d
-             ORDER BY `is_completed` ASC, `id` DESC LIMIT 1"
+             WHERE `user_id` = :u AND `task_type` = 'PAGE_TAMKIN' AND `is_completed` = 0
+             ORDER BY `id` DESC LIMIT 1"
         );
-        $stmt->execute([':u' => $userId, ':d' => $today]);
+        $stmt->execute([':u' => $userId]);
         $row = $stmt->fetch();
         return $row ?: null;
     } catch (Throwable $t) {
         return null;
     }
+}
+
+/** Backwards-compatibility alias: finds the active consolidation task. */
+function rh_pg_find_today_task(PDO $pdo, int $userId, string $today): ?array
+{
+    return rh_pg_find_active_task($pdo, $userId);
 }
 
 function rh_pg_find_task(PDO $pdo, int $userId, int $taskId): ?array
@@ -769,9 +779,9 @@ function rh_pg_ensure_task(PDO $pdo, int $userId, string $today): ?array
         return null;
     }
 
-    // The entry gate and a page controller can boot together. Serialise page
-    // task creation per user/day so two requests never create two rows.
-    $lockName = 'rh_pg_task_' . $userId . '_' . preg_replace('/\D/', '', $today);
+    // The entry gate and page controller can boot concurrently. Serialise task
+    // creation per user so concurrent requests never create duplicate rows.
+    $lockName = 'rh_pg_task_' . $userId;
     $locked = false;
     try {
         $lock = $pdo->prepare('SELECT GET_LOCK(?, 5)');
@@ -782,12 +792,22 @@ function rh_pg_ensure_task(PDO $pdo, int $userId, string $today): ?array
     }
 
     try {
-        $existing = rh_pg_find_today_task($pdo, $userId, $today);
+        $existing = rh_pg_find_active_task($pdo, $userId);
         if ($existing !== null) {
+            if ((string) ($existing['task_date'] ?? '') !== $today) {
+                try {
+                    $pdo->prepare('UPDATE `daily_task_logs` SET `task_date` = :d WHERE `id` = :id')
+                        ->execute([':d' => $today, ':id' => (int) $existing['id']]);
+                    $existing['task_date'] = $today;
+                } catch (Throwable $t) {}
+            }
             return $existing;
         }
 
         $ctx = rh_pg_user_context($pdo, $userId);
+        if ($ctx['frontier'] < 1) {
+            return null;
+        }
         $page = rh_pg_next_page($pdo, $userId, $ctx['frontier'], $today);
         if ($page === null) {
             return null;
@@ -892,12 +912,13 @@ function rh_pg_gate_payload(PDO $pdo, int $userId, string $today): array
     if (!rh_pg_schema_ready($pdo)) {
         return ['available' => false, 'reason' => 'SCHEMA'];
     }
+    $ctx = rh_pg_user_context($pdo, $userId);
+    if ($ctx['frontier'] < 1) {
+        return ['available' => false, 'reason' => 'NO_PAGES'];
+    }
     $task = rh_pg_ensure_task($pdo, $userId, $today);
     if ($task === null) {
         return ['available' => false, 'reason' => 'NO_PAGES'];
-    }
-    if ((bool) $task['is_completed']) {
-        return ['available' => false, 'reason' => 'DONE', 'completed' => true];
     }
     return [
         'available' => true,
@@ -1010,6 +1031,10 @@ function rh_pg_mark_result(PDO $pdo, int $userId, int $taskId, string $result, s
         if ($isDone) {
             $ctx = rh_pg_user_context($pdo, $userId);
             rh_pg_complete_finished_selections($pdo, $userId, $ctx['frontier']);
+        } else {
+            // If IMPROVE, reset word arrangement progress so the page can be retried fresh
+            $pdo->prepare('UPDATE `daily_task_logs` SET `completed_stations` = NULL WHERE `id` = :id')
+                ->execute([':id' => $taskId]);
         }
 
         $stmt = $pdo->prepare(

@@ -40,6 +40,9 @@
     recordedAudioUrl: null,
     recordedDuration: 0,
     recordingState: 'idle', // 'idle' | 'recording' | 'playback'
+    lastResult: null,
+    justCompletedPage: null,
+    nextTask: null,
   };
 
   function $(id) {
@@ -153,11 +156,17 @@
       state.chunkStart = 0;
       state.placed = [];
       state.bank = [];
+      state.lastResult = null;
+      state.justCompletedPage = null;
+      state.nextTask = null;
       stopAudio();
     }
 
     if (!state.task) {
       state.stage = 'inactive';
+      return;
+    }
+    if (state.stage === 'done') {
       return;
     }
     if (state.task.is_completed) {
@@ -919,16 +928,21 @@
     if (improveBtn) improveBtn.disabled = true;
 
     try {
+      const currentPage = Number(state.task.page_number) || Number(state.task.start_page) || 0;
       const data = await api('tasks/consolidation.php', {
         method: 'POST',
         body: { action: 'result', task_id: state.task.id, result },
       });
-      applyState(data, false);
-      if (state.task && state.task.is_completed) {
-        state.stage = 'done';
-      } else {
-        state.stage = 'done';
+      state.lastResult = result;
+      state.justCompletedPage = data.just_completed_page || currentPage;
+      state.nextTask = (data && data.task && data.task.id !== state.task.id) ? data.task : (result === 'DONE' ? data.task : null);
+      if (result === 'IMPROVE' && data.task) {
+        state.task = data.task;
       }
+      state.data = data;
+      if (Array.isArray(data.selections)) state.selections = data.selections;
+      if (data.targets) state.targets = data.targets;
+      state.stage = 'done';
       renderAll();
     } catch (e) {
       setStatus('recitation-status', e.message, true);
@@ -940,26 +954,91 @@
   }
 
   function renderDone() {
-    const task = state.task;
-    if (!task) return;
+    const isDone = state.lastResult === 'DONE' || (!state.lastResult && state.task && state.task.is_completed);
+    const completedPage = state.justCompletedPage || (state.task ? (state.task.page_number || state.task.start_page) : '');
     const title = $('done-title');
     const desc = $('done-desc');
     const icon = $('done-icon');
+    const nextBtn = $('btn-next-page');
+    const retryBtn = $('btn-retry-page');
     const practice = $('btn-practice-again');
-    const completed = !!task.is_completed;
 
     if (title) {
-      title.textContent = completed
-        ? t('page_done_title', 'بارك الله فيك، ثبّتت الصفحة')
-        : t('page_improve_title', 'تحتاج هذه الصفحة إلى تحسين');
+      title.textContent = isDone
+        ? (completedPage ? t('page_done_title_page', `بارك الله فيك، ثبّتت صفحة ${completedPage}`, { page: completedPage }) : t('page_done_title', 'بارك الله فيك، ثبّتت الصفحة'))
+        : (completedPage ? t('page_improve_title_page', `تحتاج صفحة ${completedPage} إلى مزيد من التثبيت`, { page: completedPage }) : t('page_improve_title', 'تحتاج هذه الصفحة إلى تحسين'));
     }
     if (desc) {
-      desc.textContent = completed
-        ? t('page_done_desc', 'ستظهر صفحة جديدة في الدخول القادم.')
-        : t('page_improve_desc', 'ستعود هذه الصفحة في الدخول القادم حتى تثبّتها.');
+      desc.textContent = isDone
+        ? t('page_done_desc_continuous', 'يمكنك الانتقال للصفحة التالية فورًا أو المتابعة لاحقًا.')
+        : t('page_improve_desc_continuous', 'ستستمر هذه الصفحة في التثبيت حتى تتقنها وتثبتها بإذن الله.');
     }
-    if (icon) icon.textContent = completed ? '✓' : '↻';
-    if (practice) practice.classList.toggle('hidden', completed);
+    if (icon) icon.textContent = isDone ? '✓' : '↻';
+
+    if (nextBtn) {
+      nextBtn.classList.toggle('hidden', !isDone);
+      const nextText = $('btn-next-page-text');
+      if (nextText) {
+        const nextPageNum = state.nextTask ? (state.nextTask.page_number || state.nextTask.start_page) : null;
+        nextText.textContent = nextPageNum
+          ? t('page_next_with_num', `الانتقال إلى الصفحة التالية (ص ${nextPageNum}) ←`, { page: nextPageNum })
+          : t('page_next_btn', 'الانتقال إلى الصفحة التالية ←');
+      }
+    }
+
+    if (retryBtn) {
+      retryBtn.classList.toggle('hidden', isDone);
+      const retryText = $('btn-retry-page-text');
+      if (retryText) {
+        retryText.textContent = completedPage
+          ? t('page_retry_with_num', `إعادة تثبيت صفحة ${completedPage} من ترتيب الكلمات ↻`, { page: completedPage })
+          : t('page_retry_btn', 'إعادة تثبيت هذه الصفحة ↻');
+      }
+    }
+
+    if (practice) {
+      practice.classList.toggle('hidden', !isDone);
+    }
+  }
+
+  function proceedToNextPage() {
+    if (state.busy) return;
+    if (state.nextTask) {
+      state.task = state.nextTask;
+      state.nextTask = null;
+      state.lastResult = null;
+      state.justCompletedPage = null;
+      cleanupRecording();
+      state.recordingState = 'idle';
+      state.revealed = false;
+      state.chunkStart = 0;
+      state.placed = [];
+      state.bank = [];
+      state.stage = 'arrangement';
+      resetChunk(true);
+      renderAll();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      window.location.reload();
+    }
+  }
+
+  function retryCurrentPage() {
+    if (state.busy) return;
+    state.lastResult = null;
+    cleanupRecording();
+    state.recordingState = 'idle';
+    state.revealed = false;
+    state.chunkStart = 0;
+    state.placed = [];
+    state.bank = [];
+    if (state.task) {
+      state.task.words_done = 0;
+    }
+    state.stage = 'arrangement';
+    resetChunk(true);
+    renderAll();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   async function practiceAgain() {
@@ -1104,6 +1183,10 @@
     if (done) done.addEventListener('click', () => markResult('DONE'));
     const improve = $('btn-page-improve');
     if (improve) improve.addEventListener('click', () => markResult('IMPROVE'));
+    const nextBtn = $('btn-next-page');
+    if (nextBtn) nextBtn.addEventListener('click', proceedToNextPage);
+    const retryBtn = $('btn-retry-page');
+    if (retryBtn) retryBtn.addEventListener('click', retryCurrentPage);
     const practice = $('btn-practice-again');
     if (practice) practice.addEventListener('click', practiceAgain);
 

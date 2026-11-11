@@ -12,12 +12,13 @@
    ========================================================================== */
 
 (function () {
-  const SESSION_KEY = 'rh_entry_gate_done_v5';
+  const SESSION_KEY = 'rh_entry_gate_done_v6';
   try {
     sessionStorage.removeItem('rh_entry_gate_done');
     sessionStorage.removeItem('rh_entry_gate_done_v2');
     sessionStorage.removeItem('rh_entry_gate_done_v3');
     sessionStorage.removeItem('rh_entry_gate_done_v4');
+    sessionStorage.removeItem('rh_entry_gate_done_v5');
   } catch (e) {}
   let alreadyDone = false;
   try { alreadyDone = sessionStorage.getItem(SESSION_KEY) === '1'; } catch (e) {}
@@ -591,8 +592,8 @@
             ? t('entry_gate_page_improve_title', 'سُجّلت الصفحة للمزيد من التثبيت')
             : t('entry_gate_page_done_title', 'أتممت تثبيت الصفحة'))}</strong>
           <p>${esc(improve
-            ? t('entry_gate_page_improve_desc', 'ستعود هذه الصفحة في الدخول القادم حتى تثبّتها.')
-            : t('entry_gate_page_done_desc', 'ستظهر صفحة جديدة في الدخول القادم.'))}</p>
+            ? t('entry_gate_page_improve_desc', 'ستستمر هذه الصفحة في التثبيت حتى تتقنها وتثبتها بإذن الله.')
+            : t('entry_gate_page_done_desc', 'أحسنت! يمكنك تثبيت المزيد من الصفحات في أي وقت من دفتر المهام.'))}</p>
         </div>
       </div>
       <div class="entry-gate-actions">

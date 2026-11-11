@@ -177,9 +177,7 @@ function formatTask(array $row, string $today, ?PDO $pdo = null, int $userId = 0
         $payload = ($pdo !== null) ? rh_pg_task_payload($pdo, $row, true) : [];
         $wordCount = (int) ($payload['word_count'] ?? 0);
         $wordsDone = (int) ($payload['words_done'] ?? 0);
-        $percent = $isCompleted
-            ? 100
-            : ($wordCount > 0 ? (int) round(($wordsDone / $wordCount) * 100) : 0);
+        $percent = $wordCount > 0 ? (int) round(($wordsDone / $wordCount) * 100) : 0;
 
         return [
             'id'                 => isset($row['id']) ? (int) $row['id'] : null,
@@ -189,11 +187,12 @@ function formatTask(array $row, string $today, ?PDO $pdo = null, int $userId = 0
             'start_page'         => $start,
             'end_page'           => $end,
             'task_date'          => (string) $row['task_date'],
-            'is_completed'       => $isCompleted,
+            'is_completed'       => false,
+            'is_continuous'      => true,
             'completed_pages'    => $isCompleted && $start !== null ? [$start] : [],
             'completed_count'    => $isCompleted ? 1 : 0,
             'total_pages'        => 1,
-            'progress_percent'   => $isCompleted ? 100 : min(100, $percent),
+            'progress_percent'   => min(100, $percent),
             'carried_over'       => false,
             'rollover_count'     => 0,
             'last_rollover_date' => null,

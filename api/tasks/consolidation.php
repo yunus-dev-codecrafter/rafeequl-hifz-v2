@@ -110,11 +110,30 @@ try {
             if (!in_array($result, ['DONE', 'IMPROVE'], true)) {
                 json_out(400, ['success' => false, 'error' => 'Result must be DONE or IMPROVE.']);
             }
+            $taskBefore = rh_pg_find_task($pdo, $userId, $taskId);
+            $completedPage = $taskBefore ? (int) $taskBefore['start_page'] : null;
+
             $progress = rh_pg_mark_result($pdo, $userId, $taskId, $result, $today);
             if ($progress === null) {
                 json_out(404, ['success' => false, 'error' => 'Task not found.']);
             }
-            json_out(200, array_merge(rh_pg_state($pdo, $userId, $today, $taskId), ['progress' => $progress]));
+
+            // Continuous advance:
+            // When DONE, ensure and return the next active task.
+            // When IMPROVE, return the current task which remains active for further practice.
+            $nextTask = null;
+            if ($result === 'DONE') {
+                $nextTask = rh_pg_ensure_task($pdo, $userId, $today);
+            } else {
+                $nextTask = rh_pg_find_task($pdo, $userId, $taskId);
+            }
+
+            $state = rh_pg_state($pdo, $userId, $today, $nextTask ? (int) $nextTask['id'] : null);
+            json_out(200, array_merge($state, [
+                'progress'            => $progress,
+                'just_completed_page' => $completedPage,
+                'result'              => $result,
+            ]));
         }
 
         json_out(400, ['success' => false, 'error' => 'Unknown action.']);

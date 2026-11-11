@@ -278,8 +278,14 @@
           <p id="done-desc" data-i18n="page_done_desc">ستظهر صفحة جديدة في الدخول القادم.</p>
         </div>
         <div class="consolidation-actions">
-          <a href="dashboard.html" class="btn btn-primary" data-i18n="back_to_home">العودة للرئيسية</a>
+          <button type="button" class="btn btn-primary" id="btn-next-page">
+            <span id="btn-next-page-text" data-i18n="page_next_btn">الانتقال إلى الصفحة التالية ←</span>
+          </button>
+          <button type="button" class="btn btn-primary hidden" id="btn-retry-page">
+            <span id="btn-retry-page-text" data-i18n="page_retry_btn">إعادة تثبيت هذه الصفحة ↻</span>
+          </button>
           <button type="button" class="btn btn-ghost" id="btn-practice-again" data-i18n="page_practice_again">إعادة الترتيب والاستماع</button>
+          <a href="dashboard.html" class="btn btn-ghost" data-i18n="back_to_home">العودة للرئيسية</a>
         </div>
       </section>
     </div>
