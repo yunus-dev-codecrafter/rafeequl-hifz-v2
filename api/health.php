@@ -38,6 +38,8 @@ $required = [
     'rub_results' => ['id', 'session_id', 'user_id', 'exercise', 'item_id', 'status', 'is_correct'],
     'rub_verse_stats' => ['id', 'user_id', 'rub_id', 'verse_key', 'due_at', 'streak'],
     'rub_word_misses' => ['id', 'user_id', 'rub_id', 'verse_key', 'word_index', 'miss_count'],
+    'consolidation_selections' => ['id', 'user_id', 'target_type', 'target_id', 'status'],
+    'consolidation_pages' => ['id', 'user_id', 'page_number', 'source', 'status', 'last_result', 'attempts'],
 ];
 
 $missing = [];

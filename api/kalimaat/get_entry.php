@@ -12,6 +12,7 @@ declare(strict_types=1);
 require __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../config/auth.php';
 require_once __DIR__ . '/_catalog.php';
+require_once __DIR__ . '/../tasks/_page.php';
 
 try {
     $authUser = rh_require_login($pdo);
@@ -75,6 +76,19 @@ try {
 
     $mustChange = (bool) ($authUser['must_change_password'] ?? false);
 
+    $consolidation = [
+        'available' => false,
+        'reason'    => 'DISABLED',
+    ];
+    if (!$mustChange) {
+        try {
+            $consolidation = rh_pg_gate_payload($pdo, $userId, date('Y-m-d'));
+        } catch (Throwable $e) {
+            error_log('[Page gate get_entry] ' . $e->getMessage());
+            $consolidation = ['available' => false, 'reason' => 'ERROR'];
+        }
+    }
+
     $kalimaat = [
         'available' => !$mustChange && $catalogOk && $locked !== null,
         'catalog_ok' => $catalogOk,
@@ -102,6 +116,7 @@ try {
         'zone' => $zone,
         'kalimaat' => $kalimaat,
         'mistake' => $mistake,
+        'consolidation' => $consolidation,
         'time' => date('c'),
     ]);
 } catch (Throwable $e) {

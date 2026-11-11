@@ -51,13 +51,13 @@ location ~ ^/(config|api/data)/ { deny all; return 404; }
 
 ## Upgrading an existing database
 
-The current release needs **migration v12**. It runs v7–v11 first, then:
+The current release needs **migration v14**. It runs v7–v13 first, then:
 
-- creates `rub_sessions`, `rub_results`, `rub_verse_stats`, and
-  `rub_word_misses` for the five-exercise Rub' consolidation session;
-- keeps the existing `RUB_TAMKIN` task, rub' catalog, arrangement progress and
-  `rub_history` intact. The legacy one-verse arrangement page remains available
-  as **Free practice**.
+- adds `PAGE_TAMKIN` to the task and mistake-source enums;
+- creates `consolidation_selections` and `consolidation_pages` for the
+  page-by-page consolidation queue and per-page history;
+- leaves the legacy Rub' tables and data untouched for safety, while runtime code
+  stops using them.
 
 Migration v11 creates the legacy `waqf_flags` table and the
 `users.gate_waqf_*` columns. They are kept for compatibility and existing data,
@@ -91,11 +91,12 @@ install: re-upload `setup.php`, delete `config/installed.lock`, create
 
 The migration is additive and idempotent except for the intentional cleanup of
 old archived mistake rows. If you are upgrading from v1, run `migrate_v2.php`
-through `migrate_v6.php` first (CLI, or temporary web access), then run v12.
+through `migrate_v6.php` first (CLI, or temporary web access), then run v14.
 `config/` is denied over HTTP by `config/.htaccess`; `migrate.php` is the
 supported browser entry point and is protected by admin login and CSRF.
-The remaining waqf table/columns are never read by the app; no new migration is
-needed for the Rub' word-arrangement update. Local device data is not deleted.
+The remaining waqf table/columns are never read by the app. Local device data is
+not deleted; the page-consolidation queue starts empty and fills as the user
+selects weak targets or lets the server pick pages.
 
 ## Rollover counting
 
@@ -401,13 +402,10 @@ a direct bookmark cannot bypass it. It opens **once per browser app session**
    recitations count; 10 are required per entry (or the remainder before 40). The
    card is **deleted automatically at 40/40**. If a legacy transition card has no
    stored next-ayah reference, the client derives it from the Quran text.
-The gate has only these **two** steps. The old flagged-waqf third step and its
-API were removed; the `waqf_flags` table and `users.gate_waqf_*` columns are
-retained only for existing data and are no longer read.
-
-The Rub' page keeps a compact **دليل علامات الوقف** legend so the user still
-learns the stop signs while reciting, but verses are no longer split into waqf
-stations and no station can be flagged.
+The gate has **three** steps in this order: page consolidation, word meanings,
+then one mistake card. The old flagged-waqf step and its API were removed; the
+`waqf_flags` table and `users.gate_waqf_*` columns are retained only for existing
+data and are no longer read.
 
 The gate is sequential, cannot be dismissed by clicking the backdrop, and fails
 open if the API or catalog is unavailable. If the user must change their
@@ -543,107 +541,59 @@ php config/verify_mushaf.php       # page map, text bundle and metadata checks
 table; `rub` is the absolute rub' al-hizb (1–240), converted from the
 `rub_el_hizb` 1–4 field in `api/data/madinah_pages.json`.
 
-## Rub' consolidation — تثبيت الربع (v6)
+## Page-by-page consolidation — تثبيت الصفحة (v14)
 
-One random **rub' al-hizb** (ربع) per day, drawn from the pages the user has
-already consolidated (`last_tikrar_page`; `COMPLETE` accounts draw from all
-240). The same rub' is kept for the whole day, rolls over if unfinished, and
-does not repeat until the eligible pool has been used once.
+Consolidation is now **one whole Madinah page per entry**, not a rub' and not a
+verse-by-verse drill. A page is chosen from the pages the user has already
+memorised (طرف الحفظ from `last_tikrar_page`; a `COMPLETE` account draws from
+all 604 pages).
 
-- Consolidation is **verse by verse**. The page shows an ayah rail (completed
-  verses get a check mark) and one compact stage at a time, which keeps mobile
-  scrolling short.
-- For each verse, its words are shuffled with **three decoy words sampled from
-  the whole Qur'an**. The user taps the words in order to rebuild the verse.
-- A wrong tap only shakes that word: nothing already placed is removed, and the
-  board is never re-scattered or restarted automatically. A wrong word can be
-  fixed by tapping any placed word (removes it and everything after it) or with
-  the undo/reset controls. Decoys are deterministic per verse, so a reload shows
-  the same board.
-- Progress is the count of completed verses, stored as a JSON key list
-  (`"surah:ayah"`) in the existing task row column (`completed_stations`) so
-  retries are idempotent and no schema migration is needed. Old station keys are
-  ignored. The page also keeps a per-task local copy and an offline queue; the
-  latest state wins.
-- The exact 240 boundaries come from Quran.com's `rub_el_hizb_number` field,
-  cross-checked against the app's own page map. `verify_rub.php` asserts all
-  6,236 verses are covered exactly once and that word tokens and decoys are
-  valid.
-- Every verse has a collapsible tafsir from **Al-Mukhtasar fi al-Tafsir**
-  (المختصر في التفسير). Arabic is shown in the Arabic interface and English in
-  the English interface, with a graceful fallback if one language is missing.
-  The tafsir is split into 240 small per-rub' files so a recitation request
-  never has to parse a multi-megabyte Quran-wide bundle.
+- **Weak targets are queued.** The user can select a surah, a rub' or a single
+  page. Selected targets are processed in selection order, page by page. If no
+  target exists, the server picks a random eligible page, preferring pages that
+  have not been consolidated in the last 30 days.
+- **The entry gate shows the page first.** It displays the first few words of the
+  page, asks the user to recite from memory, then reveals the page and plays the
+  recitation. The user marks **تم، ثبّتها** (DONE) or **أحتاج تحسينًا** (IMPROVE).
+  The gate then continues to word meanings and the mistake card, in that order.
+- **The in-app page has one exercise.** The user arranges the whole page in
+  10-word sliding windows across verse boundaries. Completed windows stay fixed;
+  a wrong tap never removes the correct order. The page then moves to recitation,
+  reveal + listening, and the same DONE / IMPROVE result.
+- **DONE advances; IMPROVE repeats.** A DONE page is not shown again immediately;
+  a new page appears on the next entry. An IMPROVE page stays pending and is the
+  next page again, even on the next day, until it is marked DONE. There is no
+  task-level rollover counter for consolidation.
+- **Audio** uses EveryAyah's Alafasy 128 kbps files
+  (`https://everyayah.com/data/Alafasy_128kbps/SSSAAA.mp3`), played one ayah at a
+  time, with the current ayah highlighted.
 
-### Five-exercise consolidation session (v12)
+### Storage and endpoints
 
-The Rub' page now opens on a **جلسة التثبيت** tab. The legacy one-verse
-arrangement board is still available as **الترتيب الحر** (Free practice), with
-its progress untouched.
+Migration v14 creates:
 
-- **Five exercises**: word arrangement, missing words, continue the ayah,
-  similar ayat (mutashabihat), and progressive disappearing ayat. The session
-  draws 4 / 6 / 8 or all verses per exercise and supports beginner,
-  intermediate, and advanced difficulty. Weak and due verses are prioritised.
-- **First-attempt accuracy** is recorded for every item. Retries are allowed for
-  practice but never overwrite the first result. The server is idempotent: an
-  existing `ANSWERED` result wins; a `SKIPPED` or `BOUNDARY_SKIPPED` result can be
-  replaced by a real answer later.
-- **Exercise 4 uses curated data only** (`web/data/mutashabihat_curated.json`)
-  and four non-trivial modes: continuation, rub membership, context before, and
-  context after. Outside-rub twins are opt-in (default on) and labelled
-  `خارج الربع` only after answering. If no verified pair exists, the stage is
-  skipped with a clear empty state; the app never invents a comparison.
-- **Exercise 5 is self-reported** (`أتقنتها` / `أحتاج مراجعة`). Hiding words never
-  marks a verse as memorised automatically.
-- **Progress is private and resumable**: `rub_sessions`, `rub_results`,
-  `rub_verse_stats`, and `rub_word_misses` store the plan, first-attempt results,
-  weak words/ayat, and simple spaced-repetition due dates per user. The client
-  also keeps a local cache and retry queue for offline use.
-- Finishing a started session completes the existing `RUB_TAMKIN` task. If no
-  session was started, the original all-verses arrangement rule still completes
-  it. The summary shows accuracy, time, per-exercise results, mistake review,
-  weak items, history, and a repeat-weak-exercises action.
+| Table | Purpose |
+| --- | --- |
+| `consolidation_selections` | queued weak surah / rub' / page targets |
+| `consolidation_pages` | per-user page status, attempts, last result and rotation history |
 
-### Optional full-rub' microphone self-test (v19)
-
-After (or alongside) the word-arrangement flow, the user can recite the whole
-rub' aloud and watch the Uthmani text appear word by word. The text is hidden by
-default; a word is revealed **only after the recogniser hears it**, so a mistake
-leaves the page blank at that point instead of exposing the answer. The mic test
-is optional and never changes verse completion or server progress.
-
-- Browser `SpeechRecognition` / `webkitSpeechRecognition` (Chrome on Android) is
-  used directly; no audio is uploaded to our server and no schema changes are
-  needed.
-- It requires HTTPS and an internet connection. If the API is unavailable, the
-  page shows a clear note and the normal rub' page keeps working.
-- The aligner normalises the Uthmani rasm (الصلاة/الصلوة، الملائكة/الملئكة، …)
-  and tolerates a small edit distance, plus merged words such as «يا أيها».
-  A skipped word stays hidden and is counted as one stall; it is not revealed.
-- Attempt progress is saved locally per task (`hifz-rub-speech-progress-v1-*`,
-  `hifz-rub-speech-result-v1-*`) so the user can resume after closing the tab.
-  The intent is a private, client-side recall aid, not a tajweed grader.
+The legacy rub' tables (`rub_history`, `rub_sessions`, `rub_results`,
+`rub_verse_stats`, `rub_word_misses`) are kept untouched for historical data,
+but runtime code no longer uses them.
 
 | File | Purpose |
 | --- | --- |
-| `api/data/rub_quarters.json` | committed catalog: boundaries, pages, verse counts |
-| `api/data/tafsir/*.json` | committed per-rub' Mukhtasar tafsir (Arabic + English) |
-| `api/tasks/_rub.php` | catalog/tafsir loaders, verse-word splitter, decoy sampler, fair picker, history |
-| `api/tasks/get_rub_verses.php` | verses + words + decoys + tafsir for one task/rub' |
-| `api/tasks/update_rub.php` | idempotent verse-key progress + completion |
-| `api/tasks/_hifz.php` | HIFZ progress validation, completion check, 20-repeat/20-pair targets |
-| `api/tasks/update_hifz_progress.php` | debounced per-verse progress save (never completes a page) |
-| `web/js/hifz.js` | 20× verse counter, adjacent-pair recitation, page pass, local resume |
-| `web/rub.html`, `web/js/rub.js` | verse rail + word-arrangement board, local state, offline queue |
-| `web/js/rub-recitation.js` | optional mic self-test: normaliser, aligner, Web Speech, overlay UI |
-| `config/build_rub_quarters.php` | rebuilds the catalog (one-off, cached downloads) |
-| `config/build_rub_tafsir.php` | rebuilds the per-rub' tafsir bundle |
-| `config/verify_rub.php` | catalog, verse-word and decoy regression checks |
+| `api/tasks/_page.php` | page text/words, target queues, task creation, DONE/IMPROVE state |
+| `api/tasks/consolidation.php` | GET state and POST select / unselect / clear / save_progress / result |
+| `api/tasks/get_daily_tasks.php` | returns one `PAGE_TAMKIN` card for the day |
+| `api/kalimaat/get_entry.php` | returns the page-consolidation payload as the first gate step |
+| `web/consolidation.html` | in-app page markup |
+| `web/js/consolidation.js` | arrangement, recitation, audio, targets and result controller |
+| `web/css/consolidation.css` | page styles |
+| `web/js/entry-gate.js` | gate step: first words → recitation → reveal/listen → result |
 
-The mobile navigation is now five tabs — الرئيسية / الحفظ / المراجعة / البطاقات /
-المزيد — where **المزيد** opens a bottom sheet with تكرار الأمس، الربط، المراجعة،
-تثبيت الربع and السجل. The shared markup lives in `web/js/nav.js`.
+The mobile navigation now includes **تثبيت الصفحة** in the **المزيد** sheet
+instead of **تثبيت الربع**. The shared markup lives in `web/js/nav.js`.
 
 ## Focus mode & sticky actions
 
@@ -787,11 +737,11 @@ active super admin cannot be suspended or demoted.
 
 ### Deploy order
 
-1. Upload `config/` (including `.htaccess`, `database.example.php`, `migrate_v12.php`, `migrate_v11.php`, `migrate_v10.php`, `migrate_v9.php`, `migrate_v8.php`, and `migrate_v7.php`), `migrate.php`, `setup.php`, `api/` (the `api/waqf/` folder is gone) and the changed `web/` files (including `web/data/kalimaat/`, `web/data/mutashabihat_curated.json`, `web/js/entry-gate.js`, `web/js/rub.js`, `web/js/rub-session.js`, `web/js/rub-exercises.js`, `web/css/rub-session.css`, and `web/js/kalimaat.js`). For the Mushaf reader also upload `web/mushaf.html`, `web/css/mushaf.css`, `web/js/mushaf.js`, and `web/data/mushaf_meta.json`; no migration is required for it.
+1. Upload `config/` (including `.htaccess`, `database.example.php`, `migrate_v14.php` through `migrate_v7.php`), `migrate.php`, `setup.php`, `api/` (the `api/waqf/` folder is gone) and the changed `web/` files (including `web/consolidation.html`, `web/js/consolidation.js`, `web/css/consolidation.css`, `web/js/entry-gate.js`, `web/js/app.js`, `web/js/review.js`, `web/js/nav.js`, `web/data/kalimaat/`, `web/data/mutashabihat_curated.json`, and `web/js/kalimaat.js`). Remove the retired `web/rub.html`, `web/js/rub*.js`, and `web/css/rub-session.css` files from the server. For the Mushaf reader also upload `web/mushaf.html`, `web/css/mushaf.css`, `web/js/mushaf.js`, and `web/data/mushaf_meta.json`; no migration is required for it.
 2. Upload `config/database.local.php` separately with the current credentials if you deploy over FTP (it is intentionally ignored by git). If you deploy through git and that file is absent, the app cannot connect until you run `setup.php`; use the wizard to write it, or set `DB_*` environment variables.
-3. Sign in as an administrator and open `https://your-host/migrate.php`, then press **تشغيل ترقية v12 الآن**. For a fresh install, use `setup.php` instead.
-4. The migration runner applies v12 (including v7-v11) and leaves `config/installed.lock` untouched. `setup.php` remains locked. Existing `ARCHIVED` mistake rows are purged intentionally.
-5. Open `api/health.php` (expect 200, `"schema_ok": true`, `"tafsir_ok": true`, and `"kalimaat_ok": true`), hard-refresh `web/index.html`, and confirm the new service worker cache (`rafeequl-hifz-v29`) is active.
+3. Sign in as an administrator and open `https://your-host/migrate.php`, then press **تشغيل ترقية v14 الآن**. For a fresh install, use `setup.php` instead.
+4. The migration runner applies v14 (including v7-v13) and leaves `config/installed.lock` untouched. `setup.php` remains locked. Existing `ARCHIVED` mistake rows are purged intentionally.
+5. Open `api/health.php` (expect 200, `"schema_ok": true`, `"tafsir_ok": true`, and `"kalimaat_ok": true`), hard-refresh `web/index.html`, and confirm the new service worker cache (`rafeequl-hifz-v32`) is active.
 
 > Back up the database before step 3 on a live site. The migration is additive
 > except for the intentional purge of completed mistake rows, but a backup is

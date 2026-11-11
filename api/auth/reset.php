@@ -52,9 +52,21 @@ try {
     $stmt = $pdo->prepare("DELETE FROM `daily_task_logs` WHERE `user_id` = :u");
     $stmt->execute([':u' => $userId]);
 
-    // 2b. Clear the rub' rotation history (table may not exist on old installs)
+    // 2b. Clear legacy rub' history (tables may not exist on old installs).
+    foreach (['rub_results', 'rub_sessions', 'rub_verse_stats', 'rub_word_misses', 'rub_history'] as $legacyRubTable) {
+        try {
+            $stmt = $pdo->prepare("DELETE FROM `$legacyRubTable` WHERE `user_id` = :u");
+            $stmt->execute([':u' => $userId]);
+        } catch (Throwable $t) {}
+    }
+
+    // 2b-2. Clear page-consolidation queue and selections (v14+)
     try {
-        $stmt = $pdo->prepare("DELETE FROM `rub_history` WHERE `user_id` = :u");
+        $stmt = $pdo->prepare("DELETE FROM `consolidation_pages` WHERE `user_id` = :u");
+        $stmt->execute([':u' => $userId]);
+    } catch (Throwable $t) {}
+    try {
+        $stmt = $pdo->prepare("DELETE FROM `consolidation_selections` WHERE `user_id` = :u");
         $stmt->execute([':u' => $userId]);
     } catch (Throwable $t) {}
 

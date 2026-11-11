@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0f766e">
+  <script src="js/pwa-manifest.js"></script>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="رفيق الحفظ">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <title>تثبيت الصفحة — رفيق الحفظ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Amiri+Quran&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/kalimaat.css">
+  <link rel="stylesheet" href="css/consolidation.css">
+  <script src="js/i18n.js"></script>
+</head>
+<body data-task-type="PAGE_TAMKIN">
+
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="header-nav-title">
+        <a href="dashboard.html" class="back-link" title="العودة لدفتر اليوم" data-i18n-title="back_to_dashboard">
+          <span>←</span>
+          <span data-i18n="back_to_tasks">العودة للمهام</span>
+        </a>
+        <span class="greeting" id="page-task-badge">🟢 <span data-i18n="task_page_title">تثبيت الصفحة</span></span>
+      </div>
+
+      <div class="header-actions">
+        <button type="button" id="btn-install-app" class="header-action-btn install-app-btn hidden" title="تثبيت التطبيق على هاتفك" aria-label="تثبيت التطبيق على هاتفك" data-i18n-title="install_app_title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          <span class="install-btn-text" data-i18n="install_app_btn">📲 تثبيت التطبيق</span>
+        </button>
+
+        <button type="button" class="lang-toggle-btn header-action-btn" title="English / العربية" aria-label="تبديل اللغة">
+          <span class="lang-code-text">EN</span>
+        </button>
+
+        <button type="button" class="wakelock-toggle-btn header-action-btn" data-wakelock="on" title="إبقاء الشاشة مضاءة">
+          <svg class="icon-wakelock-on" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+            <line x1="8" y1="21" x2="16" y2="21"></line>
+            <line x1="12" y1="17" x2="12" y2="21"></line>
+            <circle cx="12" cy="10" r="2.5" fill="currentColor"></circle>
+          </svg>
+          <svg class="icon-wakelock-off" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+            <line x1="8" y1="21" x2="16" y2="21"></line>
+            <line x1="12" y1="17" x2="12" y2="21"></line>
+            <line x1="2" y1="2" x2="22" y2="22" stroke-width="2.2"></line>
+          </svg>
+        </button>
+
+        <button type="button" class="theme-toggle-btn header-action-btn" title="تبديل المظهر">
+          <svg class="icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="4.5" fill="currentColor"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+          <svg class="icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+        </button>
+
+        <button type="button" class="sound-toggle-btn header-action-btn" data-sound="on" title="المؤثرات الصوتية" aria-label="المؤثرات الصوتية">
+          <svg class="icon-sound-on" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+          </svg>
+          <svg class="icon-sound-off" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <line x1="23" y1="9" x2="17" y2="15"></line>
+            <line x1="17" y1="9" x2="23" y2="15"></line>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container consolidation-container">
+    <div id="consolidation-loading" class="consolidation-loading">
+      <div class="consolidation-spinner" aria-hidden="true"></div>
+      <p data-i18n="page_loading">جاري تجهيز صفحة اليوم…</p>
+    </div>
+
+    <div id="consolidation-inactive" class="hidden">
+      <div class="task-page-head consolidation-empty">
+        <div class="consolidation-empty-icon" aria-hidden="true">📄</div>
+        <h2 data-i18n="page_inactive_head">لا توجد صفحة تثبيت اليوم</h2>
+        <p class="hint" data-i18n="page_inactive_desc">أكمل صفحة حفظ جديدة وثبّتها في تكرار الأمس، لتصبح لديك صفحات قابلة للتثبيت.</p>
+        <div class="consolidation-empty-actions">
+          <a href="dashboard.html" class="btn btn-primary" data-i18n="back_to_home">العودة للرئيسية</a>
+          <a href="hifz.html" class="btn btn-ghost" data-i18n="card_hifz_title">الحفظ الجديد</a>
+        </div>
+      </div>
+    </div>
+
+    <div id="consolidation-root" class="hidden">
+      <section class="consolidation-hero">
+        <div class="consolidation-hero-main">
+          <div class="consolidation-eyebrow" id="consolidation-source">صفحة اليوم للتثبيت</div>
+          <h1 class="consolidation-title" id="consolidation-page-title">صفحة —</h1>
+          <div class="consolidation-refs" id="consolidation-refs"></div>
+        </div>
+        <div class="consolidation-ring" id="consolidation-ring" role="img" aria-label="نسبة الإنجاز">
+          <svg viewBox="0 0 44 44" aria-hidden="true">
+            <circle class="consolidation-ring-bg" cx="22" cy="22" r="18"></circle>
+            <circle class="consolidation-ring-fg" id="consolidation-ring-fg" cx="22" cy="22" r="18"></circle>
+          </svg>
+          <strong id="consolidation-percent">0%</strong>
+        </div>
+      </section>
+
+      <div class="consolidation-meta">
+        <span class="consolidation-chip" id="consolidation-status-chip"></span>
+        <span class="consolidation-chip" id="consolidation-selection-chip"></span>
+        <span class="consolidation-chip" id="consolidation-attempt-chip"></span>
+      </div>
+
+      <section class="consolidation-targets">
+        <div class="consolidation-section-head">
+          <div>
+            <h2 data-i18n="page_targets_title">أهداف التثبيت</h2>
+            <p class="hint" data-i18n="page_targets_hint">اختر سورة أو ربعًا أو صفحة ضعيفة. ستُثبَّت صفحة واحدة في كل دخول، بالترتيب.</p>
+          </div>
+          <button type="button" class="btn btn-ghost consolidation-small-btn" id="btn-toggle-targets" aria-expanded="false">
+            <span data-i18n="page_targets_choose">اختيار هدف</span>
+          </button>
+        </div>
+
+        <div id="active-selections" class="consolidation-selections"></div>
+
+        <div id="targets-panel" class="consolidation-target-panel hidden">
+          <div class="consolidation-tabs" role="tablist">
+            <button type="button" class="consolidation-tab is-active" data-target-tab="SURAH" role="tab" data-i18n="page_tab_surah">سورة</button>
+            <button type="button" class="consolidation-tab" data-target-tab="RUB" role="tab" data-i18n="page_tab_rub">ربع</button>
+            <button type="button" class="consolidation-tab" data-target-tab="PAGE" role="tab" data-i18n="page_tab_page">صفحة</button>
+          </div>
+          <div id="target-list" class="consolidation-target-list"></div>
+          <div id="target-page-picker" class="consolidation-page-picker hidden">
+            <label for="target-page-input" data-i18n="page_pick_number">رقم الصفحة</label>
+            <div class="consolidation-page-picker-row">
+              <input id="target-page-input" type="number" min="1" inputmode="numeric" placeholder="1">
+              <button type="button" class="btn btn-primary" id="btn-add-page" data-i18n="page_add_target">إضافة</button>
+            </div>
+            <p class="hint" id="target-page-hint"></p>
+          </div>
+          <p class="hint consolidation-target-note" data-i18n="page_targets_note">تُعرض فقط الصفحات التي وصلت إلى تكرار الأمس. يمكنك إزالة أي هدف في أي وقت.</p>
+        </div>
+      </section>
+
+      <section class="consolidation-steps" aria-label="مراحل التثبيت">
+        <div class="consolidation-step is-active" data-stage-chip="arrangement"><span>١</span><em data-i18n="page_step_arrangement">ترتيب كلمات الصفحة</em></div>
+        <div class="consolidation-step" data-stage-chip="recitation"><span>٢</span><em data-i18n="page_step_recitation">تسميع الصفحة</em></div>
+        <div class="consolidation-step" data-stage-chip="done"><span>٣</span><em data-i18n="page_step_result">النتيجة</em></div>
+      </section>
+
+      <section id="stage-arrangement" class="consolidation-stage">
+        <div class="consolidation-stage-head">
+          <div>
+            <h2 data-i18n="page_arrangement_title">رتّب كلمات الصفحة</h2>
+            <p class="hint" data-i18n="page_arrangement_hint">رتّب عشر كلمات متتالية من الصفحة. الكلمات المكتملة تُثبَّت، والكلمة الخاطئة لا تُفقد الترتيب الصحيح.</p>
+          </div>
+        </div>
+        <div class="consolidation-progress-line">
+          <span id="arrangement-range">الكلمات 1–10</span>
+          <strong id="arrangement-percent">0%</strong>
+        </div>
+        <div class="consolidation-progress"><span id="arrangement-progress-bar"></span></div>
+        <div class="consolidation-context" id="arrangement-context" dir="rtl"></div>
+        <div class="consolidation-answer" id="arrangement-answer" dir="rtl" aria-live="polite"></div>
+        <div class="consolidation-bank" id="arrangement-bank" dir="rtl"></div>
+        <div class="consolidation-actions">
+          <button type="button" class="btn btn-ghost" id="btn-arrangement-undo" data-i18n="page_undo_word">تراجع عن كلمة</button>
+          <button type="button" class="btn btn-ghost" id="btn-arrangement-reset" data-i18n="page_reset_chunk">إعادة ترتيب المقطع</button>
+        </div>
+        <p class="hint" id="arrangement-status" role="status"></p>
+      </section>
+
+      <section id="stage-recitation" class="consolidation-stage hidden">
+        <div class="consolidation-stage-head">
+          <div>
+            <h2 data-i18n="page_recitation_title">سمّع الصفحة من حفظك</h2>
+            <p class="hint" data-i18n="page_recitation_hint">ابدأ من الكلمات الظاهرة، ثم أظهر الصفحة واستمع إليها وأنت تنظر في المصحف.</p>
+          </div>
+        </div>
+        <div class="consolidation-prompt">
+          <span class="consolidation-prompt-label" data-i18n="page_start_from">ابدأ من هنا</span>
+          <div class="consolidation-prompt-words" id="recitation-intro" dir="rtl"></div>
+        </div>
+        <div class="consolidation-actions">
+          <button type="button" class="btn btn-primary" id="btn-reveal-page" data-i18n="page_reveal_listen">أظهر الصفحة واستمع</button>
+          <button type="button" class="btn btn-ghost hidden" id="btn-stop-audio" data-i18n="page_stop_audio">إيقاف الاستماع</button>
+        </div>
+        <div id="recitation-page" class="consolidation-page-text hidden" dir="rtl"></div>
+        <div id="recitation-result-actions" class="consolidation-result-actions hidden">
+          <button type="button" class="btn btn-success" id="btn-page-done" data-i18n="page_result_done">تم، ثبّتها</button>
+          <button type="button" class="btn btn-ghost" id="btn-page-improve" data-i18n="page_result_improve">أحتاج تحسينًا</button>
+        </div>
+        <p class="hint" id="recitation-status" role="status"></p>
+      </section>
+
+      <section id="stage-done" class="consolidation-stage hidden">
+        <div class="consolidation-success" role="status">
+          <div class="consolidation-success-icon" id="done-icon" aria-hidden="true">✓</div>
+          <h2 id="done-title" data-i18n="page_done_title">بارك الله فيك، ثبّتت الصفحة</h2>
+          <p id="done-desc" data-i18n="page_done_desc">ستظهر صفحة جديدة في الدخول القادم.</p>
+        </div>
+        <div class="consolidation-actions">
+          <a href="dashboard.html" class="btn btn-primary" data-i18n="back_to_home">العودة للرئيسية</a>
+          <button type="button" class="btn btn-ghost" id="btn-practice-again" data-i18n="page_practice_again">إعادة الترتيب والاستماع</button>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script src="js/app.js"></script>
+  <script src="js/consolidation.js"></script>
+  <script src="js/nav.js"></script>
+  <script src="js/entry-gate.js"></script>
+</body>
+</html>

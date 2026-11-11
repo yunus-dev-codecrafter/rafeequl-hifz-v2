@@ -108,10 +108,10 @@ try {
         $count = is_array($decoded['rubs'] ?? null) ? count($decoded['rubs']) : 0;
         $log('- rub catalog: ' . $count . ' rub\'s.');
         if ($count !== 240) {
-            $log('! expected 240 rub\'s; run config/build_rub_quarters.php.');
+            $log('! expected 240 rub\'s; check api/data/rub_quarters.json.');
         }
     } else {
-        $log('! api/data/rub_quarters.json is missing; run config/build_rub_quarters.php.');
+        $log('! api/data/rub_quarters.json is missing.');
     }
 
     $log('== Migration v6 complete ==');

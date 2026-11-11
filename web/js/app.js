@@ -832,6 +832,9 @@ function clearEntryGateSession() {
   try {
     sessionStorage.removeItem('rh_entry_gate_done');
     sessionStorage.removeItem('rh_entry_gate_done_v2');
+    sessionStorage.removeItem('rh_entry_gate_done_v3');
+    sessionStorage.removeItem('rh_entry_gate_done_v4');
+    sessionStorage.removeItem('rh_entry_gate_done_v5');
     sessionStorage.removeItem('rh_kalimaat_test_session');
   } catch (e) {}
 }
@@ -957,7 +960,7 @@ const TASK_DESTINATIONS = {
   HIFZ_JADID: { url: 'hifz.html',       cls: 'task-green',  keyTitle: 'task_hifz_title',     keySub: 'task_hifz_sub',     title: 'الحفظ الجديد',     sub: 'صفحة جديدة اليوم' },
   TIKRAR_AMS: { url: 'tikrar.html',     cls: 'task-amber',  keyTitle: 'task_tikrar_title',   keySub: 'task_tikrar_sub',   title: 'تكرار حفظ الأمس',   sub: 'تكرار ١٠ مرات لتثبيت الحفظ قبل الربط' },
   RABT:       { url: 'rabt.html',       cls: 'task-blue',   keyTitle: 'task_rabt_title',     keySub: 'task_rabt_sub',     title: 'الربط',            sub: 'نافذة الربط المستمرة' },
-  RUB_TAMKIN: { url: 'rub.html',        cls: 'task-teal',   keyTitle: 'task_rub_title',      keySub: 'task_rub_sub',      title: 'تثبيت الربع',       sub: 'ربع واحد من محفوظك، كل موقف ٣ مرات' },
+  PAGE_TAMKIN: { url: 'consolidation.html', cls: 'task-teal', keyTitle: 'task_page_title',  keySub: 'task_page_sub',  title: 'تثبيت الصفحة',      sub: 'صفحة واحدة من محفوظك، ترتيب كلمات ثم تسميع واستماع' },
   MURAJAAH:   { url: 'murajaah.html',   cls: 'task-purple', keyTitle: 'task_murajaah_title', keySub: 'task_murajaah_sub', title: 'المراجعة',         sub: 'ختم دوري مقسم على الأيام' },
   MISTAKES:   { url: 'flashcards.html', cls: 'task-red',    keyTitle: 'task_mistakes_title', keySub: 'task_mistakes_sub', title: 'المعالجة',         sub: 'تدريب البطاقات الذكية' },
 };
@@ -1268,11 +1271,11 @@ function renderDashboardUI() {
   const dateEl = document.getElementById('tasks-date');
   if (dateEl) dateEl.textContent = sharedState.date;
 
-  // Render the dynamic task cards (Hifz, Tikrar, Rabt, Rub, Murajaah, Mistakes)
+  // Render the dynamic task cards (Hifz, Tikrar, Rabt, Page, Murajaah, Mistakes)
   const grid = document.getElementById('tasks-grid');
   if (!grid) return;
 
-  const order = ['HIFZ_JADID', 'TIKRAR_AMS', 'RABT', 'RUB_TAMKIN', 'MURAJAAH', 'MISTAKES'];
+  const order = ['HIFZ_JADID', 'TIKRAR_AMS', 'RABT', 'PAGE_TAMKIN', 'MURAJAAH', 'MISTAKES'];
   grid.innerHTML = order.map((type) => {
     const meta = TASK_DESTINATIONS[type];
     const task = sharedState.tasks.find((t) => t.task_type === type);
@@ -1313,12 +1316,7 @@ function renderDashboardUI() {
           <div class="progress-bar"><div class="progress-fill fill-blue" style="width:${donePct}%"></div></div>
         </div>`;
     } else if (task) {
-      if (type === 'RUB_TAMKIN') {
-        const from = formatAyahRefLabel(task.start_ref);
-        const to = formatAyahRefLabel(task.end_ref);
-        const rubLabel = window.I18N ? I18N.t('rub_quarter_label') : 'الربع';
-        rangeHtml = rubLabel + ' ' + task.rub_id + ' · ' + from + ' — ' + to;
-      } else if (task.start_page === task.end_page) {
+      if (task.start_page === task.end_page) {
         rangeHtml = window.I18N ? I18N.t('single_page_format', { page: task.start_page }) : ('صفحة ' + task.start_page);
       } else {
         rangeHtml = window.I18N ? I18N.t('multi_page_format', { start: task.start_page, end: task.end_page }) : ('صفحات ' + task.start_page + ' – ' + task.end_page);
@@ -1343,36 +1341,21 @@ function renderDashboardUI() {
             </div>
             <div class="progress-bar"><div class="progress-fill fill-amber" style="width:${percent}%"></div></div>
           </div>`;
-      } else if (type === 'RUB_TAMKIN') {
-        const session = task.session || null;
-        const sessionActive = session && session.status === 'IN_PROGRESS';
-        if (sessionActive) {
-          const sTotal = Number(session.total_items) || 0;
-          const sDone = Number(session.answered_items) || 0;
-          const sPercent = Math.max(0, Math.min(100, Number(session.progress_percent) || 0));
-          statusPill = `<span class="task-status">${window.I18N ? I18N.t('rub_session_pill', { done: sDone, total: sTotal }) : `${sDone} / ${sTotal} تمرين`}</span>`;
-          progressHtml = `
-            <div class="progress-wrap">
-              <div class="progress-header">
-                <span>${window.I18N ? I18N.t('rub_session_progress_title') : 'جلسة التثبيت'}</span>
-                <span><strong>${sDone}</strong> / ${sTotal} (${sPercent}%)</span>
-              </div>
-              <div class="progress-bar"><div class="progress-fill fill-teal" style="width:${sPercent}%"></div></div>
-            </div>`;
-        } else {
-          statusPill = task.is_completed
-            ? `<span class="task-status done">${window.I18N ? I18N.t('task_status_done_today') : '✓ مكتمل اليوم'}</span>`
-            : `<span class="task-status">${window.I18N ? I18N.t('rub_verse_pill', { count, total }) : `${count} / ${total} آية`}</span>`;
+      } else if (type === 'PAGE_TAMKIN') {
+        const wordsDone = Number(task.words_done) || 0;
+        const wordCount = Number(task.word_count) || 0;
+        statusPill = task.is_completed
+          ? `<span class="task-status done">${window.I18N ? I18N.t('task_status_done_today') : '✓ مكتمل اليوم'}</span>`
+          : `<span class="task-status">${window.I18N ? I18N.t('page_word_pill', { count: wordsDone, total: wordCount }) : `${wordsDone} / ${wordCount} كلمة`}</span>`;
 
-          progressHtml = `
-            <div class="progress-wrap">
-              <div class="progress-header">
-                <span>${window.I18N ? I18N.t('rub_progress_title') : 'الآيات المثبتة'}</span>
-                <span><strong>${count}</strong> / ${total} (${percent}%)</span>
-              </div>
-              <div class="progress-bar"><div class="progress-fill fill-teal" style="width:${percent}%"></div></div>
-            </div>`;
-        }
+        progressHtml = `
+          <div class="progress-wrap">
+            <div class="progress-header">
+              <span>${window.I18N ? I18N.t('page_progress_title') : 'كلمات الصفحة المثبتة'}</span>
+              <span><strong>${wordsDone}</strong> / ${wordCount} (${percent}%)</span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill fill-teal" style="width:${percent}%"></div></div>
+          </div>`;
       } else {
         statusPill = task.is_completed
           ? `<span class="task-status done">${window.I18N ? I18N.t('task_status_done_today') : '✓ مكتمل اليوم'}</span>`
@@ -1397,8 +1380,8 @@ function renderDashboardUI() {
         carriedFlag = `<span class="task-flag">${carriedText}</span>`;
       }
     } else {
-      rangeHtml = type === 'RUB_TAMKIN'
-        ? (window.I18N ? I18N.t('review_rub_inactive') : 'يثبت الربع بعد تراكم صفحات محفوظة')
+      rangeHtml = type === 'PAGE_TAMKIN'
+        ? (window.I18N ? I18N.t('review_page_inactive') : 'يثبت الصفحة بعد تراكم صفحات محفوظة')
         : (window.I18N ? I18N.t('task_status_inactive_today') : 'غير مفعّل اليوم');
       statusPill = `<span class="task-status">${window.I18N ? I18N.t('task_status_inactive') : 'غير مفعّل'}</span>`;
     }
@@ -3719,8 +3702,8 @@ document.addEventListener('DOMContentLoaded', () => {
     initAuthPage();
   } else if (document.getElementById('tasks-grid')) {
     initDashboard();
-  } else if (document.body.dataset.taskType && document.body.dataset.taskType !== 'RUB_TAMKIN') {
-    // RUB_TAMKIN has its own controller (js/rub.js) and markup.
+  } else if (document.body.dataset.taskType && document.body.dataset.taskType !== 'PAGE_TAMKIN') {
+    // PAGE_TAMKIN has its own controller (js/consolidation.js) and markup.
     initDedicatedTaskPage(document.body.dataset.taskType);
   }
 });

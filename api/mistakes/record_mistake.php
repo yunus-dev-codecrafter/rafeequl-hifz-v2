@@ -25,7 +25,7 @@ const MISTAKE_TYPES = [
     'TRANSITION_FAILURE',
     'MUTASHABIHAT',
 ];
-const SOURCE_TASKS = ['HIFZ_JADID', 'TIKRAR_AMS', 'RABT', 'MURAJAAH', 'RUB_TAMKIN'];
+const SOURCE_TASKS = ['HIFZ_JADID', 'TIKRAR_AMS', 'RABT', 'MURAJAAH', 'RUB_TAMKIN', 'PAGE_TAMKIN'];
 
 function json_out(int $code, array $payload): void
 {

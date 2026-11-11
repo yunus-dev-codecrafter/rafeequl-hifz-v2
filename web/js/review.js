@@ -31,15 +31,15 @@ const ReviewHub = {
       sub: 'اربط الصفحات المحفوظة في نافذة متصلة',
     },
     {
-      type: 'RUB_TAMKIN',
-      url: 'rub.html',
+      type: 'PAGE_TAMKIN',
+      url: 'consolidation.html',
       cls: 'task-teal',
       fill: 'fill-teal',
-      icon: '۞',
-      titleKey: 'task_rub_title',
-      subKey: 'task_rub_sub',
-      title: 'تثبيت الربع',
-      sub: 'ربع واحد من محفوظك، كل موقف ٣ مرات',
+      icon: '📄',
+      titleKey: 'task_page_title',
+      subKey: 'task_page_sub',
+      title: 'تثبيت الصفحة',
+      sub: 'صفحة واحدة من محفوظك: ترتيب كامل ثم تسميع واستماع',
     },
     {
       type: 'MURAJAAH',
@@ -134,8 +134,8 @@ const ReviewHub = {
     const arrow = this.esc(this.t('task_open_arrow', 'فتح الصفحة ←'));
 
     if (!task) {
-      const reason = item.type === 'RUB_TAMKIN'
-        ? this.t('review_rub_inactive', 'يثبت الربع بعد تراكم صفحات محفوظة')
+      const reason = item.type === 'PAGE_TAMKIN'
+        ? this.t('review_page_inactive', 'يثبت الصفحة بعد تراكم صفحات محفوظة')
         : this.t('task_status_inactive_today', 'غير مفعّل اليوم');
 
       return `
@@ -163,26 +163,23 @@ const ReviewHub = {
       flag = `<span class="task-flag">${this.esc(this.t('task_flag_carried', 'محولة من أمس'))}</span>`;
     }
 
-    if (item.type === 'RUB_TAMKIN') {
-      const label = this.t('rub_quarter_label', 'الربع') + ' ' + task.rub_id;
-      const from = formatAyahRefLabel(task.start_ref);
-      const to = formatAyahRefLabel(task.end_ref);
-      range = this.esc(label + ' · ' + from + ' — ' + to);
+    if (item.type === 'PAGE_TAMKIN') {
+      range = this.pageRange(task);
 
-      const total = task.verses_total || task.verse_count || task.total_pages || 1;
-      const count = task.is_completed ? total : (task.completed_count || 0);
+      const total = Number(task.word_count) || 0;
+      const count = task.is_completed ? total : (Number(task.words_done) || 0);
       const percent = task.progress_percent || 0;
 
-      const versePill = window.I18N
-        ? I18N.t('rub_verse_pill', { count, total })
-        : (count + ' / ' + total + ' آية');
+      const wordPill = window.I18N
+        ? I18N.t('page_word_pill', { count, total })
+        : (count + ' / ' + total + ' كلمة');
 
       status = task.is_completed
         ? `<span class="task-status done">${this.esc(this.t('task_status_done_today', '✓ مكتمل اليوم'))}</span>`
-        : `<span class="task-status">${this.esc(versePill)}</span>`;
+        : `<span class="task-status">${this.esc(wordPill)}</span>`;
 
       progress = this.progressHtml(
-        this.t('rub_progress_title', 'الآيات المثبتة'),
+        this.t('page_progress_title', 'كلمات الصفحة المثبتة'),
         count + ' / ' + total + ' (' + percent + '%)',
         percent,
         item.fill

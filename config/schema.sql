@@ -55,7 +55,7 @@ CREATE TABLE IF NOT EXISTS `daily_task_logs` (
     `id` INT NOT NULL AUTO_INCREMENT,
     `user_id` INT NOT NULL,
     `task_date` DATE NOT NULL,
-    `task_type` ENUM('HIFZ_JADID', 'TIKRAR_AMS', 'RABT', 'MURAJAAH', 'RUB_TAMKIN', 'MISTAKES') NOT NULL,
+    `task_type` ENUM('HIFZ_JADID', 'TIKRAR_AMS', 'RABT', 'MURAJAAH', 'RUB_TAMKIN', 'MISTAKES', 'PAGE_TAMKIN') NOT NULL,
     `start_page` INT NOT NULL,
     `end_page` INT NOT NULL,
     `completed_pages` TEXT NULL,
@@ -90,6 +90,49 @@ CREATE TABLE IF NOT EXISTS `rub_history` (
         ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- 3c. Page-by-page consolidation (v14)
+CREATE TABLE IF NOT EXISTS `consolidation_selections` (
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `user_id` INT NOT NULL,
+    `target_type` ENUM('SURAH', 'RUB', 'PAGE') NOT NULL,
+    `target_id` INT NOT NULL,
+    `status` ENUM('ACTIVE', 'COMPLETED', 'REMOVED') NOT NULL DEFAULT 'ACTIVE',
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `completed_at` DATETIME NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_consolidation_selection` (`user_id`, `target_type`, `target_id`),
+    KEY `idx_consolidation_selections_user` (`user_id`, `status`, `created_at`),
+    CONSTRAINT `fk_consolidation_selections_user`
+        FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
+        ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `consolidation_pages` (
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `user_id` INT NOT NULL,
+    `page_number` INT NOT NULL,
+    `selection_id` INT NULL,
+    `source` ENUM('SURAH', 'RUB', 'PAGE', 'AUTO') NOT NULL DEFAULT 'AUTO',
+    `status` ENUM('PENDING', 'DONE') NOT NULL DEFAULT 'PENDING',
+    `last_result` ENUM('DONE', 'IMPROVE') NULL,
+    `attempts` INT NOT NULL DEFAULT 0,
+    `times_done` INT NOT NULL DEFAULT 0,
+    `last_done_date` DATE NULL,
+    `completed_at` DATETIME NULL,
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_consolidation_page` (`user_id`, `page_number`),
+    KEY `idx_consolidation_pages_user_status` (`user_id`, `status`, `last_done_date`),
+    KEY `idx_consolidation_pages_selection` (`selection_id`),
+    CONSTRAINT `fk_consolidation_pages_user`
+        FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_consolidation_pages_selection`
+        FOREIGN KEY (`selection_id`) REFERENCES `consolidation_selections` (`id`)
+        ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- 4. mistakes table
 CREATE TABLE IF NOT EXISTS `mistakes` (
     `id` INT NOT NULL AUTO_INCREMENT,
@@ -102,7 +145,7 @@ CREATE TABLE IF NOT EXISTS `mistakes` (
     `severity` TINYINT NOT NULL DEFAULT 1,
     `confused_with_surah` INT NULL,
     `confused_with_ayah` INT NULL,
-    `source_task` ENUM('HIFZ_JADID', 'TIKRAR_AMS', 'RABT', 'MURAJAAH', 'RUB_TAMKIN') NULL,
+    `source_task` ENUM('HIFZ_JADID', 'TIKRAR_AMS', 'RABT', 'MURAJAAH', 'RUB_TAMKIN', 'PAGE_TAMKIN') NULL,
     `status` ENUM('ACTIVE', 'ARCHIVED') NOT NULL DEFAULT 'ACTIVE',
     `practice_count` INT NOT NULL DEFAULT 0,
     `practice_target` INT NOT NULL DEFAULT 15,

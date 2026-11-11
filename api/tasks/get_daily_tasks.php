@@ -8,8 +8,7 @@ declare(strict_types=1);
  */
 
 require __DIR__ . '/../../config/database.php';
-require_once __DIR__ . '/_rub.php';
-require_once __DIR__ . '/_rub_session.php';
+require_once __DIR__ . '/_page.php';
 require_once __DIR__ . '/_rollover.php';
 require_once __DIR__ . '/_hifz.php';
 
@@ -18,7 +17,7 @@ const TASK_TITLES = [
     'TIKRAR_AMS' => ['ar' => 'تكرار حفظ الأمس',   'en' => "Yesterday's Repetition"],
     'RABT'       => ['ar' => 'الربط',            'en' => 'Rabt (Linking)'],
     'MURAJAAH'   => ['ar' => 'المراجعة',         'en' => "Muraja'ah (Review)"],
-    'RUB_TAMKIN' => ['ar' => 'تثبيت الربع',       'en' => "Rub' Consolidation"],
+    'PAGE_TAMKIN' => ['ar' => 'تثبيت الصفحة',     'en' => 'Page Consolidation'],
     'MISTAKES'   => ['ar' => 'المعالجة',         'en' => 'Remediation'],
 ];
 
@@ -141,11 +140,6 @@ function insertTask(PDO $pdo, int $userId, string $type, array $bounds, string $
     ];
 }
 
-function insertRubTask(PDO $pdo, int $userId, array $rub, string $date): array
-{
-    return rh_insert_rub_task($pdo, $userId, $rub, $date);
-}
-
 function formatTask(array $row, string $today, ?PDO $pdo = null, int $userId = 0): array
 {
     $type = (string) $row['task_type'];
@@ -179,70 +173,37 @@ function formatTask(array $row, string $today, ?PDO $pdo = null, int $userId = 0
     $rolloverCount = (int) ($row['rollover_count'] ?? 0);
     $carriedOver = $rolloverCount > 0 || ((string) $row['task_date'] !== $today);
 
-    if ($type === 'RUB_TAMKIN') {
-        $rubId = isset($row['rub_id']) ? (int) $row['rub_id'] : 0;
-        $rub = $rubId > 0 ? rh_rub_by_id($rubId) : null;
-
-        $doneVerses = [];
-        if (!empty($row['completed_stations'])) {
-            $decoded = json_decode((string) $row['completed_stations'], true);
-            if (is_array($decoded)) {
-                $seen = [];
-                foreach ($decoded as $key) {
-                    // Verse keys are "surah:ayah"; old station keys have a third
-                    // part and are silently ignored.
-                    if (!is_string($key) || $key === '' || substr_count($key, ':') !== 1) {
-                        continue;
-                    }
-                    if (isset($seen[$key])) {
-                        continue;
-                    }
-                    $seen[$key] = true;
-                    $doneVerses[] = $key;
-                }
-            }
-        }
-
-        $versesTotal = $rub !== null ? (int) $rub['verse_count'] : 0;
-        $doneCount = $versesTotal > 0 ? min(count($doneVerses), $versesTotal) : 0;
-        $percent = $versesTotal > 0 ? (int) round(($doneCount / $versesTotal) * 100) : 0;
-
-        $session = null;
-        if ($pdo !== null && $userId > 0 && isset($row['id'])) {
-            $session = rh_rub_task_session_brief($pdo, $userId, (int) $row['id']);
-        }
+    if ($type === 'PAGE_TAMKIN') {
+        $payload = ($pdo !== null) ? rh_pg_task_payload($pdo, $row, true) : [];
+        $wordCount = (int) ($payload['word_count'] ?? 0);
+        $wordsDone = (int) ($payload['words_done'] ?? 0);
+        $percent = $isCompleted
+            ? 100
+            : ($wordCount > 0 ? (int) round(($wordsDone / $wordCount) * 100) : 0);
 
         return [
             'id'                 => isset($row['id']) ? (int) $row['id'] : null,
             'task_type'          => $type,
-            'title_ar'           => TASK_TITLES[$type]['ar'] ?? 'تثبيت الربع',
-            'title_en'           => TASK_TITLES[$type]['en'] ?? "Rub' Consolidation",
+            'title_ar'           => TASK_TITLES[$type]['ar'] ?? 'تثبيت الصفحة',
+            'title_en'           => TASK_TITLES[$type]['en'] ?? 'Page Consolidation',
             'start_page'         => $start,
             'end_page'           => $end,
             'task_date'          => (string) $row['task_date'],
             'is_completed'       => $isCompleted,
-            'completed_pages'    => [],
-            'completed_count'    => $isCompleted ? $versesTotal : $doneCount,
-            'total_pages'        => $versesTotal,
+            'completed_pages'    => $isCompleted && $start !== null ? [$start] : [],
+            'completed_count'    => $isCompleted ? 1 : 0,
+            'total_pages'        => 1,
             'progress_percent'   => $isCompleted ? 100 : min(100, $percent),
-            'carried_over'       => $carriedOver,
-            'rollover_count'     => $rolloverCount,
-            'last_rollover_date' => $row['last_rollover_date'] ?? null,
-            'rub_id'             => $rubId,
-            'rub_label_ar'       => $rubId > 0 ? rh_rub_label($rubId) : '',
-            'juz'                => $rub['juz'] ?? null,
-            'hizb'               => $rub['hizb'] ?? null,
-            'start_ref'          => $rub !== null ? $rub['start']['surah'] . ':' . $rub['start']['ayah'] : null,
-            'end_ref'            => $rub !== null ? $rub['end']['surah'] . ':' . $rub['end']['ayah'] : null,
-            'verse_count'        => $rub['verse_count'] ?? 0,
-            'verses_total'       => $versesTotal,
-            'completed_verses'   => $doneVerses,
-            'session'            => $session,
-            'session_status'     => $session['status'] ?? null,
-            'session_progress'   => $session['progress_percent'] ?? null,
-            'session_accuracy'   => $session['accuracy'] ?? null,
-            'session_answered'   => $session['answered_items'] ?? null,
-            'session_total'      => $session['total_items'] ?? null,
+            'carried_over'       => false,
+            'rollover_count'     => 0,
+            'last_rollover_date' => null,
+            'page_number'        => $start,
+            'source'             => $payload['source'] ?? 'AUTO',
+            'result'             => $payload['result'] ?? '',
+            'words_done'         => $wordsDone,
+            'word_count'         => $wordCount,
+            'start_ref'          => $payload['start_ref'] ?? null,
+            'end_ref'            => $payload['end_ref'] ?? null,
         ];
     }
 
@@ -420,10 +381,6 @@ try {
 
     $rabtWindow  = 30 + $rabtExtra;
 
-    // Rub' consolidation pool frontier: pages that graduated Tikrar Ams.
-    // COMPLETE accounts (full Qur'an) use all 240 rub's.
-    $rubFrontier = ($utype === 'COMPLETE') ? 604 : $lastTikrar;
-
     // Active mistakes -> Task 5 (المعالجة), dynamic only (never persisted)
     $stmt = $pdo->prepare("SELECT COUNT(*) FROM `mistakes` WHERE `user_id` = :id AND `status` = 'ACTIVE'");
     $stmt->execute([':id' => $userId]);
@@ -521,28 +478,12 @@ try {
         $tasks[] = formatTask($row, $today, $pdo, $userId);
     }
 
-    // Task 4b - Rub' consolidation (RUB_TAMKIN): one random rub' per day.
-    // Rollover behaves like the other tasks: an unfinished rub' keeps coming
-    // back until every station has been recited 3 times.
-    $rubEligible = ($utype === 'COMPLETE') || ($rubFrontier >= 1);
-    if ($rubEligible) {
-        $rubRow = findExistingTask($pdo, $userId, 'RUB_TAMKIN', $today);
-        if ($rubRow === null) {
-            $pickedRub = rh_pick_rub(
-                $pdo,
-                $userId,
-                $utype === 'COMPLETE' ? 604 : $rubFrontier,
-                $utype,
-                $today,
-                $utype === 'COMPLETE' ? 604 : $current
-            );
-            if ($pickedRub !== null) {
-                $rubRow = insertRubTask($pdo, $userId, $pickedRub, $today);
-            }
-        }
-        if ($rubRow !== null) {
-            $tasks[] = formatTask($rubRow, $today, $pdo, $userId);
-        }
+    // Task 4b - Page-by-page consolidation (PAGE_TAMKIN).
+    // There is deliberately no rollover: an unfinished page keeps its pending
+    // state in consolidation_pages and gets a fresh daily task row tomorrow.
+    $pageRow = rh_pg_ensure_task($pdo, $userId, $today);
+    if ($pageRow !== null) {
+        $tasks[] = formatTask($pageRow, $today, $pdo, $userId);
     }
 
     $pdo->commit();

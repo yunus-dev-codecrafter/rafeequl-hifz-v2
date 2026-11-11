@@ -2,20 +2,22 @@
 
 /* ==========================================================================
    Rafeequl Hifz - entry gate
-   A single blocking overlay with two sequential steps:
-     1. معاني كلمات القرآن (25 repetitions per entry, 500 lifetime)
-     2. بطاقة خطأ واحدة (15 repetitions per entry, 15 lifetime)
+   A single blocking overlay with three sequential steps:
+     1. تثبيت صفحة واحدة (سماع البداية، تسميع، كشف الصفحة والاستماع)
+     2. معاني كلمات القرآن (25 repetitions per entry, 500 lifetime)
+     3. بطاقة خطأ واحدة (15 repetitions per entry, 15 lifetime)
    The gate is re-armed once per browser app-session. It fails open only when
    the API or the optional catalog is unavailable, so a server problem never
    locks the user out of the app.
    ========================================================================== */
 
 (function () {
-  const SESSION_KEY = 'rh_entry_gate_done_v4';
+  const SESSION_KEY = 'rh_entry_gate_done_v5';
   try {
     sessionStorage.removeItem('rh_entry_gate_done');
     sessionStorage.removeItem('rh_entry_gate_done_v2');
     sessionStorage.removeItem('rh_entry_gate_done_v3');
+    sessionStorage.removeItem('rh_entry_gate_done_v4');
   } catch (e) {}
   let alreadyDone = false;
   try { alreadyDone = sessionStorage.getItem(SESSION_KEY) === '1'; } catch (e) {}
@@ -25,7 +27,10 @@
     data: null,
     quran: null,
     quranPromise: null,
-    step: 'kalimaat',
+    step: 'consolidation',
+    consolidation: null,
+    consolidationAudio: null,
+    consolidationPlaying: false,
     kalimaat: null,
     mistake: null,
     overlay: null,
@@ -93,6 +98,7 @@
   }
 
   function markDone() {
+    stopGateAudio();
     try { sessionStorage.setItem(SESSION_KEY, '1'); } catch (e) {}
     if (state.overlay && state.overlay.parentNode) {
       state.overlay.parentNode.removeChild(state.overlay);
@@ -108,7 +114,8 @@
       const step = el.dataset.entryStep;
       const active = step === state.step;
       el.classList.toggle('is-active', active);
-      const done = (step === 'kalimaat' && state.kalimaat && state.kalimaat.done)
+      const done = (step === 'consolidation' && state.consolidation && state.consolidation.done)
+        || (step === 'kalimaat' && state.kalimaat && state.kalimaat.done)
         || (step === 'mistake' && state.mistake && state.mistake.done);
       el.classList.toggle('is-done', !!done);
     });
@@ -120,6 +127,7 @@
         <div>
           <span class="entry-gate-kicker">${esc(kicker)}</span>
           <div class="entry-gate-steps" aria-label="${esc(t('entry_gate_steps', 'خطوات الدخول'))}">
+            <span class="entry-gate-step" data-entry-step="consolidation">${esc(t('entry_gate_step_page', 'تثبيت الصفحة'))}</span>
             <span class="entry-gate-step" data-entry-step="kalimaat">${esc(t('entry_gate_step_kalimaat', 'معاني الكلمات'))}</span>
             <span class="entry-gate-step" data-entry-step="mistake">${esc(t('entry_gate_step_mistake', 'بطاقة الخطأ'))}</span>
           </div>
@@ -164,6 +172,251 @@
         </div>
         ${word.book ? `<div class="entry-gate-book">${esc(word.book)}</div>` : ''}
       </div>`;
+  }
+
+  function formatRef(ref) {
+    if (!ref) return '';
+    const parts = String(ref).split(':');
+    const surah = Number(parts[0]) || 0;
+    const ayah = parts[1] || '';
+    return surahName(surah) + ' ' + ayah;
+  }
+
+  function gateAudioUrl(surah, ayah) {
+    const pad = (n) => String(n).padStart(3, '0');
+    return 'https://everyayah.com/data/Alafasy_128kbps/' + pad(Number(surah)) + pad(Number(ayah)) + '.mp3';
+  }
+
+  function stopGateAudio() {
+    state.consolidationPlaying = false;
+    if (state.consolidationAudio) {
+      state.consolidationAudio.onended = null;
+      state.consolidationAudio.onerror = null;
+      try { state.consolidationAudio.pause(); } catch (e) {}
+    }
+    document.querySelectorAll('.entry-gate-ayah-block.is-playing').forEach((el) => {
+      el.classList.remove('is-playing');
+    });
+    const stop = document.getElementById('entry-gate-page-stop');
+    if (stop) stop.classList.add('hidden');
+    const reveal = document.getElementById('entry-gate-page-reveal');
+    if (reveal) {
+      reveal.textContent = state.consolidation && state.consolidation.revealed
+        ? t('entry_gate_page_listen_again', 'إعادة الاستماع')
+        : t('entry_gate_page_reveal', 'أظهر الصفحة واستمع');
+    }
+  }
+
+  function playGateAudio() {
+    const c = state.consolidation;
+    if (!c || !c.task) return;
+    const verses = Array.isArray(c.task.verses) ? c.task.verses : [];
+    if (!verses.length) return;
+    stopGateAudio();
+    state.consolidationPlaying = true;
+    const audio = state.consolidationAudio || new Audio();
+    state.consolidationAudio = audio;
+    audio.preload = 'none';
+
+    const playAt = (index) => {
+      if (!state.consolidationPlaying || index >= verses.length) {
+        stopGateAudio();
+        return;
+      }
+      const verse = verses[index];
+      document.querySelectorAll('.entry-gate-ayah-block.is-playing').forEach((el) => {
+        el.classList.remove('is-playing');
+      });
+      const current = document.querySelector(`.entry-gate-ayah-block[data-gate-ayah="${esc(String(verse.key))}"]`);
+      if (current) current.classList.add('is-playing');
+
+      audio.onended = () => playAt(index + 1);
+      audio.onerror = () => {
+        stopGateAudio();
+        const status = document.getElementById('entry-gate-consolidation-status');
+        if (status) status.textContent = t('entry_gate_page_audio_error', 'تعذر تشغيل التلاوة. تأكد من الاتصال ثم أعد المحاولة.');
+      };
+      audio.src = gateAudioUrl(verse.surah, verse.ayah);
+      const promise = audio.play();
+      if (promise && typeof promise.catch === 'function') {
+        promise.catch(() => {
+          stopGateAudio();
+          const status = document.getElementById('entry-gate-consolidation-status');
+          if (status) status.textContent = t('entry_gate_page_audio_error', 'تعذر تشغيل التلاوة. تأكد من الاتصال ثم أعد المحاولة.');
+        });
+      }
+      const stop = document.getElementById('entry-gate-page-stop');
+      if (stop) stop.classList.remove('hidden');
+    };
+
+    playAt(0);
+  }
+
+  function startConsolidation() {
+    const payload = state.data && state.data.consolidation;
+    const task = payload && payload.task;
+    if (!payload || !payload.available || !task) {
+      nextAfterConsolidation();
+      return;
+    }
+    state.step = 'consolidation';
+    state.consolidation = {
+      done: false,
+      task,
+      revealed: false,
+      busy: false,
+    };
+    renderConsolidation();
+  }
+
+  function renderConsolidation() {
+    const c = state.consolidation;
+    if (!c || !c.task) return;
+    const task = c.task;
+    const page = Number(task.page_number) || Number(task.start_page) || 0;
+    const intro = Array.isArray(task.intro_words) ? task.intro_words : [];
+    const from = formatRef(task.start_ref);
+    const to = formatRef(task.end_ref);
+    const versesHtml = c.revealed
+      ? `<div class="entry-gate-page-scroll" id="entry-gate-page-scroll">
+          ${(task.verses || []).map((verse) => `
+            <div class="entry-gate-ayah-block" data-gate-ayah="${esc(String(verse.key))}">
+              <div class="entry-gate-ayah-label">${esc(surahName(verse.surah))} • ${esc(t('entry_gate_ayah', 'الآية'))} ${Number(verse.ayah) || ''}</div>
+              <div class="entry-gate-ayah">${esc(verse.text)}</div>
+            </div>`).join('')}
+        </div>`
+      : '';
+
+    const body = `
+      <div class="entry-gate-page-head">
+        <span class="entry-gate-page-badge">${esc(t('entry_gate_page_badge', 'صفحة {page}').replace('{page}', page))}</span>
+        <span class="entry-gate-page-ref">${esc(from)} — ${esc(to)}</span>
+      </div>
+      <div class="entry-gate-page-prompt">
+        <span class="entry-gate-page-prompt-label">${esc(t('entry_gate_page_start', 'ابدأ من هنا'))}</span>
+        <div class="entry-gate-page-prompt-words" dir="rtl">
+          ${intro.map((word) => `<span>${esc(word)}</span>`).join('') || `<span class="entry-gate-loading">${esc(t('entry_gate_page_loading', 'جارٍ تحميل الصفحة...'))}</span>`}
+        </div>
+      </div>
+      <p class="entry-gate-hint">${esc(t('entry_gate_page_hint', 'سمّع الصفحة من حفظك أولًا، ثم أظهرها واستمع إليها، ثم اختر النتيجة.'))}</p>
+      <div class="entry-gate-actions entry-gate-actions-split">
+        <button type="button" class="btn btn-primary entry-gate-main-btn" id="entry-gate-page-reveal">
+          ${esc(c.revealed ? t('entry_gate_page_listen_again', 'إعادة الاستماع') : t('entry_gate_page_reveal', 'أظهر الصفحة واستمع'))}
+        </button>
+        <button type="button" class="btn btn-ghost entry-gate-main-btn hidden" id="entry-gate-page-stop">
+          ${esc(t('entry_gate_page_stop', 'إيقاف الاستماع'))}
+        </button>
+      </div>
+      ${versesHtml}
+      <div class="entry-gate-actions entry-gate-actions-split ${c.revealed ? '' : 'hidden'}" id="entry-gate-page-result">
+        <button type="button" class="btn btn-success entry-gate-main-btn" id="entry-gate-page-done">
+          ${esc(t('entry_gate_page_done', 'تم، ثبّتها'))} ✓
+        </button>
+        <button type="button" class="btn btn-ghost entry-gate-main-btn" id="entry-gate-page-improve">
+          ${esc(t('entry_gate_page_improve', 'أحتاج تحسينًا'))}
+        </button>
+      </div>
+      <p class="entry-gate-hint" id="entry-gate-consolidation-status" role="status"></p>`;
+
+    render(shell(
+      t('entry_gate_kicker', 'بوابة الدخول'),
+      t('entry_gate_page_title', 'تثبيت صفحة من حفظك'),
+      t('entry_gate_page_sub', 'صفحة واحدة كل دخول: تسميع ثم كشف واستماع'),
+      body
+    ));
+
+    const reveal = document.getElementById('entry-gate-page-reveal');
+    if (reveal) {
+      reveal.addEventListener('click', () => {
+        if (!c.revealed) {
+          c.revealed = true;
+          renderConsolidation();
+        }
+        playGateAudio();
+      });
+    }
+    const stop = document.getElementById('entry-gate-page-stop');
+    if (stop) stop.addEventListener('click', stopGateAudio);
+    const done = document.getElementById('entry-gate-page-done');
+    if (done) done.addEventListener('click', () => reviewConsolidation('DONE'));
+    const improve = document.getElementById('entry-gate-page-improve');
+    if (improve) improve.addEventListener('click', () => reviewConsolidation('IMPROVE'));
+  }
+
+  async function reviewConsolidation(result) {
+    const c = state.consolidation;
+    if (state.busy || !c || !c.task) return;
+    state.busy = true;
+    c.busy = true;
+    stopGateAudio();
+    const done = document.getElementById('entry-gate-page-done');
+    const improve = document.getElementById('entry-gate-page-improve');
+    if (done) done.disabled = true;
+    if (improve) improve.disabled = true;
+    const status = document.getElementById('entry-gate-consolidation-status');
+    if (status) status.textContent = t('entry_gate_saving', 'جارٍ الحفظ...');
+
+    try {
+      const { ok, data } = await api('../api/tasks/consolidation.php', {
+        method: 'POST',
+        body: { action: 'result', task_id: c.task.id, result },
+      });
+      if (!ok || !data || !data.success) {
+        if (status) status.textContent = (data && data.error) || t('entry_gate_error', 'تعذر الحفظ. أعد المحاولة.');
+        if (done) done.disabled = false;
+        if (improve) improve.disabled = false;
+        return;
+      }
+      c.done = true;
+      c.lastResult = result;
+      showConsolidationDone(result === 'IMPROVE');
+    } catch (e) {
+      if (status) status.textContent = t('entry_gate_network_error', 'تعذر الاتصال بالخادم. أعد المحاولة.');
+      if (done) done.disabled = false;
+      if (improve) improve.disabled = false;
+    } finally {
+      state.busy = false;
+      c.busy = false;
+    }
+  }
+
+  function showConsolidationDone(improve) {
+    const c = state.consolidation;
+    if (!c) return;
+    const body = `
+      <div class="entry-gate-success" role="status">
+        <span class="entry-gate-success-icon" aria-hidden="true">${improve ? '↻' : '✓'}</span>
+        <div>
+          <strong>${esc(improve
+            ? t('entry_gate_page_improve_title', 'سُجّلت الصفحة للمزيد من التثبيت')
+            : t('entry_gate_page_done_title', 'أتممت تثبيت الصفحة'))}</strong>
+          <p>${esc(improve
+            ? t('entry_gate_page_improve_desc', 'ستعود هذه الصفحة في الدخول القادم حتى تثبّتها.')
+            : t('entry_gate_page_done_desc', 'ستظهر صفحة جديدة في الدخول القادم.'))}</p>
+        </div>
+      </div>
+      <div class="entry-gate-actions">
+        <button type="button" class="btn btn-primary entry-gate-main-btn" id="entry-gate-page-next">
+          ${esc(t('entry_gate_next', 'التالي'))} ←
+        </button>
+      </div>`;
+    render(shell(
+      t('entry_gate_kicker', 'بوابة الدخول'),
+      t('entry_gate_page_title', 'تثبيت صفحة من حفظك'),
+      t('entry_gate_step_done', 'تمت الخطوة'),
+      body
+    ));
+    const next = document.getElementById('entry-gate-page-next');
+    if (next) next.addEventListener('click', nextAfterConsolidation);
+  }
+
+  function nextAfterConsolidation() {
+    const kalimaat = state.data && state.data.kalimaat;
+    if (kalimaat && kalimaat.available && kalimaat.locked) {
+      startKalimaat();
+      return;
+    }
+    startMistake();
   }
 
   function startKalimaat() {
@@ -279,7 +532,7 @@
     render(shell(
       t('entry_gate_kicker', 'بوابة الدخول'),
       t('entry_gate_kalimaat_title', 'معاني كلمات القرآن'),
-      t('entry_gate_step_done', 'تمت الخطوة الأولى'),
+      t('entry_gate_step_done', 'تمت الخطوة'),
       body
     ));
     const next = document.getElementById('entry-gate-next');
@@ -557,6 +810,7 @@
         <p>${esc(t('entry_gate_finish_desc', 'أنت جاهز لمهام اليوم. لن تظهر هذه البوابة مرة أخرى في هذه الجلسة.'))}</p>
       </div>
       <div class="entry-gate-summary">
+        <div><span>${esc(t('entry_gate_step_page', 'تثبيت الصفحة'))}</span><strong>${state.consolidation ? '✓' : '—'}</strong></div>
         <div><span>${esc(t('entry_gate_step_kalimaat', 'معاني الكلمات'))}</span><strong>${state.kalimaat ? '✓' : '—'}</strong></div>
         <div><span>${esc(t('entry_gate_step_mistake', 'بطاقة الخطأ'))}</span><strong>${state.mistake ? '✓' : '—'}</strong></div>
       </div>
@@ -618,15 +872,17 @@
       }
 
       state.data = data;
+      const hasConsolidation = !!(data.consolidation && data.consolidation.available && data.consolidation.task);
       const hasKalimaat = !!(data.kalimaat && data.kalimaat.available);
       const hasMistake = !!(data.mistake && data.mistake.available);
-      if (!hasKalimaat && !hasMistake) {
+      if (!hasConsolidation && !hasKalimaat && !hasMistake) {
         markDone();
         return;
       }
 
       showOverlay();
-      if (hasKalimaat) startKalimaat();
+      if (hasConsolidation) startConsolidation();
+      else if (hasKalimaat) startKalimaat();
       else startMistake();
     } catch (e) {
       markDone();
