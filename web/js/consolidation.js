@@ -39,7 +39,12 @@
     recordingStartTime: 0,
     recordedAudioUrl: null,
     recordedDuration: 0,
-    recordingState: 'idle', // 'idle' | 'recording' | 'playback'
+    // 'idle' | 'starting' | 'recording' | 'stopping' | 'playback'
+    recordingState: 'idle',
+    // Incremented whenever a recorder is discarded. Stale MediaRecorder
+    // callbacks compare against it and bail out, so a stopped recorder can
+    // never stop the *next* recording or reveal the page too early.
+    recordingSession: 0,
     lastResult: null,
     justCompletedPage: null,
     nextTask: null,
@@ -609,6 +614,20 @@
       && typeof MediaRecorder !== 'undefined';
   }
 
+  async function requestMic() {
+    if (!isRecordingSupported()) throw new Error('unsupported');
+    try {
+      return await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+      });
+    } catch (err) {
+      // Some browsers reject the processing constraints above while still
+      // allowing plain audio capture. Only retry on constraint failures.
+      if (err && (err.name === 'NotAllowedError' || err.name === 'SecurityError')) throw err;
+      return navigator.mediaDevices.getUserMedia({ audio: true });
+    }
+  }
+
   function getBestMimeType() {
     if (typeof MediaRecorder === 'undefined' || typeof MediaRecorder.isTypeSupported !== 'function') {
       return '';
@@ -637,14 +656,22 @@
   }
 
   function cleanupRecording() {
+    // Invalidate every handler belonging to the recorder we are about to drop.
+    state.recordingSession += 1;
     if (state.recordingTimerId) {
       clearInterval(state.recordingTimerId);
       state.recordingTimerId = null;
     }
-    if (state.mediaRecorder && state.mediaRecorder.state !== 'inactive') {
-      try { state.mediaRecorder.stop(); } catch (e) {}
-    }
+    const recorder = state.mediaRecorder;
     state.mediaRecorder = null;
+    if (recorder) {
+      recorder.ondataavailable = null;
+      recorder.onstop = null;
+      recorder.onerror = null;
+      if (recorder.state !== 'inactive') {
+        try { recorder.stop(); } catch (e) {}
+      }
+    }
     if (state.mediaStream) {
       state.mediaStream.getTracks().forEach((track) => track.stop());
       state.mediaStream = null;
@@ -653,7 +680,8 @@
     const recordedAudio = $('recorded-audio');
     if (recordedAudio) {
       try { recordedAudio.pause(); } catch (e) {}
-      recordedAudio.src = '';
+      recordedAudio.removeAttribute('src');
+      try { recordedAudio.load(); } catch (e) {}
     }
     if (state.recordedAudioUrl) {
       URL.revokeObjectURL(state.recordedAudioUrl);
@@ -663,65 +691,123 @@
 
   async function startRecording() {
     if (state.busy) return;
+    if (state.recordingState === 'recording' || state.recordingState === 'starting') return;
     if (!isRecordingSupported()) {
       setStatus('recitation-status', t('page_mic_unsupported', 'التسجيل الصوتي غير مدعوم في هذا المتصفح.'), true);
       return;
     }
     stopAudio();
-    if (state.recordedAudioUrl) {
-      URL.revokeObjectURL(state.recordedAudioUrl);
-      state.recordedAudioUrl = null;
-    }
+    cleanupRecording();
+    state.recordingState = 'starting';
     state.recordedDuration = 0;
+    renderRecitation();
+    setStatus('recitation-status', t('page_mic_requesting', 'جارٍ تجهيز الميكروفون…'));
 
+    const session = state.recordingSession;
+    let stream;
     try {
-      state.mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream = await requestMic();
     } catch (err) {
-      setStatus('recitation-status', t('page_mic_permission_denied', 'تعذر الوصول إلى الميكروفون. يرجى السماح بالإذن في المتصفح أو المتابعة بدون تسجيل.'), true);
+      if (session === state.recordingSession) {
+        state.recordingState = 'idle';
+        renderRecitation();
+        setStatus('recitation-status', t('page_mic_permission_denied', 'تعذر الوصول إلى الميكروفون. يرجى السماح بالإذن في المتصفح أو المتابعة بدون تسجيل.'), true);
+      }
       return;
     }
 
-    state.recordingChunks = [];
-    const mimeType = getBestMimeType();
-    const options = mimeType ? { mimeType } : {};
-    try {
-      state.mediaRecorder = new MediaRecorder(state.mediaStream, options);
-    } catch (e) {
-      state.mediaRecorder = new MediaRecorder(state.mediaStream);
+    // The user may have revealed the page, re-recorded or left the stage while
+    // the permission prompt was open.
+    if (session !== state.recordingSession || state.recordingState !== 'starting' || state.stage !== 'recitation') {
+      stream.getTracks().forEach((track) => track.stop());
+      return;
     }
 
-    state.mediaRecorder.ondataavailable = (event) => {
+    state.mediaStream = stream;
+    const chunks = state.recordingChunks = [];
+    const mimeType = getBestMimeType();
+    const options = mimeType ? { mimeType } : {};
+    let recorder;
+    try {
+      recorder = new MediaRecorder(stream, options);
+    } catch (e) {
+      try {
+        recorder = new MediaRecorder(stream);
+      } catch (err) {
+        stream.getTracks().forEach((track) => track.stop());
+        state.mediaStream = null;
+        state.recordingState = 'idle';
+        renderRecitation();
+        setStatus('recitation-status', t('page_recording_failed', 'تعذر بدء التسجيل. يمكنك إعادة المحاولة أو كشف الصفحة مباشرة.'), true);
+        return;
+      }
+    }
+    state.mediaRecorder = recorder;
+
+    recorder.ondataavailable = (event) => {
+      if (session !== state.recordingSession) return;
       if (event.data && event.data.size > 0) {
-        state.recordingChunks.push(event.data);
+        chunks.push(event.data);
       }
     };
 
-    state.mediaRecorder.onstop = () => {
-      if (state.mediaStream) {
-        state.mediaStream.getTracks().forEach((track) => track.stop());
-        state.mediaStream = null;
-      }
-      const finalMime = (state.mediaRecorder && state.mediaRecorder.mimeType) || mimeType || 'audio/webm';
-      const blob = new Blob(state.recordingChunks, { type: finalMime });
+    recorder.onerror = () => {
+      if (session !== state.recordingSession) return;
+      cleanupRecording();
+      state.recordingState = 'idle';
+      renderRecitation();
+      setStatus('recitation-status', t('page_recording_failed', 'تعذر بدء التسجيل. يمكنك إعادة المحاولة أو كشف الصفحة مباشرة.'), true);
+    };
+
+    recorder.onstop = () => {
+      stream.getTracks().forEach((track) => track.stop());
+      if (state.mediaStream === stream) state.mediaStream = null;
+      if (session !== state.recordingSession) return;
+
+      if (state.mediaRecorder === recorder) state.mediaRecorder = null;
+      const finalMime = recorder.mimeType || mimeType || 'audio/webm';
+      const blob = new Blob(chunks, { type: finalMime });
       if (blob.size > 0) {
         state.recordedAudioUrl = URL.createObjectURL(blob);
-        state.recordingState = 'playback';
-        state.revealed = true;
-        renderRecitation();
-        const player = $('recorded-audio');
-        if (player) {
-          player.src = state.recordedAudioUrl;
+      }
+
+      // Always move on to the review step: even when the browser produced an
+      // empty blob the user must never be stuck on the recording screen.
+      state.recordingState = 'playback';
+      state.revealed = true;
+      renderRecitation();
+      setStatus('recitation-status', '');
+      scrollRecitationReveal();
+
+      const player = $('recorded-audio');
+      if (state.recordedAudioUrl && player) {
+        player.src = state.recordedAudioUrl;
+        try {
           const p = player.play();
           if (p && typeof p.catch === 'function') p.catch(() => {});
-        }
+        } catch (e) {}
+      } else if (!state.recordedAudioUrl) {
+        setStatus('recitation-status', t('page_recording_empty', 'لم يُسجَّل صوت هذه المرة. أعد المحاولة أو استمع للقارئ.'), true);
       }
     };
 
     state.recordingStartTime = Date.now();
     state.recordingState = 'recording';
     state.revealed = false;
-    state.mediaRecorder.start(250);
+    try {
+      recorder.start(250);
+    } catch (e) {
+      recorder.onstop = null;
+      stream.getTracks().forEach((track) => track.stop());
+      state.mediaStream = null;
+      state.mediaRecorder = null;
+      state.recordingState = 'idle';
+      renderRecitation();
+      setStatus('recitation-status', t('page_recording_failed', 'تعذر بدء التسجيل. يمكنك إعادة المحاولة أو كشف الصفحة مباشرة.'), true);
+      return;
+    }
     renderRecitation();
+    setStatus('recitation-status', '');
 
     const timerEl = $('recording-timer');
     if (timerEl) timerEl.textContent = '00:00';
@@ -734,30 +820,51 @@
     }, 500);
   }
 
-  function stopRecording(reveal = true) {
+  function stopRecording() {
     if (state.recordingTimerId) {
       clearInterval(state.recordingTimerId);
       state.recordingTimerId = null;
     }
-    state.recordedDuration = Math.round((Date.now() - (state.recordingStartTime || Date.now())) / 1000);
-    if (state.mediaRecorder && state.mediaRecorder.state !== 'inactive') {
-      try {
-        state.mediaRecorder.stop();
-      } catch (e) {}
-    } else {
-      if (state.mediaStream) {
-        state.mediaStream.getTracks().forEach((track) => track.stop());
-        state.mediaStream = null;
-      }
-      if (reveal) {
-        state.recordingState = 'playback';
-        state.revealed = true;
-        renderRecitation();
-      }
+    if (state.recordingState === 'recording') {
+      state.recordedDuration = Math.round((Date.now() - (state.recordingStartTime || Date.now())) / 1000);
     }
+    const recorder = state.mediaRecorder;
+    if (recorder && recorder.state !== 'inactive') {
+      state.recordingState = 'stopping';
+      const badge = $('recording-timer');
+      if (badge) badge.textContent = formatTime(state.recordedDuration);
+      setStatus('recitation-status', t('page_recording_finishing', 'جارٍ تجهيز التسجيل…'));
+      try {
+        recorder.stop();
+      } catch (e) {
+        try { recorder.onstop(); } catch (err) {}
+      }
+      // Safety net: some mobile browsers never fire `stop` after backgrounding.
+      const stopSession = state.recordingSession;
+      setTimeout(() => {
+        if (state.recordingSession === stopSession && state.recordingState === 'stopping') {
+          state.recordingState = 'playback';
+          state.revealed = true;
+          renderRecitation();
+          setStatus('recitation-status', '');
+          scrollRecitationReveal();
+        }
+      }, 4000);
+      return;
+    }
+
+    if (state.mediaStream) {
+      state.mediaStream.getTracks().forEach((track) => track.stop());
+      state.mediaStream = null;
+    }
+    state.recordingState = 'playback';
+    state.revealed = true;
+    renderRecitation();
+    scrollRecitationReveal();
   }
 
   function rerecord() {
+    if (state.busy) return;
     stopAudio();
     cleanupRecording();
     state.recordingState = 'idle';
@@ -768,12 +875,25 @@
 
   function revealDirectly() {
     stopAudio();
-    if (state.recordingState === 'recording') {
-      stopRecording(false);
+    if (state.recordingState === 'recording' || state.recordingState === 'stopping') {
+      // Keep the take that was already recorded, then reveal it.
+      stopRecording();
+      return;
+    }
+    if (state.recordingState === 'starting') {
+      cleanupRecording();
     }
     state.recordingState = 'playback';
     state.revealed = true;
+    setStatus('recitation-status', '');
     renderRecitation();
+    scrollRecitationReveal();
+  }
+
+  function scrollRecitationReveal() {
+    const pageEl = $('recitation-page');
+    if (!pageEl || typeof pageEl.scrollIntoView !== 'function') return;
+    try { pageEl.scrollIntoView({ block: 'start', behavior: 'smooth' }); } catch (e) {}
   }
 
   function renderRecitation() {
@@ -789,8 +909,9 @@
     const idleBox = $('recorder-state-idle');
     const activeBox = $('recorder-state-active');
     const playbackBox = $('recorder-state-playback');
+    const recordingLike = state.recordingState === 'recording' || state.recordingState === 'stopping';
 
-    if (state.recordingState === 'recording') {
+    if (recordingLike) {
       if (idleBox) idleBox.classList.add('hidden');
       if (activeBox) activeBox.classList.remove('hidden');
       if (playbackBox) playbackBox.classList.add('hidden');
@@ -818,6 +939,9 @@
       if (playbackBox) playbackBox.classList.add('hidden');
     }
 
+    const startBtn = $('btn-start-record');
+    if (startBtn) startBtn.disabled = state.recordingState === 'starting';
+
     const pageEl = $('recitation-page');
     if (pageEl && state.revealed) {
       pageEl.classList.remove('hidden');
@@ -838,7 +962,8 @@
 
     const resultActions = $('recitation-result-actions');
     if (resultActions) resultActions.classList.toggle('hidden', !state.revealed);
-    setStatus('recitation-status', '');
+    // Status messages are owned by the actions that set them; re-rendering the
+    // panel must not silently wipe a microphone or playback error.
   }
 
   function ensureAudio() {
@@ -943,6 +1068,8 @@
       if (Array.isArray(data.selections)) state.selections = data.selections;
       if (data.targets) state.targets = data.targets;
       state.stage = 'done';
+      cleanupRecording();
+      state.recordingState = 'idle';
       renderAll();
     } catch (e) {
       setStatus('recitation-status', e.message, true);
@@ -1170,7 +1297,7 @@
     const startRecord = $('btn-start-record');
     if (startRecord) startRecord.addEventListener('click', startRecording);
     const stopRecord = $('btn-stop-record');
-    if (stopRecord) stopRecord.addEventListener('click', () => stopRecording(true));
+    if (stopRecord) stopRecord.addEventListener('click', stopRecording);
     const revealDirect = $('btn-reveal-direct');
     if (revealDirect) revealDirect.addEventListener('click', revealDirectly);
     const rerecordBtn = $('btn-rerecord');

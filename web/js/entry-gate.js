@@ -29,14 +29,17 @@
     quran: null,
     quranPromise: null,
     step: 'consolidation',
+    steps: null,
     consolidation: null,
     consolidationAudio: null,
     consolidationPlaying: false,
     consolidationAudioUrl: null,
     consolidationRecording: false,
+    consolidationPending: false,
     consolidationMediaRecorder: null,
     consolidationStream: null,
     consolidationChunks: [],
+    consolidationSession: 0,
     consolidationTimerId: null,
     consolidationStartTime: 0,
     kalimaat: null,
@@ -44,6 +47,17 @@
     overlay: null,
     busy: false,
   };
+
+  const STEP_ORDER = ['consolidation', 'kalimaat', 'mistake'];
+  const STEP_LABELS = {
+    consolidation: ['entry_gate_step_page', 'تثبيت الصفحة'],
+    kalimaat: ['entry_gate_step_kalimaat', 'معاني الكلمات'],
+    mistake: ['entry_gate_step_mistake', 'بطاقة الخطأ'],
+  };
+
+  function visibleSteps() {
+    return STEP_ORDER.filter((key) => !state.steps || state.steps[key] !== false);
+  }
 
   function t(key, fallback, params) {
     try {
@@ -107,6 +121,7 @@
 
   function markDone() {
     stopGateAudio();
+    state.consolidationPending = false;
     cleanupGateRecording();
     try { sessionStorage.setItem(SESSION_KEY, '1'); } catch (e) {}
     if (state.overlay && state.overlay.parentNode) {
@@ -136,9 +151,10 @@
         <div>
           <span class="entry-gate-kicker">${esc(kicker)}</span>
           <div class="entry-gate-steps" aria-label="${esc(t('entry_gate_steps', 'خطوات الدخول'))}">
-            <span class="entry-gate-step" data-entry-step="consolidation">${esc(t('entry_gate_step_page', 'تثبيت الصفحة'))}</span>
-            <span class="entry-gate-step" data-entry-step="kalimaat">${esc(t('entry_gate_step_kalimaat', 'معاني الكلمات'))}</span>
-            <span class="entry-gate-step" data-entry-step="mistake">${esc(t('entry_gate_step_mistake', 'بطاقة الخطأ'))}</span>
+            ${visibleSteps().map((key) => {
+              const label = STEP_LABELS[key];
+              return `<span class="entry-gate-step" data-entry-step="${key}">${esc(t(label[0], label[1]))}</span>`;
+            }).join('')}
           </div>
         </div>
         <span class="entry-gate-lock" aria-hidden="true">🔒</span>
@@ -197,14 +213,21 @@
   }
 
   function cleanupGateRecording() {
+    state.consolidationSession += 1;
     if (state.consolidationTimerId) {
       clearInterval(state.consolidationTimerId);
       state.consolidationTimerId = null;
     }
-    if (state.consolidationMediaRecorder && state.consolidationMediaRecorder.state !== 'inactive') {
-      try { state.consolidationMediaRecorder.stop(); } catch (e) {}
-    }
+    const recorder = state.consolidationMediaRecorder;
     state.consolidationMediaRecorder = null;
+    if (recorder) {
+      recorder.ondataavailable = null;
+      recorder.onstop = null;
+      recorder.onerror = null;
+      if (recorder.state !== 'inactive') {
+        try { recorder.stop(); } catch (e) {}
+      }
+    }
     if (state.consolidationStream) {
       state.consolidationStream.getTracks().forEach((track) => track.stop());
       state.consolidationStream = null;
@@ -237,28 +260,55 @@
     if (play) play.classList.remove('hidden');
   }
 
+  async function requestGateMic() {
+    try {
+      return await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+      });
+    } catch (err) {
+      if (err && (err.name === 'NotAllowedError' || err.name === 'SecurityError')) throw err;
+      return navigator.mediaDevices.getUserMedia({ audio: true });
+    }
+  }
+
   async function startGateRecording() {
     const c = state.consolidation;
     if (!c || c.busy) return;
+    if (state.consolidationRecording || state.consolidationPending) return;
     if (typeof navigator === 'undefined' || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof MediaRecorder === 'undefined') {
       const status = document.getElementById('entry-gate-consolidation-status');
       if (status) status.textContent = t('page_mic_unsupported', 'التسجيل الصوتي غير مدعوم في هذا المتصفح.');
       return;
     }
     stopGateAudio();
-    if (state.consolidationAudioUrl) {
-      URL.revokeObjectURL(state.consolidationAudioUrl);
-      state.consolidationAudioUrl = null;
-    }
+    cleanupGateRecording();
+    const session = state.consolidationSession;
+    state.consolidationPending = true;
+    c.revealed = false;
+    const pendingStatus = document.getElementById('entry-gate-consolidation-status');
+    if (pendingStatus) pendingStatus.textContent = t('page_mic_requesting', 'جارٍ تجهيز الميكروفون…');
+
+    let stream;
     try {
-      state.consolidationStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream = await requestGateMic();
     } catch (err) {
-      const status = document.getElementById('entry-gate-consolidation-status');
-      if (status) status.textContent = t('page_mic_permission_denied', 'تعذر الوصول إلى الميكروفون. يرجى السماح بالإذن أو كشف الصفحة مباشرة.');
+      if (session === state.consolidationSession) {
+        state.consolidationPending = false;
+        renderConsolidation();
+        const status = document.getElementById('entry-gate-consolidation-status');
+        if (status) status.textContent = t('page_mic_permission_denied', 'تعذر الوصول إلى الميكروفون. يرجى السماح بالإذن أو كشف الصفحة مباشرة.');
+      }
       return;
     }
 
-    state.consolidationChunks = [];
+    state.consolidationPending = false;
+    if (session !== state.consolidationSession || c.revealed || !state.consolidation || state.step !== 'consolidation') {
+      stream.getTracks().forEach((track) => track.stop());
+      return;
+    }
+
+    state.consolidationStream = stream;
+    const chunks = state.consolidationChunks = [];
     let mimeType = '';
     const candidates = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg'];
     if (MediaRecorder.isTypeSupported) {
@@ -269,40 +319,79 @@
         }
       }
     }
+    let recorder;
     try {
-      state.consolidationMediaRecorder = new MediaRecorder(state.consolidationStream, mimeType ? { mimeType } : {});
+      recorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
     } catch (e) {
-      state.consolidationMediaRecorder = new MediaRecorder(state.consolidationStream);
+      try {
+        recorder = new MediaRecorder(stream);
+      } catch (err) {
+        stream.getTracks().forEach((track) => track.stop());
+        state.consolidationStream = null;
+        state.consolidationRecording = false;
+        renderConsolidation();
+        const status = document.getElementById('entry-gate-consolidation-status');
+        if (status) status.textContent = t('page_recording_failed', 'تعذر بدء التسجيل. يمكنك إعادة المحاولة أو كشف الصفحة مباشرة.');
+        return;
+      }
     }
+    state.consolidationMediaRecorder = recorder;
 
-    state.consolidationMediaRecorder.ondataavailable = (e) => {
-      if (e.data && e.data.size > 0) state.consolidationChunks.push(e.data);
+    recorder.ondataavailable = (e) => {
+      if (session !== state.consolidationSession) return;
+      if (e.data && e.data.size > 0) chunks.push(e.data);
     };
 
-    state.consolidationMediaRecorder.onstop = () => {
-      if (state.consolidationStream) {
-        state.consolidationStream.getTracks().forEach((track) => track.stop());
-        state.consolidationStream = null;
-      }
-      const finalMime = (state.consolidationMediaRecorder && state.consolidationMediaRecorder.mimeType) || mimeType || 'audio/webm';
-      const blob = new Blob(state.consolidationChunks, { type: finalMime });
+    recorder.onerror = () => {
+      if (session !== state.consolidationSession) return;
+      cleanupGateRecording();
+      renderConsolidation();
+      const status = document.getElementById('entry-gate-consolidation-status');
+      if (status) status.textContent = t('page_recording_failed', 'تعذر بدء التسجيل. يمكنك إعادة المحاولة أو كشف الصفحة مباشرة.');
+    };
+
+    recorder.onstop = () => {
+      stream.getTracks().forEach((track) => track.stop());
+      if (state.consolidationStream === stream) state.consolidationStream = null;
+      if (session !== state.consolidationSession) return;
+
+      if (state.consolidationMediaRecorder === recorder) state.consolidationMediaRecorder = null;
+      const finalMime = recorder.mimeType || mimeType || 'audio/webm';
+      const blob = new Blob(chunks, { type: finalMime });
       if (blob.size > 0) {
         state.consolidationAudioUrl = URL.createObjectURL(blob);
-        c.revealed = true;
-        renderConsolidation();
-        const player = document.getElementById('entry-gate-recorded-audio');
-        if (player) {
-          player.src = state.consolidationAudioUrl;
+      }
+      // Reveal the page regardless so the user is never trapped in recording.
+      state.consolidationRecording = false;
+      c.revealed = true;
+      renderConsolidation();
+      scrollGateReveal();
+      const player = document.getElementById('entry-gate-recorded-audio');
+      if (state.consolidationAudioUrl && player) {
+        player.src = state.consolidationAudioUrl;
+        try {
           const p = player.play();
           if (p && typeof p.catch === 'function') p.catch(() => {});
-        }
+        } catch (e) {}
       }
     };
 
     state.consolidationStartTime = Date.now();
-    state.consolidationRecording = true;
     c.revealed = false;
-    state.consolidationMediaRecorder.start(250);
+    state.consolidationRecording = true;
+    try {
+      recorder.start(250);
+    } catch (e) {
+      recorder.onstop = null;
+      stream.getTracks().forEach((track) => track.stop());
+      state.consolidationStream = null;
+      state.consolidationMediaRecorder = null;
+      state.consolidationRecording = false;
+      renderConsolidation();
+      const status = document.getElementById('entry-gate-consolidation-status');
+      if (status) status.textContent = t('page_recording_failed', 'تعذر بدء التسجيل. يمكنك إعادة المحاولة أو كشف الصفحة مباشرة.');
+      return;
+    }
     renderConsolidation();
 
     if (state.consolidationTimerId) clearInterval(state.consolidationTimerId);
@@ -323,18 +412,33 @@
       state.consolidationTimerId = null;
     }
     state.consolidationRecording = false;
-    if (state.consolidationMediaRecorder && state.consolidationMediaRecorder.state !== 'inactive') {
-      try { state.consolidationMediaRecorder.stop(); } catch (e) {}
-    } else {
-      if (state.consolidationStream) {
-        state.consolidationStream.getTracks().forEach((track) => track.stop());
-        state.consolidationStream = null;
+    const recorder = state.consolidationMediaRecorder;
+    if (recorder && recorder.state !== 'inactive') {
+      const status = document.getElementById('entry-gate-consolidation-status');
+      if (status) status.textContent = t('page_recording_finishing', 'جارٍ تجهيز التسجيل…');
+      try {
+        recorder.stop();
+      } catch (e) {
+        try { recorder.onstop(); } catch (err) {}
       }
-      const c = state.consolidation;
-      if (c) {
-        c.revealed = true;
-        renderConsolidation();
-      }
+      const stopSession = state.consolidationSession;
+      setTimeout(() => {
+        if (state.consolidationSession === stopSession && state.step === 'consolidation' && state.consolidation && !state.consolidation.revealed) {
+          state.consolidation.revealed = true;
+          renderConsolidation();
+        }
+      }, 4000);
+      return;
+    }
+    if (state.consolidationStream) {
+      state.consolidationStream.getTracks().forEach((track) => track.stop());
+      state.consolidationStream = null;
+    }
+    const c = state.consolidation;
+    if (c) {
+      c.revealed = true;
+      renderConsolidation();
+      scrollGateReveal();
     }
   }
 
@@ -402,6 +506,12 @@
       busy: false,
     };
     renderConsolidation();
+  }
+
+  function scrollGateReveal() {
+    const target = document.getElementById('entry-gate-page-scroll');
+    if (!target || typeof target.scrollIntoView !== 'function') return;
+    try { target.scrollIntoView({ block: 'start', behavior: 'smooth' }); } catch (e) {}
   }
 
   function renderConsolidation() {
@@ -521,6 +631,7 @@
     const rerecord = document.getElementById('entry-gate-record-rerecord');
     if (rerecord) {
       rerecord.addEventListener('click', () => {
+        state.consolidationPending = false;
         cleanupGateRecording();
         startGateRecording();
       });
@@ -528,8 +639,12 @@
     const reveal = document.getElementById('entry-gate-page-reveal');
     if (reveal) {
       reveal.addEventListener('click', () => {
+        stopGateAudio();
+        state.consolidationPending = false;
+        cleanupGateRecording();
         c.revealed = true;
         renderConsolidation();
+        scrollGateReveal();
       });
     }
     const qariPlay = document.getElementById('entry-gate-qari-play');
@@ -1011,9 +1126,11 @@
         <p>${esc(t('entry_gate_finish_desc', 'أنت جاهز لمهام اليوم. لن تظهر هذه البوابة مرة أخرى في هذه الجلسة.'))}</p>
       </div>
       <div class="entry-gate-summary">
-        <div><span>${esc(t('entry_gate_step_page', 'تثبيت الصفحة'))}</span><strong>${state.consolidation ? '✓' : '—'}</strong></div>
-        <div><span>${esc(t('entry_gate_step_kalimaat', 'معاني الكلمات'))}</span><strong>${state.kalimaat ? '✓' : '—'}</strong></div>
-        <div><span>${esc(t('entry_gate_step_mistake', 'بطاقة الخطأ'))}</span><strong>${state.mistake ? '✓' : '—'}</strong></div>
+        ${visibleSteps().map((key) => {
+          const label = STEP_LABELS[key];
+          const doneFlag = key === 'consolidation' ? state.consolidation : (key === 'kalimaat' ? state.kalimaat : state.mistake);
+          return `<div><span>${esc(t(label[0], label[1]))}</span><strong>${doneFlag ? '✓' : '—'}</strong></div>`;
+        }).join('')}
       </div>
       <div class="entry-gate-actions">
         <button type="button" class="btn btn-primary entry-gate-main-btn" id="entry-gate-close">
@@ -1056,6 +1173,21 @@
     });
   }
 
+  async function resolveConsolidation(payload) {
+    if (payload && payload.available && payload.task) return payload;
+    // Older deployments of api/kalimaat/get_entry.php predate page
+    // consolidation and omit the `consolidation` block entirely. Ask the page
+    // API directly so the gate still opens with page consolidation first
+    // instead of silently skipping it.
+    try {
+      const { ok, data } = await api('../api/tasks/consolidation.php', { method: 'GET' });
+      if (ok && data && data.success && data.task && !data.task.is_completed) {
+        return { available: true, task: data.task };
+      }
+    } catch (e) {}
+    return payload || { available: false, reason: 'UNAVAILABLE' };
+  }
+
   async function boot() {
     let done = false;
     try { done = sessionStorage.getItem(SESSION_KEY) === '1'; } catch (e) {}
@@ -1073,6 +1205,7 @@
       }
 
       state.data = data;
+      data.consolidation = await resolveConsolidation(data.consolidation);
       const hasConsolidation = !!(data.consolidation && data.consolidation.available && data.consolidation.task);
       const hasKalimaat = !!(data.kalimaat && data.kalimaat.available);
       const hasMistake = !!(data.mistake && data.mistake.available);
@@ -1080,6 +1213,12 @@
         markDone();
         return;
       }
+
+      state.steps = {
+        consolidation: hasConsolidation,
+        kalimaat: hasKalimaat,
+        mistake: hasMistake,
+      };
 
       showOverlay();
       if (hasConsolidation) startConsolidation();
