@@ -188,6 +188,7 @@
         <div class="consolidation-actions">
           <button type="button" class="btn btn-ghost" id="btn-arrangement-undo" data-i18n="page_undo_word">تراجع عن كلمة</button>
           <button type="button" class="btn btn-ghost" id="btn-arrangement-reset" data-i18n="page_reset_chunk">إعادة ترتيب المقطع</button>
+          <button type="button" class="btn btn-ghost" id="btn-skip-to-recite" data-i18n="page_skip_to_recite">الانتقال إلى التسميع والتسجيل مباشرة ←</button>
         </div>
         <p class="hint" id="arrangement-status" role="status"></p>
       </section>
@@ -206,62 +207,7 @@
         </div>
 
         <!-- Voice Recorder & Playback Controller -->
-        <div class="consolidation-recorder-box" id="recitation-recorder-box">
-          <!-- State 1: Idle (Ready to record) -->
-          <div class="recorder-state recorder-state-idle" id="recorder-state-idle">
-            <button type="button" class="btn btn-primary btn-record-main" id="btn-start-record">
-              <span class="record-icon" aria-hidden="true">🎙️</span>
-              <span data-i18n="page_start_recording">ابدأ تسجيل التلاوة</span>
-            </button>
-            <button type="button" class="btn btn-ghost btn-sm" id="btn-reveal-direct" data-i18n="page_reveal_without_record">كشف الصفحة مباشرة بدون تسجيل</button>
-          </div>
-
-          <!-- State 2: Recording in progress -->
-          <div class="recorder-state recorder-state-active hidden" id="recorder-state-active">
-            <div class="recording-pulse-badge">
-              <span class="recording-dot" aria-hidden="true"></span>
-              <span class="recording-text" data-i18n="page_recording_active">جارٍ التسجيل... سمّع الصفحة غيبًا</span>
-              <span class="recording-timer" id="recording-timer">00:00</span>
-            </div>
-            <button type="button" class="btn btn-danger btn-stop-record" id="btn-stop-record">
-              <span aria-hidden="true">⏹️</span>
-              <span data-i18n="page_stop_recording">إيقاف التسجيل وعرض الصفحة</span>
-            </button>
-          </div>
-
-          <!-- State 3: Playback & Review -->
-          <div class="recorder-state recorder-state-playback hidden" id="recorder-state-playback">
-            <div class="playback-card" id="playback-card">
-              <div class="playback-card-header">
-                <span class="playback-card-title">
-                  <span aria-hidden="true">🎙️</span>
-                  <strong data-i18n="page_my_recording_label">تسجيل تلاوتك:</strong>
-                </span>
-                <span class="playback-duration" id="record-duration-badge">00:00</span>
-              </div>
-              <div class="playback-audio-wrap" id="playback-audio-wrap">
-                <audio id="recorded-audio" controls preload="metadata" class="recorded-audio-player"></audio>
-              </div>
-              <div class="playback-sub-actions">
-                <button type="button" class="btn btn-ghost btn-sm" id="btn-rerecord">
-                  <span aria-hidden="true">🔄</span>
-                  <span data-i18n="page_rerecord">إعادة التسجيل</span>
-                </button>
-                <button type="button" class="btn btn-ghost btn-sm" id="btn-qari-audio">
-                  <span aria-hidden="true">🔊</span>
-                  <span data-i18n="page_listen_qari">استمع للقارئ (مشاري العفاسي)</span>
-                </button>
-                <button type="button" class="btn btn-ghost btn-sm hidden" id="btn-stop-qari">
-                  <span aria-hidden="true">⏹️</span>
-                  <span data-i18n="page_stop_qari">إيقاف تلاوة القارئ</span>
-                </button>
-              </div>
-            </div>
-            <p class="consolidation-review-notice" data-i18n="page_review_check_hint">
-              استمع لتسجيلك وقارنه بنص المصحف أدناه لرصد أي سقط أو خطأ:
-            </p>
-          </div>
-        </div>
+        <div class="consolidation-recorder-box" id="recitation-recorder-box"></div>
 
         <div id="recitation-page" class="consolidation-page-text hidden" dir="rtl"></div>
         <div id="recitation-result-actions" class="consolidation-result-actions hidden">

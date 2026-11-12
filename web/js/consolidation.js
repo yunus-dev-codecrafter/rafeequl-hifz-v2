@@ -31,19 +31,15 @@
     playingIndex: -1,
     playing: false,
     activeTab: 'SURAH',
-    // Voice recording
+    // Voice recording & playback (mirrors entry-gate engine)
+    recording: false,
+    recordingPending: false,
     mediaRecorder: null,
     mediaStream: null,
     recordingChunks: [],
     recordingTimerId: null,
     recordingStartTime: 0,
     recordedAudioUrl: null,
-    recordedDuration: 0,
-    // 'idle' | 'starting' | 'recording' | 'stopping' | 'playback'
-    recordingState: 'idle',
-    // Incremented whenever a recorder is discarded. Stale MediaRecorder
-    // callbacks compare against it and bail out, so a stopped recorder can
-    // never stop the *next* recording or reveal the page too early.
     recordingSession: 0,
     lastResult: null,
     justCompletedPage: null,
@@ -156,7 +152,6 @@
 
     if (resetStage) {
       cleanupRecording();
-      state.recordingState = 'idle';
       state.revealed = false;
       state.chunkStart = 0;
       state.placed = [];
@@ -604,7 +599,7 @@
   }
 
   /* ---------------------------------------------------------------------
-   * Stage 2 — recitation, recording, playback and verification
+   * Stage 2 — recitation, recording, playback and verification (entry-gate engine)
    * ------------------------------------------------------------------ */
 
   function isRecordingSupported() {
@@ -621,8 +616,6 @@
         audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
       });
     } catch (err) {
-      // Some browsers reject the processing constraints above while still
-      // allowing plain audio capture. Only retry on constraint failures.
       if (err && (err.name === 'NotAllowedError' || err.name === 'SecurityError')) throw err;
       return navigator.mediaDevices.getUserMedia({ audio: true });
     }
@@ -648,15 +641,7 @@
     return '';
   }
 
-  function formatTime(sec) {
-    const s = Math.max(0, Math.floor(sec || 0));
-    const m = Math.floor(s / 60);
-    const rem = s % 60;
-    return String(m).padStart(2, '0') + ':' + String(rem).padStart(2, '0');
-  }
-
   function cleanupRecording() {
-    // Invalidate every handler belonging to the recorder we are about to drop.
     state.recordingSession += 1;
     if (state.recordingTimerId) {
       clearInterval(state.recordingTimerId);
@@ -676,49 +661,44 @@
       state.mediaStream.getTracks().forEach((track) => track.stop());
       state.mediaStream = null;
     }
-    state.recordingChunks = [];
-    const recordedAudio = $('recorded-audio');
-    if (recordedAudio) {
-      try { recordedAudio.pause(); } catch (e) {}
-      recordedAudio.removeAttribute('src');
-      try { recordedAudio.load(); } catch (e) {}
-    }
     if (state.recordedAudioUrl) {
       URL.revokeObjectURL(state.recordedAudioUrl);
       state.recordedAudioUrl = null;
     }
+    state.recording = false;
+    state.recordingPending = false;
+    state.recordingChunks = [];
   }
 
   async function startRecording() {
     if (state.busy) return;
-    if (state.recordingState === 'recording' || state.recordingState === 'starting') return;
+    if (state.recording || state.recordingPending) return;
     if (!isRecordingSupported()) {
       setStatus('recitation-status', t('page_mic_unsupported', 'التسجيل الصوتي غير مدعوم في هذا المتصفح.'), true);
       return;
     }
     stopAudio();
     cleanupRecording();
-    state.recordingState = 'starting';
-    state.recordedDuration = 0;
+    const session = state.recordingSession;
+    state.recordingPending = true;
+    state.revealed = false;
     renderRecitation();
     setStatus('recitation-status', t('page_mic_requesting', 'جارٍ تجهيز الميكروفون…'));
 
-    const session = state.recordingSession;
     let stream;
     try {
       stream = await requestMic();
     } catch (err) {
       if (session === state.recordingSession) {
-        state.recordingState = 'idle';
+        state.recordingPending = false;
         renderRecitation();
-        setStatus('recitation-status', t('page_mic_permission_denied', 'تعذر الوصول إلى الميكروفون. يرجى السماح بالإذن في المتصفح أو المتابعة بدون تسجيل.'), true);
+        setStatus('recitation-status', t('page_mic_permission_denied', 'تعذر الوصول إلى الميكروفون. يرجى السماح بالإذن أو كشف الصفحة مباشرة.'), true);
       }
       return;
     }
 
-    // The user may have revealed the page, re-recorded or left the stage while
-    // the permission prompt was open.
-    if (session !== state.recordingSession || state.recordingState !== 'starting' || state.stage !== 'recitation') {
+    state.recordingPending = false;
+    if (session !== state.recordingSession || state.revealed || state.stage !== 'recitation') {
       stream.getTracks().forEach((track) => track.stop());
       return;
     }
@@ -726,17 +706,16 @@
     state.mediaStream = stream;
     const chunks = state.recordingChunks = [];
     const mimeType = getBestMimeType();
-    const options = mimeType ? { mimeType } : {};
     let recorder;
     try {
-      recorder = new MediaRecorder(stream, options);
+      recorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
     } catch (e) {
       try {
         recorder = new MediaRecorder(stream);
       } catch (err) {
         stream.getTracks().forEach((track) => track.stop());
         state.mediaStream = null;
-        state.recordingState = 'idle';
+        state.recording = false;
         renderRecitation();
         setStatus('recitation-status', t('page_recording_failed', 'تعذر بدء التسجيل. يمكنك إعادة المحاولة أو كشف الصفحة مباشرة.'), true);
         return;
@@ -744,17 +723,14 @@
     }
     state.mediaRecorder = recorder;
 
-    recorder.ondataavailable = (event) => {
+    recorder.ondataavailable = (e) => {
       if (session !== state.recordingSession) return;
-      if (event.data && event.data.size > 0) {
-        chunks.push(event.data);
-      }
+      if (e.data && e.data.size > 0) chunks.push(e.data);
     };
 
     recorder.onerror = () => {
       if (session !== state.recordingSession) return;
       cleanupRecording();
-      state.recordingState = 'idle';
       renderRecitation();
       setStatus('recitation-status', t('page_recording_failed', 'تعذر بدء التسجيل. يمكنك إعادة المحاولة أو كشف الصفحة مباشرة.'), true);
     };
@@ -770,15 +746,12 @@
       if (blob.size > 0) {
         state.recordedAudioUrl = URL.createObjectURL(blob);
       }
-
-      // Always move on to the review step: even when the browser produced an
-      // empty blob the user must never be stuck on the recording screen.
-      state.recordingState = 'playback';
+      // Reveal the page regardless so the user is never trapped in recording
+      state.recording = false;
       state.revealed = true;
       renderRecitation();
       setStatus('recitation-status', '');
       scrollRecitationReveal();
-
       const player = $('recorded-audio');
       if (state.recordedAudioUrl && player) {
         player.src = state.recordedAudioUrl;
@@ -786,14 +759,12 @@
           const p = player.play();
           if (p && typeof p.catch === 'function') p.catch(() => {});
         } catch (e) {}
-      } else if (!state.recordedAudioUrl) {
-        setStatus('recitation-status', t('page_recording_empty', 'لم يُسجَّل صوت هذه المرة. أعد المحاولة أو استمع للقارئ.'), true);
       }
     };
 
     state.recordingStartTime = Date.now();
-    state.recordingState = 'recording';
     state.revealed = false;
+    state.recording = true;
     try {
       recorder.start(250);
     } catch (e) {
@@ -801,7 +772,7 @@
       stream.getTracks().forEach((track) => track.stop());
       state.mediaStream = null;
       state.mediaRecorder = null;
-      state.recordingState = 'idle';
+      state.recording = false;
       renderRecitation();
       setStatus('recitation-status', t('page_recording_failed', 'تعذر بدء التسجيل. يمكنك إعادة المحاولة أو كشف الصفحة مباشرة.'), true);
       return;
@@ -809,14 +780,15 @@
     renderRecitation();
     setStatus('recitation-status', '');
 
-    const timerEl = $('recording-timer');
-    if (timerEl) timerEl.textContent = '00:00';
     if (state.recordingTimerId) clearInterval(state.recordingTimerId);
     state.recordingTimerId = setInterval(() => {
       const elapsed = Math.floor((Date.now() - state.recordingStartTime) / 1000);
-      state.recordedDuration = elapsed;
-      const el = $('recording-timer');
-      if (el) el.textContent = formatTime(elapsed);
+      const m = Math.floor(elapsed / 60);
+      const s = elapsed % 60;
+      const timerEl = $('recording-timer');
+      if (timerEl) {
+        timerEl.textContent = String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+      }
     }, 500);
   }
 
@@ -825,25 +797,18 @@
       clearInterval(state.recordingTimerId);
       state.recordingTimerId = null;
     }
-    if (state.recordingState === 'recording') {
-      state.recordedDuration = Math.round((Date.now() - (state.recordingStartTime || Date.now())) / 1000);
-    }
+    state.recording = false;
     const recorder = state.mediaRecorder;
     if (recorder && recorder.state !== 'inactive') {
-      state.recordingState = 'stopping';
-      const badge = $('recording-timer');
-      if (badge) badge.textContent = formatTime(state.recordedDuration);
       setStatus('recitation-status', t('page_recording_finishing', 'جارٍ تجهيز التسجيل…'));
       try {
         recorder.stop();
       } catch (e) {
         try { recorder.onstop(); } catch (err) {}
       }
-      // Safety net: some mobile browsers never fire `stop` after backgrounding.
       const stopSession = state.recordingSession;
       setTimeout(() => {
-        if (state.recordingSession === stopSession && state.recordingState === 'stopping') {
-          state.recordingState = 'playback';
+        if (state.recordingSession === stopSession && !state.revealed) {
           state.revealed = true;
           renderRecitation();
           setStatus('recitation-status', '');
@@ -852,38 +817,26 @@
       }, 4000);
       return;
     }
-
     if (state.mediaStream) {
       state.mediaStream.getTracks().forEach((track) => track.stop());
       state.mediaStream = null;
     }
-    state.recordingState = 'playback';
     state.revealed = true;
     renderRecitation();
+    setStatus('recitation-status', '');
     scrollRecitationReveal();
   }
 
   function rerecord() {
-    if (state.busy) return;
-    stopAudio();
+    state.recordingPending = false;
     cleanupRecording();
-    state.recordingState = 'idle';
-    state.revealed = false;
-    renderRecitation();
     startRecording();
   }
 
   function revealDirectly() {
     stopAudio();
-    if (state.recordingState === 'recording' || state.recordingState === 'stopping') {
-      // Keep the take that was already recorded, then reveal it.
-      stopRecording();
-      return;
-    }
-    if (state.recordingState === 'starting') {
-      cleanupRecording();
-    }
-    state.recordingState = 'playback';
+    state.recordingPending = false;
+    cleanupRecording();
     state.revealed = true;
     setStatus('recitation-status', '');
     renderRecitation();
@@ -906,41 +859,87 @@
       prompt.innerHTML = intro.map((word) => `<span>${escHtml(word)}</span>`).join('');
     }
 
-    const idleBox = $('recorder-state-idle');
-    const activeBox = $('recorder-state-active');
-    const playbackBox = $('recorder-state-playback');
-    const recordingLike = state.recordingState === 'recording' || state.recordingState === 'stopping';
-
-    if (recordingLike) {
-      if (idleBox) idleBox.classList.add('hidden');
-      if (activeBox) activeBox.classList.remove('hidden');
-      if (playbackBox) playbackBox.classList.add('hidden');
-    } else if (state.revealed || state.recordingState === 'playback') {
-      if (idleBox) idleBox.classList.add('hidden');
-      if (activeBox) activeBox.classList.add('hidden');
-      if (playbackBox) playbackBox.classList.remove('hidden');
-
-      const audioWrap = $('playback-audio-wrap');
-      const audioEl = $('recorded-audio');
-      const badge = $('record-duration-badge');
-      if (state.recordedAudioUrl) {
-        if (audioWrap) audioWrap.classList.remove('hidden');
-        if (audioEl && audioEl.src !== state.recordedAudioUrl) {
-          audioEl.src = state.recordedAudioUrl;
-        }
-        if (badge) badge.textContent = formatTime(state.recordedDuration);
+    const box = $('recitation-recorder-box');
+    if (box) {
+      if (state.recording) {
+        box.innerHTML = `
+          <div class="recorder-state recorder-state-active" style="align-items: center; text-align: center;">
+            <div class="recording-pulse-badge" style="margin: 0.6rem auto; display: inline-flex;">
+              <span class="recording-dot"></span>
+              <span>${escHtml(t('page_recording_active', 'جارٍ التسجيل... سمّع الصفحة غيبًا'))}</span>
+              <span class="recording-timer" id="recording-timer">00:00</span>
+            </div>
+            <div class="consolidation-actions" style="justify-content: center;">
+              <button type="button" class="btn btn-danger btn-stop-record" id="btn-stop-record">
+                ⏹️ ${escHtml(t('page_stop_recording', 'إيقاف التسجيل وعرض الصفحة'))}
+              </button>
+            </div>
+          </div>`;
+        const stopBtn = $('btn-stop-record');
+        if (stopBtn) stopBtn.addEventListener('click', stopRecording);
+      } else if (!state.revealed) {
+        box.innerHTML = `
+          <div class="recorder-state recorder-state-idle" style="align-items: center; text-align: center;">
+            <div class="consolidation-actions" style="justify-content: center; gap: 0.65rem;">
+              <button type="button" class="btn btn-primary btn-record-main" id="btn-start-record"${state.recordingPending ? ' disabled' : ''}>
+                🎙️ ${escHtml(t('page_start_recording', 'ابدأ تسجيل التلاوة'))}
+              </button>
+              <button type="button" class="btn btn-ghost" id="btn-reveal-direct">
+                ${escHtml(t('page_reveal_without_record', 'كشف الصفحة مباشرة بدون تسجيل'))}
+              </button>
+            </div>
+          </div>`;
+        const startBtn = $('btn-start-record');
+        if (startBtn) startBtn.addEventListener('click', startRecording);
+        const revealBtn = $('btn-reveal-direct');
+        if (revealBtn) revealBtn.addEventListener('click', revealDirectly);
       } else {
-        if (audioWrap) audioWrap.classList.add('hidden');
-        if (badge) badge.textContent = '';
+        box.innerHTML = `
+          <div class="recorder-state recorder-state-playback">
+            <div class="playback-card" style="margin: 0.6rem 0; padding: 0.85rem; border-radius: 14px; background: rgba(15, 118, 110, 0.05); border: 1px solid rgba(15, 118, 110, 0.16);">
+              ${state.recordedAudioUrl ? `
+                <div style="font-size: 0.92rem; font-weight: 700; color: var(--primary, #0f766e); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.4rem;">
+                  <span>🎙️</span>
+                  <span>${escHtml(t('page_my_recording_label', 'تسجيل تلاوتك:'))}</span>
+                </div>
+                <audio controls class="recorded-audio-player" id="recorded-audio" src="${state.recordedAudioUrl}" style="width: 100%; height: 42px;"></audio>
+                <div class="playback-sub-actions" style="margin-top: 0.5rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                  <button type="button" class="btn btn-ghost btn-sm" id="btn-rerecord">
+                    🔄 ${escHtml(t('page_rerecord', 'إعادة التسجيل'))}
+                  </button>
+                  <button type="button" class="btn btn-ghost btn-sm${state.playing ? ' hidden' : ''}" id="btn-qari-audio">
+                    🔊 ${escHtml(t('page_listen_qari', 'استمع للقارئ (مشاري العفاسي)'))}
+                  </button>
+                  <button type="button" class="btn btn-ghost btn-sm${!state.playing ? ' hidden' : ''}" id="btn-stop-qari">
+                    ⏹️ ${escHtml(t('page_stop_qari', 'إيقاف تلاوة القارئ'))}
+                  </button>
+                </div>
+              ` : `
+                <div class="consolidation-actions" style="justify-content: center; gap: 0.5rem; flex-wrap: wrap;">
+                  <button type="button" class="btn btn-ghost btn-sm" id="btn-rerecord">
+                    🎙️ ${escHtml(t('page_start_recording', 'ابدأ تسجيل التلاوة'))}
+                  </button>
+                  <button type="button" class="btn btn-ghost btn-sm${state.playing ? ' hidden' : ''}" id="btn-qari-audio">
+                    🔊 ${escHtml(t('page_listen_qari', 'استمع للقارئ (مشاري العفاسي)'))}
+                  </button>
+                  <button type="button" class="btn btn-ghost btn-sm${!state.playing ? ' hidden' : ''}" id="btn-stop-qari">
+                    ⏹️ ${escHtml(t('page_stop_qari', 'إيقاف تلاوة القارئ'))}
+                  </button>
+                </div>
+              `}
+            </div>
+            <p class="consolidation-review-notice">
+              ${escHtml(t('page_review_check_hint', 'استمع لتسجيلك وقارنه بنص المصحف أدناه لرصد أي سقط أو خطأ:'))}
+            </p>
+          </div>`;
+        const rerecordBtn = $('btn-rerecord');
+        if (rerecordBtn) rerecordBtn.addEventListener('click', rerecord);
+        const qariBtn = $('btn-qari-audio');
+        if (qariBtn) qariBtn.addEventListener('click', playQariAudio);
+        const stopQariBtn = $('btn-stop-qari');
+        if (stopQariBtn) stopQariBtn.addEventListener('click', stopAudio);
       }
-    } else {
-      if (idleBox) idleBox.classList.remove('hidden');
-      if (activeBox) activeBox.classList.add('hidden');
-      if (playbackBox) playbackBox.classList.add('hidden');
     }
-
-    const startBtn = $('btn-start-record');
-    if (startBtn) startBtn.disabled = state.recordingState === 'starting';
 
     const pageEl = $('recitation-page');
     if (pageEl && state.revealed) {
@@ -955,15 +954,8 @@
       pageEl.innerHTML = '';
     }
 
-    const stopQariBtn = $('btn-stop-qari');
-    if (stopQariBtn) stopQariBtn.classList.toggle('hidden', !state.playing);
-    const qariBtn = $('btn-qari-audio');
-    if (qariBtn) qariBtn.classList.toggle('hidden', state.playing);
-
     const resultActions = $('recitation-result-actions');
     if (resultActions) resultActions.classList.toggle('hidden', !state.revealed);
-    // Status messages are owned by the actions that set them; re-rendering the
-    // panel must not silently wipe a microphone or playback error.
   }
 
   function ensureAudio() {
@@ -1069,8 +1061,7 @@
       if (data.targets) state.targets = data.targets;
       state.stage = 'done';
       cleanupRecording();
-      state.recordingState = 'idle';
-      renderAll();
+            renderAll();
     } catch (e) {
       setStatus('recitation-status', e.message, true);
       if (doneBtn) doneBtn.disabled = false;
@@ -1136,8 +1127,7 @@
       state.lastResult = null;
       state.justCompletedPage = null;
       cleanupRecording();
-      state.recordingState = 'idle';
-      state.revealed = false;
+            state.revealed = false;
       state.chunkStart = 0;
       state.placed = [];
       state.bank = [];
@@ -1154,8 +1144,7 @@
     if (state.busy) return;
     state.lastResult = null;
     cleanupRecording();
-    state.recordingState = 'idle';
-    state.revealed = false;
+        state.revealed = false;
     state.chunkStart = 0;
     state.placed = [];
     state.bank = [];
@@ -1294,18 +1283,23 @@
     const reset = $('btn-arrangement-reset');
     if (reset) reset.addEventListener('click', resetChunkWords);
 
-    const startRecord = $('btn-start-record');
-    if (startRecord) startRecord.addEventListener('click', startRecording);
-    const stopRecord = $('btn-stop-record');
-    if (stopRecord) stopRecord.addEventListener('click', stopRecording);
-    const revealDirect = $('btn-reveal-direct');
-    if (revealDirect) revealDirect.addEventListener('click', revealDirectly);
-    const rerecordBtn = $('btn-rerecord');
-    if (rerecordBtn) rerecordBtn.addEventListener('click', rerecord);
-    const qariBtn = $('btn-qari-audio');
-    if (qariBtn) qariBtn.addEventListener('click', playQariAudio);
-    const stopQariBtn = $('btn-stop-qari');
-    if (stopQariBtn) stopQariBtn.addEventListener('click', stopAudio);
+    const skipToRecite = $('btn-skip-to-recite');
+    if (skipToRecite) {
+      skipToRecite.addEventListener('click', () => {
+        state.stage = 'recitation';
+        renderStages();
+      });
+    }
+
+    document.querySelectorAll('[data-stage-chip]').forEach((chip) => {
+      chip.style.cursor = 'pointer';
+      chip.addEventListener('click', () => {
+        const target = chip.dataset.stageChip;
+        if (!target) return;
+        state.stage = target;
+        renderStages();
+      });
+    });
     const done = $('btn-page-done');
     if (done) done.addEventListener('click', () => markResult('DONE'));
     const improve = $('btn-page-improve');
