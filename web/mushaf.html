@@ -32,6 +32,10 @@
         <button type="button" id="mushaf-my-page" class="mushaf-chip-btn hidden" data-i18n="mushaf_my_page" data-i18n-title="mushaf_my_page_title" title="صفحة الحفظ الحالية">
           صفحتي
         </button>
+        <button type="button" id="mushaf-add-consolidation" class="mushaf-chip-btn mushaf-consolidate-btn hidden" data-i18n-title="mushaf_add_consolidation_title" title="أضف هذه الصفحة إلى أولويات تثبيت الحفظ" aria-pressed="false">
+          <span aria-hidden="true">📌</span>
+          <span class="mushaf-consolidate-text" data-consolidation-label data-i18n="mushaf_add_consolidation_short">تثبيت</span>
+        </button>
         <button type="button" class="theme-toggle-btn mushaf-icon-btn" title="تبديل المظهر" aria-label="تبديل المظهر">
           <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <circle cx="12" cy="12" r="4.5" fill="currentColor"></circle>
@@ -65,18 +69,27 @@
 
       <button type="button" id="mushaf-next" class="mushaf-nav-btn" data-i18n-title="mushaf_next_page" aria-label="الصفحة التالية">›</button>
 
-      <div class="mushaf-selects">
-        <select id="mushaf-surah-jump" aria-label="الانتقال إلى سورة" data-i18n-title="mushaf_jump_surah">
-          <option value="" data-i18n="mushaf_jump_surah">السورة…</option>
-        </select>
-        <select id="mushaf-juz-jump" aria-label="الانتقال إلى جزء" data-i18n-title="mushaf_jump_juz">
-          <option value="" data-i18n="mushaf_jump_juz">الجزء…</option>
-        </select>
-      </div>
+      <button type="button" id="mushaf-tools-btn" class="mushaf-icon-btn mushaf-tools-btn" aria-expanded="false" aria-controls="mushaf-tools-panel" data-i18n-title="mushaf_display_options" title="خيارات التصفح وحجم الخط">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+      </button>
 
-      <div class="mushaf-font-controls" role="group" aria-label="حجم الخط" data-i18n-title="mushaf_font_size">
-        <button type="button" id="mushaf-font-dec" class="mushaf-font-btn" data-i18n-title="mushaf_font_smaller" aria-label="تصغير الخط">A−</button>
-        <button type="button" id="mushaf-font-inc" class="mushaf-font-btn" data-i18n-title="mushaf_font_larger" aria-label="تكبير الخط">A+</button>
+      <div id="mushaf-tools-panel" class="mushaf-tools-panel">
+        <div class="mushaf-selects">
+          <select id="mushaf-surah-jump" aria-label="الانتقال إلى سورة" data-i18n-title="mushaf_jump_surah">
+            <option value="" data-i18n="mushaf_jump_surah">السورة…</option>
+          </select>
+          <select id="mushaf-juz-jump" aria-label="الانتقال إلى جزء" data-i18n-title="mushaf_jump_juz">
+            <option value="" data-i18n="mushaf_jump_juz">الجزء…</option>
+          </select>
+        </div>
+
+        <div class="mushaf-font-controls" role="group" aria-label="حجم الخط" data-i18n-title="mushaf_font_size">
+          <button type="button" id="mushaf-font-dec" class="mushaf-font-btn" data-i18n-title="mushaf_font_smaller" aria-label="تصغير الخط">A−</button>
+          <button type="button" id="mushaf-font-inc" class="mushaf-font-btn" data-i18n-title="mushaf_font_larger" aria-label="تكبير الخط">A+</button>
+        </div>
       </div>
 
       <button type="button" id="mushaf-play-page" class="mushaf-chip-btn mushaf-play-btn" data-i18n="mushaf_play_page" data-i18n-title="mushaf_play_page">

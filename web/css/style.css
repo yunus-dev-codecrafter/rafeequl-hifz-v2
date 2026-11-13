@@ -2562,6 +2562,27 @@ input:focus, select:focus, textarea:focus {
   transform: translateY(-1px);
 }
 
+.btn-consolidation-add {
+  border-color: var(--accent-soft-border);
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.btn-consolidation-add:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #ffffff;
+}
+
+.btn-consolidation-add.is-added,
+.btn-consolidation-add.is-added:disabled {
+  background: var(--success-soft, var(--accent-soft));
+  border-color: var(--success-border, var(--accent-soft-border));
+  color: var(--success, var(--accent));
+  opacity: 1;
+  cursor: default;
+}
+
 /* ==========================================================================
    Keyboard Shortcut Badges
    ========================================================================== */

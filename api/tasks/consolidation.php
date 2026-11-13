@@ -9,7 +9,9 @@ declare(strict_types=1);
  *      list of selectable surahs/rubs/pages.
  *
  * POST JSON:
- *   action = "select"        target_type ("SURAH"|"RUB"|"PAGE"), target_id
+ *   action = "select"        target_type ("SURAH"|"RUB"|"PAGE"), target_id,
+ *                            repoint (optional, default true: switch the
+ *                            current consolidation task to the target's first page)
  *   action = "unselect"      selection_id
  *   action = "clear"
  *   action = "save_progress" task_id, words_done
@@ -71,8 +73,18 @@ try {
             if (!in_array($type, ['SURAH', 'RUB', 'PAGE'], true) || $targetId < 1) {
                 json_out(400, ['success' => false, 'error' => 'Choose a valid surah, rub or page.']);
             }
+            $repoint = true;
+            if (array_key_exists('repoint', $input)) {
+                $rawRepoint = $input['repoint'];
+                if (is_bool($rawRepoint)) {
+                    $repoint = $rawRepoint;
+                } elseif (is_string($rawRepoint) || is_int($rawRepoint)) {
+                    $parsed = filter_var($rawRepoint, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+                    $repoint = $parsed === null ? true : $parsed;
+                }
+            }
             $ctx = rh_pg_user_context($pdo, $userId);
-            $selection = rh_pg_add_selection($pdo, $userId, $type, $targetId, $ctx['frontier'], $today);
+            $selection = rh_pg_add_selection($pdo, $userId, $type, $targetId, $ctx['frontier'], $today, $repoint);
             if ($selection === null) {
                 json_out(400, ['success' => false, 'error' => 'This target has no memorised pages yet.']);
             }

@@ -2424,6 +2424,10 @@ function renderActivePageStage(taskType, task, activePage) {
     : `<button type="button" id="btn-undo-page" class="btn btn-warning-outline" title="${undoBtnTitle}">${undoBtnText}</button>
        <button type="button" id="btn-complete-page" class="btn btn-ghost" style="font-size:0.85rem;" title="${completeBtnText}">${completeBtnText}</button>`;
 
+  const consolidateBtnText = window.I18N ? I18N.t('consolidation_add_btn') : '📌 تثبيت الحفظ';
+  const consolidateBtnTitle = window.I18N ? I18N.t('consolidation_add_btn_title') : 'أضف الصفحة الحالية إلى أولويات تثبيت الحفظ';
+  const consolidateLabel = window.I18N ? I18N.t('consolidation_add_btn_short') : 'تثبيت الحفظ';
+
   const fullActionsHtml = `
     <div class="stage-actions is-sticky">
       ${completeActionHtml}
@@ -2435,6 +2439,10 @@ function renderActivePageStage(taskType, task, activePage) {
 
       <button type="button" id="btn-view-mushaf" class="btn-mushaf-view" title="${mushafBtnText}">
         ${mushafBtnText}
+      </button>
+
+      <button type="button" id="btn-add-consolidation" class="btn btn-ghost btn-consolidation-add" title="${consolidateBtnTitle}" aria-pressed="false">
+        <span data-consolidation-label>${consolidateBtnText}</span>
       </button>
 
       <button type="button" id="btn-open-mistake" class="btn btn-danger">
@@ -2452,13 +2460,16 @@ function renderActivePageStage(taskType, task, activePage) {
       <div class="stage-primary-actions">
         ${completeActionHtml}
       </div>
-      <div class="stage-secondary-actions">
+      <div class="stage-secondary-actions is-four">
         <button type="button" id="btn-focus" class="btn btn-ghost btn-focus-toggle stage-icon-btn" title="${focusTitle}" aria-label="${focusTitle}">
           <span class="focus-enter-label">🎯<span class="stage-btn-label"> ${focusLabel}</span></span>
           <span class="focus-exit-label">✅<span class="stage-btn-label"> ${focusExitLabel}</span></span>
         </button>
         <button type="button" id="btn-view-mushaf" class="btn-mushaf-view stage-icon-btn" title="${mushafBtnText}" aria-label="${mushafBtnText}">
           <span class="stage-btn-icon" aria-hidden="true">📖</span><span class="stage-btn-label"> ${mushafLabel}</span>
+        </button>
+        <button type="button" id="btn-add-consolidation" class="btn btn-ghost btn-consolidation-add stage-icon-btn" title="${consolidateBtnTitle}" aria-label="${consolidateBtnTitle}" aria-pressed="false">
+          <span class="stage-btn-icon" aria-hidden="true">📌</span><span class="stage-btn-label" data-consolidation-label> ${consolidateLabel}</span>
         </button>
         <button type="button" id="btn-open-mistake" class="btn btn-danger stage-icon-btn" title="${mistakeBtnText}" aria-label="${mistakeBtnText}">
           <span class="stage-btn-icon" aria-hidden="true">🔴</span><span class="stage-btn-label"> ${mistakeLabel}</span>
@@ -2598,6 +2609,13 @@ function renderActivePageStage(taskType, task, activePage) {
     });
   }
 
+  const consolidateBtn = document.getElementById('btn-add-consolidation');
+  if (consolidateBtn) {
+    consolidateBtn.addEventListener('click', () => {
+      addPageToConsolidation(activePage, consolidateBtn);
+    });
+  }
+
   const mistakeBtn = document.getElementById('btn-open-mistake');
   mistakeBtn.addEventListener('click', () => {
     openMistakeModal(activePage);
@@ -2642,6 +2660,90 @@ function renderActivePageStage(taskType, task, activePage) {
     }
   }
 }
+
+/* ---------------- 7d. Add a page to the consolidation priority list ---------------- */
+
+/**
+ * Queue the current page as a weak PAGE target for page consolidation.
+ * Shared by the task pages (Rabt / Murajaah) and the Mushaf reader.
+ */
+async function addPageToConsolidation(page, button = null) {
+  const pageNumber = parseInt(page, 10);
+  if (!Number.isFinite(pageNumber) || pageNumber < 1 || pageNumber > 604) {
+    showToast(window.I18N ? I18N.t('consolidation_add_failed') : 'تعذرت إضافة الصفحة إلى أولويات التثبيت', true);
+    return false;
+  }
+
+  if (button && button.dataset.consolidationBusy === '1') return false;
+
+  if (button) {
+    const label = button.querySelector('[data-consolidation-label]');
+    if (label && !button.dataset.consolidationDefaultLabel) {
+      button.dataset.consolidationDefaultLabel = label.textContent;
+    }
+    button.dataset.consolidationBusy = '1';
+    button.disabled = true;
+  }
+
+  try {
+    await API.call('tasks/consolidation.php', {
+      method: 'POST',
+      body: { action: 'select', target_type: 'PAGE', target_id: pageNumber, repoint: false },
+      redirectOn401: true,
+    });
+
+    if (window.AudioEngine && typeof AudioEngine.playSuccess === 'function') {
+      AudioEngine.playSuccess();
+    }
+    showToast(window.I18N
+      ? I18N.t('consolidation_added_toast', { page: pageNumber })
+      : `أُضيفت صفحة ${pageNumber} إلى أولويات تثبيت الحفظ ✓`);
+
+    if (button) {
+      button.dataset.consolidationBusy = '0';
+      button.dataset.consolidationAdded = '1';
+      button.classList.add('is-added');
+      button.setAttribute('aria-pressed', 'true');
+      const label = button.querySelector('[data-consolidation-label]');
+      if (label) {
+        label.textContent = window.I18N ? I18N.t('consolidation_added_btn') : '✓ في قائمة التثبيت';
+      }
+    }
+    return true;
+  } catch (err) {
+    const message = String((err && err.message) || '');
+    const notMemorized = /memoris/i.test(message);
+    showToast(
+      notMemorized
+        ? (window.I18N ? I18N.t('consolidation_add_unavailable') : 'هذه الصفحة لم تصل بعد إلى نطاق حفظك، لذا لا يمكن إضافتها للتثبيت.')
+        : (message || (window.I18N ? I18N.t('consolidation_add_failed') : 'تعذرت إضافة الصفحة إلى أولويات التثبيت')),
+      true
+    );
+    if (button) {
+      button.dataset.consolidationBusy = '0';
+      button.disabled = false;
+    }
+    return false;
+  }
+}
+
+function resetConsolidationButton(button) {
+  if (!button) return;
+  button.disabled = false;
+  button.dataset.consolidationBusy = '0';
+  button.dataset.consolidationAdded = '0';
+  button.classList.remove('is-added');
+  button.setAttribute('aria-pressed', 'false');
+  const label = button.querySelector('[data-consolidation-label]');
+  if (label && button.dataset.consolidationDefaultLabel) {
+    label.textContent = button.dataset.consolidationDefaultLabel;
+  }
+}
+
+window.RHConsolidation = {
+  addPage: addPageToConsolidation,
+  resetButton: resetConsolidationButton,
+};
 
 /* ---------------- 8. Mistake Logging Modal (Shared) ---------------- */
 

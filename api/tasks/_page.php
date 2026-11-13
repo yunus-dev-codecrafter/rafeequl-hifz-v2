@@ -503,7 +503,7 @@ function rh_pg_repoint_today_task(PDO $pdo, int $userId, string $today, int $pag
  *
  * @return array<string,mixed>|null
  */
-function rh_pg_add_selection(PDO $pdo, int $userId, string $targetType, int $targetId, int $frontier, string $today): ?array
+function rh_pg_add_selection(PDO $pdo, int $userId, string $targetType, int $targetId, int $frontier, string $today, bool $repointTask = true): ?array
 {
     $targetType = strtoupper($targetType);
     if (!in_array($targetType, ['SURAH', 'RUB', 'PAGE'], true)) {
@@ -557,7 +557,9 @@ function rh_pg_add_selection(PDO $pdo, int $userId, string $targetType, int $tar
         ]);
     }
 
-    rh_pg_repoint_today_task($pdo, $userId, $today, $pages[0]);
+    if ($repointTask) {
+        rh_pg_repoint_today_task($pdo, $userId, $today, $pages[0]);
+    }
 
     return [
         'id'          => $selectionId,

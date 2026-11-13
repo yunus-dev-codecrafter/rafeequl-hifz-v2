@@ -173,6 +173,9 @@
     const myPageBtn = els.myPage;
     const current = state.user && validPage(state.user.current_hifz_page);
     if (myPageBtn) myPageBtn.classList.toggle('hidden', !current);
+    if (els.addConsolidation) {
+      els.addConsolidation.classList.toggle('hidden', !state.user);
+    }
 
     if (els.ayahMistake) {
       els.ayahMistake.classList.toggle('hidden', !state.user);
@@ -335,6 +338,9 @@
     stopAudio();
     hideAyahBar();
     renderPage(target);
+    if (window.RHConsolidation && els.addConsolidation) {
+      window.RHConsolidation.resetButton(els.addConsolidation);
+    }
     updateUrl(target);
     loadPageNote(target);
     window.scrollTo({ top: 0, behavior: 'auto' });
@@ -643,6 +649,14 @@
       hideAyahBar();
       window.scrollTo(0, scrollY);
     }
+    if (els.addConsolidation) {
+      const label = els.addConsolidation.querySelector('[data-consolidation-label]');
+      if (label) {
+        label.textContent = els.addConsolidation.dataset.consolidationAdded === '1'
+          ? t('consolidation_added_btn')
+          : t('mushaf_add_consolidation_short');
+      }
+    }
     updatePagePlayButton(state.playMode === 'page');
     updateAyahBarText();
     if (typeof updateThemeIcon === 'function') updateThemeIcon();
@@ -667,6 +681,22 @@
   }
 
   /* ---------------- UI wiring ---------------- */
+
+  function setToolsOpen(open) {
+    if (!els.toolsPanel || !els.toolsBtn) return;
+    els.toolsPanel.classList.toggle('is-open', !!open);
+    els.toolsBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+
+  async function addCurrentPageToConsolidation() {
+    if (!window.RHConsolidation || typeof window.RHConsolidation.addPage !== 'function') return;
+    const user = state.user || await state.authPromise;
+    if (!user) {
+      showToast(t('mushaf_login_required'), true);
+      return;
+    }
+    window.RHConsolidation.addPage(state.page, els.addConsolidation);
+  }
 
   function bindUI() {
     if (els.back) {
@@ -706,11 +736,20 @@
       });
     }
 
+    if (els.toolsBtn) {
+      els.toolsBtn.addEventListener('click', () => {
+        setToolsOpen(!els.toolsPanel.classList.contains('is-open'));
+      });
+    }
+
     if (els.surahJump) {
       els.surahJump.addEventListener('change', () => {
         const id = parseInt(els.surahJump.value, 10);
         els.surahJump.value = '';
-        if (id && state.surahStarts[id]) goToPage(state.surahStarts[id]);
+        if (id && state.surahStarts[id]) {
+          goToPage(state.surahStarts[id]);
+          setToolsOpen(false);
+        }
       });
     }
 
@@ -718,7 +757,10 @@
       els.juzJump.addEventListener('change', () => {
         const juz = parseInt(els.juzJump.value, 10);
         els.juzJump.value = '';
-        if (juz && state.juzStarts[juz]) goToPage(state.juzStarts[juz]);
+        if (juz && state.juzStarts[juz]) {
+          goToPage(state.juzStarts[juz]);
+          setToolsOpen(false);
+        }
       });
     }
 
@@ -734,6 +776,10 @@
         if (state.playMode === 'page') stopAudio();
         else playPage();
       });
+    }
+
+    if (els.addConsolidation) {
+      els.addConsolidation.addEventListener('click', addCurrentPageToConsolidation);
     }
 
     if (els.myPage) {
@@ -796,6 +842,13 @@
       hideAyahBar();
     });
 
+    // Click outside the tools popover closes it.
+    document.addEventListener('click', (e) => {
+      if (!els.toolsPanel || !els.toolsPanel.classList.contains('is-open')) return;
+      if (e.target.closest && (e.target.closest('#mushaf-tools-panel') || e.target.closest('#mushaf-tools-btn'))) return;
+      setToolsOpen(false);
+    });
+
     // Keyboard page navigation (same convention as the rest of the app:
     // ArrowLeft = next page in RTL, ArrowRight = previous page).
     document.addEventListener('keydown', (e) => {
@@ -806,6 +859,10 @@
       if (mistakeModal && !mistakeModal.classList.contains('hidden')) return;
 
       if (e.key === 'Escape') {
+        if (els.toolsPanel && els.toolsPanel.classList.contains('is-open')) {
+          setToolsOpen(false);
+          return;
+        }
         if (els.ayahBar && !els.ayahBar.classList.contains('hidden')) {
           hideAyahBar();
           return;
@@ -832,9 +889,12 @@
     els.pageInput = document.getElementById('mushaf-page-input');
     els.surahJump = document.getElementById('mushaf-surah-jump');
     els.juzJump = document.getElementById('mushaf-juz-jump');
+    els.toolsBtn = document.getElementById('mushaf-tools-btn');
+    els.toolsPanel = document.getElementById('mushaf-tools-panel');
     els.fontDec = document.getElementById('mushaf-font-dec');
     els.fontInc = document.getElementById('mushaf-font-inc');
     els.playPage = document.getElementById('mushaf-play-page');
+    els.addConsolidation = document.getElementById('mushaf-add-consolidation');
     els.status = document.getElementById('mushaf-status');
     els.page = document.getElementById('mushaf-page');
     els.error = document.getElementById('mushaf-error');
