@@ -4,7 +4,7 @@
 
 .consolidation-container {
   max-width: 980px;
-  padding-bottom: 6rem;
+  padding-bottom: 2.5rem;
 }
 
 .consolidation-loading {
@@ -156,6 +156,97 @@
 .consolidation-chip.is-warn {
   background: rgba(180, 83, 9, 0.10);
   border-color: rgba(180, 83, 9, 0.22);
+  color: #9a5b00;
+}
+
+/* Priority page switcher ------------------------------------------------ */
+
+.consolidation-page-switch {
+  background: var(--surface, #fff);
+  border: 1px solid var(--line, #d8e3e1);
+  border-radius: 16px;
+  padding: 0.7rem 0.85rem;
+  margin-bottom: 0.85rem;
+}
+
+.consolidation-page-switch-head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.6rem;
+  margin-bottom: 0.55rem;
+}
+
+.consolidation-page-switch-title {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--text, #13302d);
+}
+
+.consolidation-page-switch-hint {
+  font-size: 0.76rem;
+  color: var(--text-soft, #5b7370);
+}
+
+.consolidation-page-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.consolidation-page-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid var(--line, #d8e3e1);
+  background: var(--surface, #fff);
+  color: var(--text, #13302d);
+  border-radius: 999px;
+  padding: 0.32rem 0.7rem;
+  font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.consolidation-page-option strong {
+  font-size: 0.92rem;
+  font-weight: 800;
+}
+
+.consolidation-page-option span {
+  font-size: 0.72rem;
+  color: var(--text-soft, #5b7370);
+}
+
+.consolidation-page-option:hover {
+  border-color: rgba(15, 118, 110, 0.4);
+  background: rgba(15, 118, 110, 0.05);
+}
+
+.consolidation-page-option.is-current,
+.consolidation-page-option.is-current:hover {
+  border-color: var(--primary, #0f766e);
+  background: rgba(15, 118, 110, 0.10);
+  color: var(--primary, #0f766e);
+}
+
+.consolidation-page-option.is-current span {
+  color: var(--primary, #0f766e);
+}
+
+.consolidation-page-option.is-done strong::after {
+  content: ' ✓';
+  color: #166534;
+  font-size: 0.8em;
+}
+
+.consolidation-page-option.is-warn {
+  border-color: rgba(180, 83, 9, 0.28);
+  background: rgba(180, 83, 9, 0.06);
+}
+
+.consolidation-page-option.is-warn span {
   color: #9a5b00;
 }
 
@@ -835,38 +926,270 @@ html[data-theme="dark"] .consolidation-page-text {
 /* Responsive ------------------------------------------------------------ */
 
 @media (max-width: 640px) {
+  .consolidation-container {
+    padding-bottom: 1.5rem;
+  }
+
   .consolidation-hero {
-    padding: 1rem;
+    padding: 0.8rem 0.9rem;
+    margin: 0.6rem 0;
+    gap: 0.7rem;
+    border-radius: 16px;
+  }
+
+  .consolidation-eyebrow {
+    font-size: 0.76rem;
+  }
+
+  .consolidation-title {
+    font-size: 1.3rem;
+    margin: 0.1rem 0 0.2rem;
+  }
+
+  .consolidation-refs {
+    font-size: 0.8rem;
   }
 
   .consolidation-ring {
-    width: 68px;
-    height: 68px;
+    width: 58px;
+    height: 58px;
   }
 
-  .consolidation-steps {
-    grid-template-columns: 1fr;
+  .consolidation-ring strong {
+    font-size: 0.8rem;
   }
 
-  .consolidation-step {
-    padding: 0.45rem 0.55rem;
+  .consolidation-meta {
+    gap: 0.3rem;
+    margin-bottom: 0.7rem;
+  }
+
+  .consolidation-chip {
+    font-size: 0.72rem;
+    padding: 0.22rem 0.55rem;
+  }
+
+  /* Duplicates the hero eyebrow; keep the mobile bar short. */
+  #consolidation-selection-chip {
+    display: none;
+  }
+
+  .consolidation-page-switch {
+    padding: 0.6rem 0.7rem;
+    border-radius: 14px;
+    margin-bottom: 0.7rem;
+  }
+
+  .consolidation-page-switch-head {
+    margin-bottom: 0.45rem;
+  }
+
+  .consolidation-page-switch-hint {
+    display: none;
+  }
+
+  .consolidation-page-options {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 0.25rem;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .consolidation-page-options::-webkit-scrollbar {
+    display: none;
+  }
+
+  .consolidation-page-option {
+    flex: 0 0 auto;
+    padding: 0.3rem 0.65rem;
+  }
+
+  .consolidation-targets {
+    padding: 0.75rem 0.8rem;
+    border-radius: 14px;
+    margin-bottom: 0.7rem;
+  }
+
+  .consolidation-section-head {
+    gap: 0.5rem;
+  }
+
+  .consolidation-section-head h2 {
+    font-size: 0.98rem;
+  }
+
+  /* Instructional hints live in the stage cards; hide this one on phones. */
+  .consolidation-section-head .hint {
+    display: none;
+  }
+
+  .consolidation-small-btn {
+    padding: 0.38rem 0.7rem;
+    font-size: 0.76rem;
+  }
+
+  .consolidation-selections {
+    display: flex;
+    overflow-x: auto;
+    gap: 0.4rem;
+    margin-top: 0.55rem;
+    padding-bottom: 0.2rem;
+    scrollbar-width: none;
+  }
+
+  /* The priority pages strip already shows the same list above; keep the
+     targets section compact until the user opens it. */
+  .consolidation-targets:not(.is-open) #active-selections {
+    display: none;
+  }
+
+  .consolidation-selections::-webkit-scrollbar {
+    display: none;
+  }
+
+  .consolidation-selection {
+    flex: 0 0 78%;
+    padding: 0.5rem 0.6rem;
+    border-radius: 12px;
+  }
+
+  .consolidation-no-selection {
+    flex: 0 0 100%;
+    display: block;
   }
 
   .consolidation-target-list {
     grid-template-columns: 1fr;
-    max-height: 260px;
+    max-height: 210px;
   }
 
-  .consolidation-selections {
-    grid-template-columns: 1fr;
+  .consolidation-steps {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.3rem;
+    margin: 0.7rem 0;
+  }
+
+  .consolidation-step {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 0.2rem;
+    padding: 0.4rem 0.25rem;
+    border-radius: 10px;
+    font-size: 0.66rem;
+    line-height: 1.15;
+  }
+
+  .consolidation-step span {
+    width: 20px;
+    height: 20px;
+    font-size: 0.66rem;
+  }
+
+  .consolidation-stage {
+    padding: 0.85rem 0.85rem 1rem;
+    border-radius: 16px;
+    margin-bottom: 0.8rem;
+    box-shadow: 0 6px 18px rgba(15, 118, 110, 0.05);
+  }
+
+  .consolidation-stage-head h2 {
+    font-size: 1rem;
+  }
+
+  .consolidation-stage-head .hint {
+    font-size: 0.78rem;
+    line-height: 1.45;
+  }
+
+  .consolidation-progress-line {
+    margin-top: 0.65rem;
+    font-size: 0.75rem;
+  }
+
+  .consolidation-context {
+    font-size: 0.98rem;
+    margin: 0.35rem 0;
+  }
+
+  .consolidation-answer {
+    min-height: 56px;
+    padding: 0.5rem;
+    gap: 0.3rem;
+    margin-bottom: 0.6rem;
   }
 
   .consolidation-answer-word,
   .consolidation-bank-word {
-    font-size: 1.22rem;
+    font-size: 1.1rem;
+    line-height: 1.65;
+    padding: 0.15rem 0.45rem;
+  }
+
+  .consolidation-bank {
+    gap: 0.32rem;
+    min-height: 48px;
+  }
+
+  .consolidation-actions,
+  .consolidation-result-actions {
+    gap: 0.35rem;
+    margin-top: 0.65rem;
+  }
+
+  .consolidation-actions .btn,
+  .consolidation-result-actions .btn {
+    padding: 0.45rem 0.6rem;
+    font-size: 0.78rem;
+  }
+
+  .consolidation-recorder-box {
+    margin: 0.7rem 0;
+    padding: 0.75rem;
+    border-radius: 14px;
+  }
+
+  .btn-record-main {
+    padding: 0.65rem 1.1rem;
+    font-size: 0.92rem;
+    border-radius: 12px;
+  }
+
+  .btn-stop-record {
+    padding: 0.6rem 0.9rem;
+    font-size: 0.85rem;
+  }
+
+  .recording-pulse-badge {
+    padding: 0.4rem 0.7rem;
+    gap: 0.4rem;
+    font-size: 0.82rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .recording-timer {
+    font-size: 1rem;
+  }
+
+  .consolidation-prompt {
+    margin: 0.6rem 0;
+    padding: 0.55rem 0.65rem;
+  }
+
+  .consolidation-prompt-words {
+    font-size: 1.2rem;
+  }
+
+  .consolidation-page-text {
+    padding: 0.6rem;
+    max-height: 55vh;
   }
 
   .consolidation-ayah p {
-    font-size: 1.38rem;
+    font-size: 1.3rem;
+    line-height: 1.95;
   }
 }

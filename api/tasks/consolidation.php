@@ -14,6 +14,7 @@ declare(strict_types=1);
  *                            current consolidation task to the target's first page)
  *   action = "unselect"      selection_id
  *   action = "clear"
+ *   action = "choose_page"   page (must belong to an active priority target)
  *   action = "save_progress" task_id, words_done
  *   action = "result"        task_id, result ("DONE"|"IMPROVE")
  *
@@ -106,6 +107,16 @@ try {
             json_out(200, rh_pg_state($pdo, $userId, $today));
         }
 
+        if ($action === 'choose_page') {
+            $page = (int) ($input['page'] ?? 0);
+            $ctx = rh_pg_user_context($pdo, $userId);
+            $task = rh_pg_open_page($pdo, $userId, $today, $page, $ctx['frontier']);
+            if ($task === null) {
+                json_out(400, ['success' => false, 'error' => 'Choose a page from your priority list.']);
+            }
+            json_out(200, rh_pg_state($pdo, $userId, $today, (int) $task['id']));
+        }
+
         if ($action === 'save_progress') {
             $taskId = (int) ($input['task_id'] ?? 0);
             $wordsDone = (int) ($input['words_done'] ?? 0);
@@ -113,7 +124,7 @@ try {
             if ($saved === null) {
                 json_out(404, ['success' => false, 'error' => 'Task not found.']);
             }
-            json_out(200, array_merge(rh_pg_state($pdo, $userId, $today, $taskId), ['saved' => $saved]));
+            json_out(200, array_merge(rh_pg_state($pdo, $userId, $today, $taskId, false), ['saved' => $saved]));
         }
 
         if ($action === 'result') {

@@ -20,6 +20,7 @@
     task: null,
     selections: [],
     targets: null,
+    pageOptions: [],
     stage: 'arrangement',
     chunkStart: 0,
     chunkWords: [],
@@ -149,6 +150,7 @@
     state.task = data && data.task ? data.task : null;
     state.selections = data && Array.isArray(data.selections) ? data.selections : [];
     state.targets = data && data.targets ? data.targets : null;
+    if (data && Array.isArray(data.page_options)) state.pageOptions = data.page_options;
 
     if (resetStage) {
       cleanupRecording();
@@ -192,6 +194,7 @@
     if (data.task && state.stage !== 'done') state.task = data.task;
     if (Array.isArray(data.selections)) state.selections = data.selections;
     if (data.targets) state.targets = data.targets;
+    if (Array.isArray(data.page_options)) state.pageOptions = data.page_options;
   }
 
   /* ---------------------------------------------------------------------
@@ -211,6 +214,7 @@
 
     renderHero();
     renderSelections();
+    renderPageOptions();
     renderTargetList();
     renderStages();
   }
@@ -328,6 +332,75 @@
           <div class="consolidation-progress is-small"><span style="width:${percent}%"></span></div>
         </div>`;
     }).join('');
+  }
+
+  function renderPageOptions() {
+    const wrap = $('page-switch');
+    const box = $('page-options');
+    if (!wrap || !box) return;
+
+    const options = Array.isArray(state.pageOptions) ? state.pageOptions : [];
+    const task = state.task;
+    const currentPage = task ? (Number(task.page_number) || Number(task.start_page) || 0) : 0;
+
+    const hasChoice = options.length >= 2
+      || (options.length === 1 && Number(options[0].page_number) !== currentPage);
+    if (!hasChoice) {
+      wrap.classList.add('hidden');
+      box.innerHTML = '';
+      return;
+    }
+
+    wrap.classList.remove('hidden');
+    const doneLabel = t('page_status_done', '✓ مكتملة');
+    const improveLabel = t('page_status_improve', 'تحتاج تحسينًا');
+    const readyLabel = t('page_option_ready', 'جاهزة للتثبيت');
+    const currentLabel = t('page_option_current', 'الحالية');
+
+    box.innerHTML = options.map((item) => {
+      const page = Number(item.page_number) || 0;
+      const isCurrent = page === currentPage;
+      const isDone = String(item.status || '').toUpperCase() === 'DONE';
+      const needsImprove = !isDone && String(item.last_result || '').toUpperCase() === 'IMPROVE';
+      const targetName = item.target_type === 'PAGE' ? '' : targetLabel(item.target_type, item.target_id);
+      const statusText = isCurrent
+        ? currentLabel
+        : (isDone ? doneLabel : (needsImprove ? improveLabel : readyLabel));
+      const title = [targetName, t('page_title', 'صفحة {page}').replace('{page}', page), statusText]
+        .filter(Boolean)
+        .join(' · ');
+      const stateClass = isCurrent ? ' is-current' : (isDone ? ' is-done' : (needsImprove ? ' is-warn' : ''));
+      return `
+        <button type="button" class="consolidation-page-option${stateClass}"
+          data-page-option="${page}" title="${escHtml(title)}"${isCurrent ? ' aria-current="true"' : ''}>
+          <strong>${page}</strong>
+          <span>${escHtml(statusText)}</span>
+        </button>`;
+    }).join('');
+  }
+
+  async function choosePage(page) {
+    if (state.busy || !page) return;
+    const currentPage = state.task ? (Number(state.task.page_number) || Number(state.task.start_page) || 0) : 0;
+    if (page === currentPage) return;
+
+    state.busy = true;
+    try {
+      const data = await api('tasks/consolidation.php', {
+        method: 'POST',
+        body: { action: 'choose_page', page },
+      });
+      // The previous stage (often "done") must not block applyState.
+      state.stage = 'arrangement';
+      applyState(data, true);
+      resetChunk(true);
+      renderAll();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (e) {
+      if (window.showToast) window.showToast(t('page_choice_failed', 'تعذر فتح الصفحة المختارة.'), true);
+    } finally {
+      state.busy = false;
+    }
   }
 
   function renderTargetList() {
@@ -1059,6 +1132,7 @@
       state.data = data;
       if (Array.isArray(data.selections)) state.selections = data.selections;
       if (data.targets) state.targets = data.targets;
+      if (Array.isArray(data.page_options)) state.pageOptions = data.page_options;
       state.stage = 'done';
       cleanupRecording();
             renderAll();
@@ -1226,6 +1300,12 @@
 
   function bindEvents() {
     document.addEventListener('click', (event) => {
+      const pageBtn = event.target.closest('[data-page-option]');
+      if (pageBtn) {
+        choosePage(Number(pageBtn.dataset.pageOption));
+        return;
+      }
+
       const bankBtn = event.target.closest('[data-bank-index]');
       if (bankBtn) {
         onBankClick(Number(bankBtn.dataset.bankIndex));
@@ -1259,6 +1339,8 @@
         if (!panel) return;
         const willShow = panel.classList.contains('hidden');
         panel.classList.toggle('hidden', !willShow);
+        const section = $('targets-section');
+        if (section) section.classList.toggle('is-open', willShow);
         toggle.setAttribute('aria-expanded', willShow ? 'true' : 'false');
         if (willShow) renderTargetList();
       });

@@ -408,7 +408,7 @@ function rh_pg_progress_map(PDO $pdo, int $userId): array
 }
 
 /** @return array<int,array<string,mixed>> */
-function rh_pg_active_selections(PDO $pdo, int $userId, int $frontier): array
+function rh_pg_active_selections(PDO $pdo, int $userId, int $frontier, ?array $progressMap = null): array
 {
     $out = [];
     try {
@@ -424,7 +424,7 @@ function rh_pg_active_selections(PDO $pdo, int $userId, int $frontier): array
         return $out;
     }
 
-    $progress = rh_pg_progress_map($pdo, $userId);
+    $progress = $progressMap ?? rh_pg_progress_map($pdo, $userId);
     foreach ($rows as $row) {
         $type = (string) $row['target_type'];
         $id = (int) $row['target_id'];
@@ -472,6 +472,109 @@ function rh_pg_active_page_owner(PDO $pdo, int $userId, int $frontier): array
         }
     }
     return $owners;
+}
+
+/**
+ * Pages that belong to the user's active priority list, in priority order.
+ *
+ * @return array<int,array<string,mixed>>
+ */
+function rh_pg_selection_pages(PDO $pdo, int $userId, int $frontier, ?array $progressMap = null): array
+{
+    $pages = [];
+    try {
+        $stmt = $pdo->prepare(
+            "SELECT `id`, `target_type`, `target_id`, `created_at`
+             FROM `consolidation_selections`
+             WHERE `user_id` = :u AND `status` = 'ACTIVE'
+             ORDER BY `created_at` ASC, `id` ASC"
+        );
+        $stmt->execute([':u' => $userId]);
+        $rows = $stmt->fetchAll();
+    } catch (Throwable $t) {
+        return $pages;
+    }
+
+    $progress = $progressMap ?? rh_pg_progress_map($pdo, $userId);
+    foreach ($rows as $row) {
+        $targetPages = rh_pg_target_pages((string) $row['target_type'], (int) $row['target_id'], $frontier);
+        foreach ($targetPages as $page) {
+            if (isset($pages[$page])) {
+                continue;
+            }
+            $pages[$page] = [
+                'page_number'  => $page,
+                'selection_id' => (int) $row['id'],
+                'target_type'  => (string) $row['target_type'],
+                'target_id'    => (int) $row['target_id'],
+                'status'       => (string) ($progress[$page]['status'] ?? 'PENDING'),
+                'last_result'  => (string) ($progress[$page]['last_result'] ?? ''),
+            ];
+        }
+    }
+
+    return array_values($pages);
+}
+
+/**
+ * Switch today's consolidation task to a page that belongs to the user's
+ * priority list. Creates a fresh task when the previous one is completed.
+ *
+ * @return array<string,mixed>|null
+ */
+function rh_pg_open_page(PDO $pdo, int $userId, string $today, int $page, int $frontier): ?array
+{
+    if ($page < 1 || $page > $frontier) {
+        return null;
+    }
+
+    $allowed = false;
+    foreach (rh_pg_selection_pages($pdo, $userId, $frontier) as $option) {
+        if ((int) $option['page_number'] === $page) {
+            $allowed = true;
+            break;
+        }
+    }
+    if (!$allowed) {
+        return null;
+    }
+
+    $active = rh_pg_find_active_task($pdo, $userId);
+    if ($active !== null) {
+        $pdo->prepare(
+            "UPDATE `daily_task_logs`
+             SET `start_page` = :p, `end_page` = :p, `is_completed` = 0,
+                 `completed_stations` = NULL, `task_date` = :d
+             WHERE `id` = :id AND `user_id` = :u"
+        )->execute([
+            ':p'  => $page,
+            ':d'  => $today,
+            ':id' => (int) $active['id'],
+            ':u'  => $userId,
+        ]);
+        return rh_pg_find_task($pdo, $userId, (int) $active['id']);
+    }
+
+    $hasRollover = rh_task_has_rollover($pdo);
+    $extraColumns = $hasRollover ? ', `rollover_count`, `last_rollover_date`' : '';
+    $extraValues  = $hasRollover ? ', 0, :rollover_date' : '';
+    $stmt = $pdo->prepare(
+        "INSERT INTO `daily_task_logs`
+            (`user_id`, `task_date`, `task_type`, `start_page`, `end_page`, `is_completed`" . $extraColumns . ")
+         VALUES (:u, :d, 'PAGE_TAMKIN', :p_start, :p_end, 0" . $extraValues . ")"
+    );
+    $params = [
+        ':u'       => $userId,
+        ':d'       => $today,
+        ':p_start' => $page,
+        ':p_end'   => $page,
+    ];
+    if ($hasRollover) {
+        $params[':rollover_date'] = $today;
+    }
+    $stmt->execute($params);
+
+    return rh_pg_find_task($pdo, $userId, (int) $pdo->lastInsertId());
 }
 
 function rh_pg_repoint_today_task(PDO $pdo, int $userId, string $today, int $page): void
@@ -1058,7 +1161,7 @@ function rh_pg_mark_result(PDO $pdo, int $userId, int $taskId, string $result, s
 }
 
 /** Build the full state payload for the consolidation page. */
-function rh_pg_state(PDO $pdo, int $userId, string $today, ?int $taskId = null): array
+function rh_pg_state(PDO $pdo, int $userId, string $today, ?int $taskId = null, bool $includePageOptions = true): array
 {
     $ctx = rh_pg_user_context($pdo, $userId);
     $task = null;
@@ -1069,13 +1172,20 @@ function rh_pg_state(PDO $pdo, int $userId, string $today, ?int $taskId = null):
         $task = rh_pg_ensure_task($pdo, $userId, $today);
     }
 
-    return [
+    // Read the progress map once and share it between the two lists.
+    $progressMap = $includePageOptions ? rh_pg_progress_map($pdo, $userId) : null;
+
+    $payload = [
         'success'    => true,
         'date'       => $today,
         'user_type'  => $ctx['user_type'],
         'frontier'   => $ctx['frontier'],
         'task'       => $task !== null ? rh_pg_task_payload($pdo, $task, true) : null,
-        'selections' => rh_pg_active_selections($pdo, $userId, $ctx['frontier']),
+        'selections' => rh_pg_active_selections($pdo, $userId, $ctx['frontier'], $progressMap),
         'targets'    => rh_pg_list_targets($ctx['frontier']),
     ];
+    if ($includePageOptions) {
+        $payload['page_options'] = rh_pg_selection_pages($pdo, $userId, $ctx['frontier'], $progressMap);
+    }
+    return $payload;
 }
