@@ -541,16 +541,19 @@ function rh_pg_open_page(PDO $pdo, int $userId, string $today, int $page, int $f
 
     $active = rh_pg_find_active_task($pdo, $userId);
     if ($active !== null) {
+        // Native MySQL prepares reject a named placeholder used twice, so the
+        // start/end page values need their own parameter names.
         $pdo->prepare(
             "UPDATE `daily_task_logs`
-             SET `start_page` = :p, `end_page` = :p, `is_completed` = 0,
+             SET `start_page` = :p_start, `end_page` = :p_end, `is_completed` = 0,
                  `completed_stations` = NULL, `task_date` = :d
              WHERE `id` = :id AND `user_id` = :u"
         )->execute([
-            ':p'  => $page,
-            ':d'  => $today,
-            ':id' => (int) $active['id'],
-            ':u'  => $userId,
+            ':p_start' => $page,
+            ':p_end'   => $page,
+            ':d'       => $today,
+            ':id'      => (int) $active['id'],
+            ':u'       => $userId,
         ]);
         return rh_pg_find_task($pdo, $userId, (int) $active['id']);
     }

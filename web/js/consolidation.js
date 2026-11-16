@@ -397,7 +397,8 @@
       renderAll();
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (e) {
-      if (window.showToast) window.showToast(t('page_choice_failed', 'تعذر فتح الصفحة المختارة.'), true);
+      const message = (e && e.message) ? e.message : t('page_choice_failed', 'تعذر فتح الصفحة المختارة.');
+      if (window.showToast) window.showToast(message, true);
     } finally {
       state.busy = false;
     }
