@@ -323,16 +323,31 @@
     },
 
     async loadTafsir(page) {
-      if (this.tafsir && this.tafsirPage === page) return this.tafsir;
+      if (!page || page < 1) return {};
+      if (this.tafsir && this.tafsirPage === page && Object.keys(this.tafsir).length > 0) {
+        return this.tafsir;
+      }
       try {
-        const data = await API.call('data/get_tafsir.php?page=' + page);
+        let data = null;
+        if (window.API && typeof API.call === 'function') {
+          try {
+            data = await API.call('tasks/get_tafsir.php?page=' + page);
+          } catch (err) {
+            const res = await fetch('../api/tasks/get_tafsir.php?page=' + page, { credentials: 'same-origin' });
+            if (res.ok) data = await res.json();
+          }
+        } else {
+          const res = await fetch('../api/tasks/get_tafsir.php?page=' + page, { credentials: 'same-origin' });
+          if (res.ok) data = await res.json();
+        }
+
         if (data && data.verses) {
           this.tafsir = data.verses;
           this.tafsirPage = page;
           return this.tafsir;
         }
       } catch (e) {
-        // Fallback or offline
+        console.warn('Failed to load tafsir:', e);
       }
       this.tafsir = this.tafsir || {};
       return this.tafsir;
@@ -1302,6 +1317,17 @@
         ? (hifzIsEnglish() ? (tafsirEntry.en || tafsirEntry.ar) : (tafsirEntry.ar || tafsirEntry.en))
         : '';
 
+      if (!tafsirText) {
+        setTimeout(() => {
+          this.loadTafsir(this.page).then(() => {
+            const entry = this.tafsir && this.tafsir[verse.key];
+            const txt = entry ? (hifzIsEnglish() ? (entry.en || entry.ar) : (entry.ar || entry.en)) : '';
+            const el = document.getElementById('hifz-tafsir-text');
+            if (el && txt) el.textContent = txt;
+          }).catch(() => {});
+        }, 50);
+      }
+
       return `
         <section class="consolidation-stage">
           <div class="consolidation-stage-head">
@@ -1332,7 +1358,7 @@
               <span class="hifz-tafsir-ref">${hifzEsc(verse.surahName)} • ${hifzEsc(hifzT('page_ayah_word', {}, 'الآية'))} ${verse.ayah}</span>
             </div>
             <div class="hifz-tafsir-body">
-              <p class="hifz-tafsir-text">${hifzEsc(tafsirText || hifzT('hifz_tafsir_loading', {}, 'جاري تحميل التفسير…'))}</p>
+              <p class="hifz-tafsir-text" id="hifz-tafsir-text">${hifzEsc(tafsirText || hifzT('hifz_tafsir_loading', {}, 'جاري تحميل التفسير…'))}</p>
             </div>
             <div class="hifz-tafsir-footer">
               <span class="hifz-tafsir-source">${hifzEsc(hifzT('hifz_mukhtasar_source', {}, 'مركز تفسير للدراسات القرآنية'))}</span>
