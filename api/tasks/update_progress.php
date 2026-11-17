@@ -285,7 +285,8 @@ try {
                         'error'   => 'hifz_progress must be a JSON object.',
                     ]);
                 }
-                if (rh_hifz_state_version($incomingHifz) !== RH_HIFZ_STATE_VERSION) {
+                $incomingVersion = rh_hifz_state_version($incomingHifz);
+                if ($incomingVersion !== 3 && $incomingVersion !== 2) {
                     $pdo->rollBack();
                     json_out(409, [
                         'success' => false,
@@ -311,7 +312,7 @@ try {
                 json_out(409, [
                     'success' => false,
                     'code'    => 'HIFZ_INCOMPLETE',
-                    'error'   => 'Complete 20 repetitions for every verse, 20 for every adjacent pair, and the full-page pass before finishing this page.',
+                    'error'   => 'Complete memorization and recording for all verses, plus the final page recording before finishing this page.',
                 ]);
             }
 

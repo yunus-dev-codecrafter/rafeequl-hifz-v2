@@ -22,12 +22,12 @@ declare(strict_types=1);
  *   complete   bool
  */
 
-const RH_HIFZ_STATE_VERSION = 2;
+const RH_HIFZ_STATE_VERSION = 3;
 const RH_HIFZ_TARGET_REPS = 20;
 const RH_HIFZ_PAIR_REPS = 20;
 const RH_HIFZ_PAGE_PASS_TARGET = 1;
 const RH_HIFZ_MAX_VERSES = 200;
-const RH_HIFZ_PHASES = ['repeat', 'link', 'page', 'complete'];
+const RH_HIFZ_PHASES = ['repeat', 'link', 'page', 'complete', 'memorize', 'record', 'review', 'final_record', 'final_review'];
 
 if (!function_exists('rh_hifz_decode')) {
     /** Decode the stored JSON without trusting its contents. */
@@ -170,7 +170,7 @@ if (!function_exists('rh_hifz_sanitize')) {
         }
 
         $version = rh_hifz_state_version($input);
-        if ($version !== RH_HIFZ_STATE_VERSION) {
+        if ($version !== 3 && $version !== 2) {
             return $allowLegacyComplete ? rh_hifz_legacy_complete_state($input, $page) : null;
         }
 
@@ -182,8 +182,80 @@ if (!function_exists('rh_hifz_sanitize')) {
             return null;
         }
 
+        $expectedTotal = rh_hifz_page_verse_count($page);
+
+        // Check for v3 payload (verses[])
+        $versesIn = $input['verses'] ?? null;
         $repsIn = $input['reps'] ?? null;
         $linksIn = $input['links'] ?? null;
+
+        if ($versesIn !== null && is_array($versesIn)) {
+            $versesIn = array_values($versesIn);
+            $total = count($versesIn);
+            if ($total < 1 || $total > RH_HIFZ_MAX_VERSES) {
+                return null;
+            }
+            if ($expectedTotal > 0 && $total !== $expectedTotal) {
+                return null;
+            }
+
+            $verses = [];
+            foreach ($versesIn as $value) {
+                if (!is_int($value) && !is_numeric($value) && !is_bool($value)) {
+                    return null;
+                }
+                $verses[] = ($value === true || (int) $value >= 1) ? 1 : 0;
+            }
+
+            $finalPassValue = $input['final_pass'] ?? ($input['page_pass'] ?? 0);
+            $finalPass = ($finalPassValue === true || (int) $finalPassValue >= 1) ? 1 : 0;
+
+            $currentValue = $input['current'] ?? 0;
+            $current = max(0, min($total - 1, (int) $currentValue));
+
+            $phase = (string) ($input['substage'] ?? ($input['phase'] ?? 'memorize'));
+            if (!in_array($phase, RH_HIFZ_PHASES, true)) {
+                $phase = 'memorize';
+            }
+
+            $allVersesDone = (count($verses) > 0 && array_sum($verses) === count($verses));
+            $complete = ($allVersesDone && $finalPass >= 1);
+
+            $claimedComplete = (bool) ($input['complete'] ?? false);
+            if ($claimedComplete && !$complete) {
+                return null;
+            }
+
+            // Generate backward-compatible reps and links
+            $reps = array_map(function ($v) { return $v ? RH_HIFZ_TARGET_REPS : 0; }, $verses);
+            $links = [];
+            for ($i = 0; $i < $total; $i++) {
+                $links[] = ($i > 0 && $verses[$i]) ? RH_HIFZ_PAIR_REPS : 0;
+            }
+
+            if ($complete) {
+                $phase = 'complete';
+                $current = $total - 1;
+                $finalPass = 1;
+            }
+
+            return [
+                'v'          => 3,
+                'page'       => $page,
+                'verses'     => $verses,
+                'final_pass' => $finalPass,
+                'reps'       => $reps,
+                'links'      => $links,
+                'page_pass'  => $finalPass,
+                'current'    => $current,
+                'substage'   => $phase,
+                'phase'      => $phase,
+                'complete'   => $complete,
+                'updated_at' => gmdate('c'),
+            ];
+        }
+
+        // v2 payload fallback (reps[] and links[])
         if (!is_array($repsIn) || !is_array($linksIn)) {
             return null;
         }
@@ -194,18 +266,19 @@ if (!function_exists('rh_hifz_sanitize')) {
         if ($total < 1 || $total > RH_HIFZ_MAX_VERSES || count($linksIn) !== $total) {
             return null;
         }
-
-        $expectedTotal = rh_hifz_page_verse_count($page);
         if ($expectedTotal > 0 && $total !== $expectedTotal) {
             return null;
         }
 
         $reps = [];
+        $verses = [];
         foreach ($repsIn as $value) {
             if (!is_int($value) && !is_numeric($value)) {
                 return null;
             }
-            $reps[] = max(0, min(RH_HIFZ_TARGET_REPS, (int) $value));
+            $r = max(0, min(RH_HIFZ_TARGET_REPS, (int) $value));
+            $reps[] = $r;
+            $verses[] = ($r >= RH_HIFZ_TARGET_REPS) ? 1 : 0;
         }
 
         $links = [];
@@ -215,13 +288,9 @@ if (!function_exists('rh_hifz_sanitize')) {
             }
             $links[] = max(0, min(RH_HIFZ_PAIR_REPS, (int) $value));
         }
-        // links[0] has no previous verse to join with.
         $links[0] = 0;
 
         $currentValue = $input['current'] ?? 0;
-        if (!is_int($currentValue) && !is_numeric($currentValue)) {
-            return null;
-        }
         $current = max(0, min($total - 1, (int) $currentValue));
 
         $phase = (string) ($input['phase'] ?? 'repeat');
@@ -230,10 +299,7 @@ if (!function_exists('rh_hifz_sanitize')) {
         }
 
         $pagePassValue = $input['page_pass'] ?? 0;
-        if (!is_int($pagePassValue) && !is_numeric($pagePassValue) && !is_bool($pagePassValue)) {
-            return null;
-        }
-        $pagePass = $pagePassValue === true ? 1 : max(0, min(1, (int) $pagePassValue));
+        $pagePass = ($pagePassValue === true || (int) $pagePassValue >= 1) ? 1 : 0;
 
         $allReps = true;
         foreach ($reps as $value) {
@@ -247,9 +313,6 @@ if (!function_exists('rh_hifz_sanitize')) {
 
         $claimedComplete = (bool) ($input['complete'] ?? false);
         if ($claimedComplete && !$complete) {
-            // A client must not be able to finish early by simply setting the
-            // flag. Treat the payload as inconsistent instead of silently
-            // accepting it.
             return null;
         }
 
@@ -257,25 +320,18 @@ if (!function_exists('rh_hifz_sanitize')) {
             $phase = 'complete';
             $current = $total - 1;
             $pagePass = RH_HIFZ_PAGE_PASS_TARGET;
-        } else {
-            if ($phase === 'complete') {
-                $phase = 'repeat';
-            }
-            if ($phase === 'page' && !$allReps) {
-                $phase = 'repeat';
-            }
-            if ($phase === 'link' && $current < 1) {
-                $phase = 'repeat';
-            }
         }
 
         return [
-            'v'          => RH_HIFZ_STATE_VERSION,
+            'v'          => 3,
             'page'       => $page,
+            'verses'     => $verses,
+            'final_pass' => $pagePass,
             'reps'       => $reps,
             'links'      => $links,
             'page_pass'  => $pagePass,
             'current'    => $current,
+            'substage'   => $phase,
             'phase'      => $phase,
             'complete'   => $complete,
             'updated_at' => gmdate('c'),
@@ -289,10 +345,27 @@ if (!function_exists('rh_hifz_is_complete')) {
         if ($state === null || empty($state['complete'])) {
             return false;
         }
-        if (rh_hifz_state_version($state) !== RH_HIFZ_STATE_VERSION) {
+        $version = rh_hifz_state_version($state);
+        if ($version !== 3 && $version !== 2) {
             return false;
         }
 
+        // Version 3 check
+        if (!empty($state['verses']) && is_array($state['verses'])) {
+            $verses = array_values($state['verses']);
+            if (count($verses) < 1) {
+                return false;
+            }
+            foreach ($verses as $v) {
+                if ((int) $v < 1) {
+                    return false;
+                }
+            }
+            $finalPass = (int) ($state['final_pass'] ?? ($state['page_pass'] ?? 0));
+            return $finalPass >= 1;
+        }
+
+        // Version 2 fallback
         $reps = $state['reps'] ?? null;
         $links = $state['links'] ?? null;
         if (!is_array($reps) || !is_array($links) || count($reps) < 1 || count($reps) !== count($links)) {
@@ -329,13 +402,20 @@ if (!function_exists('rh_hifz_state_score')) {
             return -1;
         }
         $score = 0;
-        foreach (($state['reps'] ?? []) as $value) {
-            $score += (int) $value;
+        if (!empty($state['verses']) && is_array($state['verses'])) {
+            foreach ($state['verses'] as $value) {
+                $score += ((int) $value) * 20;
+            }
+        } else {
+            foreach (($state['reps'] ?? []) as $value) {
+                $score += (int) $value;
+            }
+            foreach (($state['links'] ?? []) as $value) {
+                $score += (int) $value;
+            }
         }
-        foreach (($state['links'] ?? []) as $value) {
-            $score += (int) $value;
-        }
-        $score += ((int) ($state['page_pass'] ?? 0)) * 100;
+        $finalPass = (int) ($state['final_pass'] ?? ($state['page_pass'] ?? 0));
+        $score += $finalPass * 100;
         if (!empty($state['complete'])) {
             $score += 1000;
         }

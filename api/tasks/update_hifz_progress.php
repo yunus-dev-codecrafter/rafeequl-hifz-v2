@@ -69,7 +69,8 @@ try {
         json_out(400, ['success' => false, 'error' => 'progress must be a JSON object.']);
     }
 
-    if (rh_hifz_state_version($progressInput) !== RH_HIFZ_STATE_VERSION) {
+    $version = rh_hifz_state_version($progressInput);
+    if ($version !== 3 && $version !== 2) {
         json_out(409, [
             'success' => false,
             'code'    => 'HIFZ_STATE_VERSION',

@@ -1879,6 +1879,10 @@ function renderTaskPage(taskType) {
   }
 
   if (taskType === 'TIKRAR_AMS') {
+    if (window.TikrarPage && typeof window.TikrarPage.render === 'function') {
+      window.TikrarPage.render(task);
+      return;
+    }
     renderTikrarStage(task);
     return;
   }

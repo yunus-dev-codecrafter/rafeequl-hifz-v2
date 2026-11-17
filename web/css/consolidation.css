@@ -1193,3 +1193,420 @@ html[data-theme="dark"] .consolidation-page-text {
     line-height: 1.95;
   }
 }
+
+.consolidation-ayah.is-prev-page-ayah {
+  background: rgba(217, 119, 6, 0.04);
+  border: 1px dashed rgba(217, 119, 6, 0.28);
+  border-radius: 12px;
+  margin-bottom: 0.65rem;
+  padding: 0.75rem 0.85rem;
+}
+
+.consolidation-ayah.is-prev-page-ayah .consolidation-ayah-ref {
+  color: #b45309;
+  font-weight: 700;
+}
+
+/* Tafsir Card in Memorization View */
+.hifz-tafsir-card {
+  margin: 1.1rem 0;
+  padding: 1.15rem 1.25rem;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(15, 118, 110, 0.06), rgba(15, 118, 110, 0.01));
+  border: 1px solid rgba(15, 118, 110, 0.18);
+  box-shadow: 0 4px 16px rgba(15, 118, 110, 0.04);
+}
+
+.hifz-tafsir-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.55rem;
+  border-bottom: 1px dashed rgba(15, 118, 110, 0.15);
+}
+
+.hifz-tafsir-title {
+  font-weight: 800;
+  font-size: 0.96rem;
+  color: var(--primary, #0f766e);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.hifz-tafsir-ref {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-soft, #5b7370);
+  background: rgba(15, 118, 110, 0.08);
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+}
+
+.hifz-tafsir-body {
+  margin: 0.4rem 0;
+}
+
+.hifz-tafsir-text {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.85;
+  color: var(--text, #13302d);
+  font-family: 'Cairo', sans-serif;
+  text-align: justify;
+}
+
+.hifz-tafsir-footer {
+  margin-top: 0.65rem;
+}
+
+html[dir="rtl"] .hifz-tafsir-footer {
+  text-align: left;
+}
+
+html[dir="ltr"] .hifz-tafsir-footer {
+  text-align: right;
+}
+
+.hifz-tafsir-source {
+  font-size: 0.74rem;
+  color: var(--text-soft, #5b7370);
+  opacity: 0.85;
+}
+
+/* -------------------------------------------------------------------------
+ * Tikrar Ams Challenge Styles (Amber Accent & Ayah Sequencing)
+ * ------------------------------------------------------------------------- */
+
+html body[data-task-type="TIKRAR_AMS"] .consolidation-hero {
+  border-color: rgba(217, 119, 6, 0.22);
+  background: linear-gradient(135deg, rgba(217, 119, 6, 0.09), rgba(217, 119, 6, 0.02));
+}
+
+html body[data-task-type="TIKRAR_AMS"] .consolidation-eyebrow {
+  color: #d97706;
+}
+
+html body[data-task-type="TIKRAR_AMS"] .consolidation-ring-fg {
+  stroke: #d97706;
+}
+
+html body[data-task-type="TIKRAR_AMS"] .consolidation-ring strong {
+  color: #d97706;
+}
+
+html body[data-task-type="TIKRAR_AMS"] .consolidation-step.is-active span {
+  background: #d97706;
+}
+
+html body[data-task-type="TIKRAR_AMS"] .consolidation-step.is-active {
+  color: #d97706;
+}
+
+.tikrar-slots-container {
+  min-height: 100px;
+  padding: 0.9rem;
+  border-radius: 16px;
+  background: rgba(217, 119, 6, 0.03);
+  border: 2px dashed rgba(217, 119, 6, 0.25);
+  margin: 1rem 0;
+}
+
+.tikrar-slot-empty {
+  text-align: center;
+  padding: 1.5rem 1rem;
+  color: var(--text-soft, #5b7370);
+  font-size: 0.95rem;
+}
+
+.tikrar-slot-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem 0.95rem;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid rgba(217, 119, 6, 0.2);
+  margin-bottom: 0.5rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+  animation: tikrar-slide-in 0.25s ease;
+}
+
+@keyframes tikrar-slide-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.tikrar-slot-order {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #d97706;
+  color: #ffffff;
+  font-size: 0.82rem;
+  font-weight: 700;
+  flex: 0 0 auto;
+}
+
+.tikrar-slot-content {
+  flex: 1;
+}
+
+.tikrar-slot-ref {
+  font-size: 0.72rem;
+  color: #b45309;
+  font-weight: 700;
+  margin-bottom: 0.2rem;
+}
+
+.tikrar-slot-text {
+  margin: 0;
+  font-family: 'Amiri Quran', 'Traditional Arabic', serif;
+  font-size: 1.32rem;
+  line-height: 1.95;
+  color: var(--text, #13302d);
+}
+
+.tikrar-bank-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 1.2rem 0 0.6rem;
+}
+
+.tikrar-bank-title {
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: var(--text, #13302d);
+}
+
+.tikrar-bank-hint {
+  font-size: 0.78rem;
+  color: var(--text-soft, #5b7370);
+}
+
+.tikrar-bank {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+
+.tikrar-bank-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  padding: 0.85rem 1.15rem;
+  border-radius: 14px;
+  background: var(--surface, #ffffff);
+  border: 1px solid var(--line, #d8e3e1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+  text-align: right;
+  font-family: inherit;
+  width: 100%;
+}
+
+.tikrar-bank-item:hover {
+  transform: translateY(-2px);
+  border-color: rgba(217, 119, 6, 0.5);
+  background: rgba(217, 119, 6, 0.04);
+}
+
+.tikrar-bank-item:active {
+  transform: scale(0.98);
+}
+
+.tikrar-bank-item.is-wrong {
+  animation: consolidation-shake 0.4s ease;
+  border-color: #dc2626 !important;
+  background: rgba(220, 38, 38, 0.08) !important;
+}
+
+.tikrar-bank-preview {
+  font-family: 'Amiri Quran', 'Traditional Arabic', serif;
+  font-size: 1.35rem;
+  line-height: 1.95;
+  color: var(--text, #13302d);
+  flex: 1;
+}
+
+.tikrar-bank-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.78rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(217, 119, 6, 0.08);
+  color: #b45309;
+  font-weight: 700;
+  flex: 0 0 auto;
+}
+
+/* --- Tikrar Drill (Endings & Transitions Challenge 2) --- */
+.tikrar-drill-box {
+  margin: 1rem 0;
+}
+
+.tikrar-drill-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.85rem;
+  gap: 0.5rem;
+}
+
+.tikrar-drill-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  background: rgba(217, 119, 6, 0.1);
+  color: #b45309;
+  border: 1px solid rgba(217, 119, 6, 0.2);
+}
+
+.tikrar-drill-card {
+  padding: 1.25rem 1.1rem;
+  border-radius: 16px;
+  background: var(--surface, #ffffff);
+  border: 1.5px solid rgba(217, 119, 6, 0.22);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.03);
+  margin-bottom: 1.2rem;
+}
+
+.tikrar-drill-q-title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #b45309;
+  margin-bottom: 0.65rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.tikrar-drill-prompt-box {
+  padding: 1rem 1.15rem;
+  border-radius: 12px;
+  background: rgba(217, 119, 6, 0.035);
+  border: 1px solid rgba(217, 119, 6, 0.15);
+  margin-bottom: 1.1rem;
+  text-align: right;
+}
+
+.tikrar-drill-prompt-text {
+  font-family: 'Amiri Quran', 'Traditional Arabic', serif;
+  font-size: 1.45rem;
+  line-height: 2.1;
+  color: var(--text, #13302d);
+  margin: 0;
+}
+
+.tikrar-drill-blank {
+  display: inline-block;
+  padding: 0.1rem 0.65rem;
+  margin: 0 0.3rem;
+  border-radius: 8px;
+  border: 2px dashed #d97706;
+  background: rgba(217, 119, 6, 0.12);
+  color: #b45309;
+  font-weight: 800;
+  font-size: 1.15rem;
+  vertical-align: middle;
+}
+
+.tikrar-drill-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.tikrar-drill-opt {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.9rem 1.15rem;
+  border-radius: 14px;
+  background: var(--surface, #ffffff);
+  border: 1.5px solid var(--line, #d8e3e1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+  cursor: pointer;
+  text-align: right;
+  font-family: inherit;
+  width: 100%;
+  transition: all 0.18s ease;
+}
+
+.tikrar-drill-opt:hover:not(:disabled) {
+  border-color: #d97706;
+  background: rgba(217, 119, 6, 0.05);
+  transform: translateY(-2px);
+}
+
+.tikrar-drill-opt:active:not(:disabled) {
+  transform: scale(0.99);
+}
+
+.tikrar-drill-opt-text {
+  font-family: 'Amiri Quran', 'Traditional Arabic', serif;
+  font-size: 1.35rem;
+  line-height: 1.95;
+  color: var(--text, #13302d);
+  flex: 1;
+}
+
+.tikrar-drill-opt.is-correct {
+  border-color: #16a34a !important;
+  background: rgba(22, 163, 74, 0.1) !important;
+  color: #166534 !important;
+}
+
+.tikrar-drill-opt.is-wrong {
+  animation: consolidation-shake 0.4s ease;
+  border-color: #dc2626 !important;
+  background: rgba(220, 38, 38, 0.1) !important;
+  color: #991b1b !important;
+}
+
+.tikrar-drill-opt:disabled {
+  cursor: default;
+  opacity: 0.95;
+}
+
+.tikrar-drill-feedback {
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  animation: tikrar-slide-in 0.25s ease;
+}
+
+.tikrar-drill-feedback.is-correct {
+  background: rgba(22, 163, 74, 0.12);
+  color: #166534;
+  border: 1px solid rgba(22, 163, 74, 0.3);
+}
+
+.tikrar-drill-feedback.is-wrong {
+  background: rgba(220, 38, 38, 0.1);
+  color: #991b1b;
+  border: 1px solid rgba(220, 38, 38, 0.25);
+}
+
