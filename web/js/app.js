@@ -1801,6 +1801,9 @@ function scrollToStage() {
 }
 
 function selectTaskPage(taskType, page, isDone, shouldScroll = true) {
+  if (typeof PageAuditor !== 'undefined' && PageAuditor.cleanupRecording) {
+    PageAuditor.cleanupRecording(true);
+  }
   sessionStorage.setItem('selected_page_' + taskType, page);
   if (isDone) {
     sessionStorage.setItem('view_completed_' + taskType, '1');
@@ -2372,6 +2375,438 @@ function renderTikrarStage(task) {
   }
 }
 
+/* ---------------- 7d. Page Auditor & Reciter for Rabt & Muraja'ah ---------------- */
+const PageAuditor = {
+  currentTaskType: null,
+  currentPage: null,
+  stage: 'idle', // 'idle' | 'recording' | 'audit'
+  recording: false,
+  recordingPending: false,
+  mediaRecorder: null,
+  mediaStream: null,
+  recordingChunks: [],
+  recordingTimerId: null,
+  recordingStartTime: 0,
+  recordedAudioUrl: null,
+  recordingSession: 0,
+  quranData: null,
+  quranLoading: null,
+
+  async loadQuran() {
+    if (this.quranData) return this.quranData;
+    if (window.__quranUthmaniCache) {
+      this.quranData = window.__quranUthmaniCache;
+      return this.quranData;
+    }
+    if (window.PageNotes && typeof window.PageNotes.loadQuran === 'function') {
+      try {
+        const data = await window.PageNotes.loadQuran();
+        if (data) {
+          this.quranData = data;
+          window.__quranUthmaniCache = data;
+          return data;
+        }
+      } catch (e) {}
+    }
+    if (this.quranLoading) return this.quranLoading;
+    this.quranLoading = fetch('data/quran-uthmani.json', { credentials: 'same-origin' })
+      .then((res) => {
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.json();
+      })
+      .then((data) => {
+        this.quranData = data;
+        window.__quranUthmaniCache = data;
+        this.quranLoading = null;
+        return data;
+      })
+      .catch((err) => {
+        this.quranLoading = null;
+        console.error('Failed to load Quran Uthmani text', err);
+        return null;
+      });
+    return this.quranLoading;
+  },
+
+  buildVerses(page) {
+    const sections = (typeof getPageVerseSections === 'function') ? getPageVerseSections(page) : [];
+    const verses = [];
+    if (!sections || !sections.length) return verses;
+    sections.forEach((sec) => {
+      const sId = Number(sec.surahId);
+      const sName = (window.I18N && window.I18N.lang === 'en') ? sec.surahNameEn : sec.surahNameAr;
+      for (let ayah = Number(sec.fromAyah); ayah <= Number(sec.toAyah); ayah++) {
+        let text = '';
+        if (this.quranData && this.quranData[String(sId)] && this.quranData[String(sId)][ayah - 1]) {
+          text = this.quranData[String(sId)][ayah - 1];
+        }
+        verses.push({
+          page,
+          surah: sId,
+          ayah,
+          surahName: sName,
+          text,
+          key: `${sId}:${ayah}`,
+        });
+      }
+    });
+    return verses;
+  },
+
+  isRecordingSupported() {
+    return typeof window !== 'undefined'
+      && !!window.navigator
+      && !!navigator.mediaDevices
+      && typeof navigator.mediaDevices.getUserMedia === 'function'
+      && typeof MediaRecorder !== 'undefined';
+  },
+
+  getBestMimeType() {
+    if (typeof MediaRecorder === 'undefined' || typeof MediaRecorder.isTypeSupported !== 'function') {
+      return '';
+    }
+    const candidates = [
+      'audio/webm;codecs=opus',
+      'audio/webm',
+      'audio/mp4',
+      'audio/aac',
+      'audio/ogg;codecs=opus',
+      'audio/ogg',
+    ];
+    for (const candidate of candidates) {
+      if (MediaRecorder.isTypeSupported(candidate)) return candidate;
+    }
+    return '';
+  },
+
+  cleanupRecording(revokeAudio = true) {
+    this.recordingSession += 1;
+    if (this.recordingTimerId) {
+      clearInterval(this.recordingTimerId);
+      this.recordingTimerId = null;
+    }
+    const recorder = this.mediaRecorder;
+    this.mediaRecorder = null;
+    if (recorder) {
+      recorder.ondataavailable = null;
+      recorder.onstop = null;
+      recorder.onerror = null;
+      if (recorder.state !== 'inactive') {
+        try { recorder.stop(); } catch (e) {}
+      }
+    }
+    if (this.mediaStream) {
+      this.mediaStream.getTracks().forEach((track) => track.stop());
+      this.mediaStream = null;
+    }
+    if (revokeAudio && this.recordedAudioUrl) {
+      URL.revokeObjectURL(this.recordedAudioUrl);
+      this.recordedAudioUrl = null;
+    }
+    this.recording = false;
+    this.recordingPending = false;
+    this.recordingChunks = [];
+  },
+
+  syncPage(taskType, page, isPageDone) {
+    this.loadQuran();
+    if (this.currentTaskType !== taskType || this.currentPage !== page) {
+      this.cleanupRecording(true);
+      this.currentTaskType = taskType;
+      this.currentPage = page;
+      this.stage = isPageDone ? 'audit' : 'idle';
+    }
+  },
+
+  async startRecording(taskType, page) {
+    if (this.recording || this.recordingPending) return;
+    if (!this.isRecordingSupported()) {
+      showToast(window.I18N ? I18N.t('page_mic_unsupported') : 'التسجيل الصوتي غير مدعوم في هذا المتصفح. يمكنك كشف الصفحة مباشرة.', true);
+      return;
+    }
+    this.cleanupRecording(true);
+    const session = this.recordingSession;
+    this.recordingPending = true;
+    this.stage = 'recording';
+    renderTaskPage(taskType);
+
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+      });
+    } catch (err) {
+      if (session === this.recordingSession) {
+        this.recordingPending = false;
+        this.stage = 'idle';
+        showToast(window.I18N ? I18N.t('page_mic_permission_denied') : 'تعذر الوصول إلى الميكروفون. يرجى السماح بالإذن أو كشف الصفحة مباشرة.', true);
+        renderTaskPage(taskType);
+      }
+      return;
+    }
+
+    this.recordingPending = false;
+    if (session !== this.recordingSession) {
+      stream.getTracks().forEach((track) => track.stop());
+      return;
+    }
+
+    this.mediaStream = stream;
+    this.recordingChunks = [];
+    const mimeType = this.getBestMimeType();
+    let recorder;
+    try {
+      recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+    } catch (err) {
+      try {
+        recorder = new MediaRecorder(stream);
+      } catch (e2) {
+        stream.getTracks().forEach((track) => track.stop());
+        this.mediaStream = null;
+        this.stage = 'idle';
+        showToast(window.I18N ? I18N.t('page_recorder_init_failed') : 'تعذر تهيئة المسجل الصوتي.', true);
+        renderTaskPage(taskType);
+        return;
+      }
+    }
+
+    this.mediaRecorder = recorder;
+
+    recorder.ondataavailable = (e) => {
+      if (e && e.data && e.data.size > 0) {
+        this.recordingChunks.push(e.data);
+      }
+    };
+
+    recorder.onerror = () => {
+      showToast(window.I18N ? I18N.t('page_recording_error') : 'حدث خطأ أثناء التسجيل.', true);
+      this.cleanupRecording(true);
+      this.stage = 'idle';
+      renderTaskPage(taskType);
+    };
+
+    recorder.onstop = () => {
+      const type = (recorder && recorder.mimeType) || mimeType || 'audio/webm';
+      if (this.recordingChunks.length) {
+        const blob = new Blob(this.recordingChunks, { type });
+        if (this.recordedAudioUrl) URL.revokeObjectURL(this.recordedAudioUrl);
+        this.recordedAudioUrl = URL.createObjectURL(blob);
+      }
+      if (this.mediaStream) {
+        this.mediaStream.getTracks().forEach((track) => track.stop());
+        this.mediaStream = null;
+      }
+      this.mediaRecorder = null;
+      this.recording = false;
+      this.stage = 'audit';
+      renderTaskPage(taskType);
+
+      setTimeout(() => {
+        const player = document.getElementById('stage-recorded-audio');
+        if (this.recordedAudioUrl && player) {
+          player.src = this.recordedAudioUrl;
+          try {
+            const p = player.play();
+            if (p && typeof p.catch === 'function') p.catch(() => {});
+          } catch (e) {}
+        }
+      }, 50);
+    };
+
+    this.recordingStartTime = Date.now();
+    this.recording = true;
+    try {
+      recorder.start(250);
+    } catch (e) {
+      stream.getTracks().forEach((track) => track.stop());
+      this.mediaStream = null;
+      this.mediaRecorder = null;
+      this.recording = false;
+      this.stage = 'idle';
+      showToast(window.I18N ? I18N.t('page_recording_failed') : 'تعذر بدء التسجيل.', true);
+      renderTaskPage(taskType);
+      return;
+    }
+
+    this.recordingTimerId = setInterval(() => {
+      const timerEl = document.getElementById('stage-recording-timer');
+      if (!timerEl) return;
+      const elapsed = Math.floor((Date.now() - this.recordingStartTime) / 1000);
+      const mm = String(Math.floor(elapsed / 60)).padStart(2, '0');
+      const ss = String(elapsed % 60).padStart(2, '0');
+      timerEl.textContent = `${mm}:${ss}`;
+    }, 250);
+  },
+
+  stopRecording(taskType) {
+    if (!this.recording) return;
+    if (this.recordingTimerId) {
+      clearInterval(this.recordingTimerId);
+      this.recordingTimerId = null;
+    }
+    const recorder = this.mediaRecorder;
+    if (recorder && recorder.state !== 'inactive') {
+      try {
+        recorder.stop();
+      } catch (err) {
+        try { recorder.onstop(); } catch (e) {}
+      }
+    }
+  },
+
+  rerecord(taskType) {
+    this.cleanupRecording(true);
+    this.stage = 'idle';
+    renderTaskPage(taskType);
+  },
+
+  revealDirectly(taskType) {
+    this.cleanupRecording(true);
+    this.stage = 'audit';
+    renderTaskPage(taskType);
+  },
+
+  renderAuditorHtml(taskType, page, isPageDone) {
+    const t = (k, fb) => (window.I18N && typeof I18N.t === 'function' ? (I18N.t(k) !== k ? I18N.t(k) : fb) : fb);
+
+    if (this.stage === 'recording') {
+      return `
+        <div class="consolidation-recorder-box">
+          <div class="recorder-state recorder-state-active" style="align-items: center; text-align: center;">
+            <div class="recording-pulse-badge" style="margin: 0.6rem auto; display: inline-flex;">
+              <span class="recording-dot"></span>
+              <span>${esc(t('page_recording_active', 'جارٍ التسجيل... سمّع الصفحة كاملة غيباً'))}</span>
+              <span class="recording-timer" id="stage-recording-timer">00:00</span>
+            </div>
+            <div class="consolidation-actions" style="justify-content: center; margin-top: 0.5rem;">
+              <button type="button" class="btn btn-danger btn-stop-record" id="btn-stop-record" style="min-width: 240px; padding: 0.85rem 1.4rem; font-size: 1.05rem;">
+                ⏹️ ${esc(t('page_stop_recording', 'إيقاف التسجيل ومطابقة المصحف'))}
+              </button>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    if (this.stage === 'idle') {
+      return `
+        <div class="consolidation-recorder-box">
+          <div class="recorder-state recorder-state-idle" style="align-items: center; text-align: center;">
+            <p class="hint" style="margin-bottom:0.75rem; font-size:0.95rem;">
+              ${esc(t('rabt_recorder_idle_hint', 'سمّع الصفحة غيباً أثناء التسجيل، ثم أوقف التسجيل لتستمع لتلاوتك وأنت تنظر في المصحف لكشف وتدقيق أي خطأ:'))}
+            </p>
+            <div class="consolidation-actions" style="justify-content: center; gap: 0.65rem; flex-wrap:wrap;">
+              <button type="button" class="btn btn-primary btn-record-main" id="btn-start-record"${this.recordingPending ? ' disabled' : ''}>
+                🎙️ ${esc(t('page_start_recording', 'ابدأ تسجيل التلاوة الآن'))}
+              </button>
+              <button type="button" class="btn btn-ghost" id="btn-reveal-direct">
+                ${esc(t('page_reveal_without_record', 'كشف نص الصفحة مباشرة بدون تسجيل'))}
+              </button>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    // stage === 'audit'
+    const verses = this.buildVerses(page);
+    let versesContent = '';
+    if (!verses.length) {
+      this.loadQuran().then((data) => {
+        if (data && document.getElementById('stage-page-text')) {
+          const fresh = this.buildVerses(page);
+          const el = document.getElementById('stage-page-text');
+          if (el && fresh.length) {
+            el.innerHTML = fresh.map((v) => `
+              <div class="consolidation-ayah clickable-ayah" data-surah="${v.surah}" data-ayah="${v.ayah}" style="cursor:pointer;" title="${esc(t('ayah_click_to_mistake', 'انقر لتسجيل خطأ على الآية'))}">
+                <div class="consolidation-ayah-ref" style="display:flex; justify-content:space-between; align-items:center;">
+                  <span>${esc(v.surahName)} • ${esc(t('page_ayah_word', 'آية'))} ${v.ayah}</span>
+                  <span class="ayah-click-hint" style="font-size:0.72rem; color:var(--danger, #dc2626); opacity:0.8;">🔴 ${esc(t('ayah_click_to_mistake', 'انقر لتسجيل خطأ'))}</span>
+                </div>
+                <p>${esc(v.text || '…')}</p>
+              </div>
+            `).join('');
+            this.bindAyahClicks(page);
+          }
+        }
+      });
+      versesContent = `<p class="hint" style="text-align:center; padding:1.5rem 0;">${esc(t('loading_verses', 'جاري تحميل آيات الصفحة…'))}</p>`;
+    } else {
+      versesContent = verses.map((v) => `
+        <div class="consolidation-ayah clickable-ayah" data-surah="${v.surah}" data-ayah="${v.ayah}" style="cursor:pointer;" title="${esc(t('ayah_click_to_mistake', 'انقر لتسجيل خطأ على الآية'))}">
+          <div class="consolidation-ayah-ref" style="display:flex; justify-content:space-between; align-items:center;">
+            <span>${esc(v.surahName)} • ${esc(t('page_ayah_word', 'آية'))} ${v.ayah}</span>
+            <span class="ayah-click-hint" style="font-size:0.72rem; color:var(--danger, #dc2626); opacity:0.8;">🔴 ${esc(t('ayah_click_to_mistake', 'انقر لتسجيل خطأ'))}</span>
+          </div>
+          <p>${esc(v.text || '…')}</p>
+        </div>
+      `).join('');
+    }
+
+    return `
+      <div class="consolidation-recorder-box">
+        <div class="recorder-state recorder-state-playback">
+          <div class="playback-card" style="margin: 0.5rem 0; padding: 0.85rem; border-radius: 14px; background: rgba(15, 118, 110, 0.05); border: 1px solid rgba(15, 118, 110, 0.16);">
+            ${this.recordedAudioUrl ? `
+              <div style="font-size: 0.92rem; font-weight: 700; color: var(--primary, #0f766e); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.4rem;">
+                <span>🎙️</span>
+                <span>${esc(t('page_my_recording_label', 'تسجيل تلاوتك:'))}</span>
+              </div>
+              <audio controls class="recorded-audio-player" id="stage-recorded-audio" src="${this.recordedAudioUrl}" style="width: 100%; height: 42px;"></audio>
+            ` : ''}
+            <div class="playback-sub-actions" style="margin-top: 0.5rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <button type="button" class="btn btn-ghost btn-sm" id="btn-rerecord">
+                🔄 ${esc(t('page_rerecord', 'إعادة التسجيل'))}
+              </button>
+            </div>
+          </div>
+          <p class="consolidation-review-notice">
+            ${esc(t('stage_audit_notice', 'استمع لتسجيل تلاوتك وتابع في نص الصفحة أدناه كلمة بكلمة لتدقيق أي خطأ وسجله فوراً:'))}
+          </p>
+        </div>
+      </div>
+
+      <!-- Full Mushaf Page Text for Auditing -->
+      <div id="stage-page-text" class="consolidation-page-text" dir="rtl" style="margin-top:0.75rem;">
+        ${versesContent}
+      </div>`;
+  },
+
+  bindAyahClicks(page) {
+    document.querySelectorAll('#stage-page-text .clickable-ayah').forEach((el) => {
+      el.addEventListener('click', () => {
+        const surah = parseInt(el.dataset.surah, 10);
+        const ayah = parseInt(el.dataset.ayah, 10);
+        if (Number.isFinite(surah) && Number.isFinite(ayah) && typeof openMistakeModalForAyah === 'function') {
+          openMistakeModalForAyah(page, surah, ayah);
+        }
+      });
+    });
+  },
+
+  bindEvents(taskType, page) {
+    const startBtn = document.getElementById('btn-start-record');
+    if (startBtn) {
+      startBtn.addEventListener('click', () => this.startRecording(taskType, page));
+    }
+
+    const stopBtn = document.getElementById('btn-stop-record');
+    if (stopBtn) {
+      stopBtn.addEventListener('click', () => this.stopRecording(taskType));
+    }
+
+    const revealBtn = document.getElementById('btn-reveal-direct');
+    if (revealBtn) {
+      revealBtn.addEventListener('click', () => this.revealDirectly(taskType));
+    }
+
+    const rerecordBtn = document.getElementById('btn-rerecord');
+    if (rerecordBtn) {
+      rerecordBtn.addEventListener('click', () => this.rerecord(taskType));
+    }
+
+    this.bindAyahClicks(page);
+  }
+};
+
 function renderActivePageStage(taskType, task, activePage) {
   const stage = document.getElementById('recitation-stage');
   if (!stage) return;
@@ -2380,6 +2815,13 @@ function renderActivePageStage(taskType, task, activePage) {
   const isPageDone = completedList.includes(activePage);
   const mistakeCount = sharedState.badges[activePage] || 0;
   const taskTitle = (window.I18N && window.I18N.lang === 'en' && task.title_en) ? task.title_en : (task.title_ar || '');
+
+  const isRabtOrMurajaah = taskType === 'RABT' || taskType === 'MURAJAAH';
+  let auditorHtml = '';
+  if (isRabtOrMurajaah) {
+    PageAuditor.syncPage(taskType, activePage, isPageDone);
+    auditorHtml = PageAuditor.renderAuditorHtml(taskType, activePage, isPageDone);
+  }
 
   const pageTitle = window.I18N ? I18N.t('stage_page_label', { page: activePage }) : `📖 صفحة ${activePage}`;
   const statusPill = isPageDone
@@ -2507,6 +2949,8 @@ function renderActivePageStage(taskType, task, activePage) {
       </div>
     ` : ''}
 
+    ${isRabtOrMurajaah ? auditorHtml : ''}
+
     ${actionsHtml}
     <div class="kbd-hint">
       ${kbdHintText}
@@ -2515,6 +2959,10 @@ function renderActivePageStage(taskType, task, activePage) {
     <!-- Per-page recall board (notes / anchors / cues) -->
     <div class="page-notes-root" id="page-notes-root"></div>
   `;
+
+  if (isRabtOrMurajaah) {
+    PageAuditor.bindEvents(taskType, activePage);
+  }
 
   // Action listeners
   const completeBtn = document.getElementById('btn-complete-page');
@@ -2567,6 +3015,9 @@ function renderActivePageStage(taskType, task, activePage) {
           nextCandidate = Math.min(updatedTask.end_page, activePage + 1);
         }
 
+        if (isRabtOrMurajaah) {
+          PageAuditor.cleanupRecording(true);
+        }
         sessionStorage.setItem('selected_page_' + taskType, nextCandidate);
         sessionStorage.removeItem('view_completed_' + taskType);
         renderTaskPage(taskType);
@@ -2594,6 +3045,9 @@ function renderActivePageStage(taskType, task, activePage) {
         }
         showToast(window.I18N ? I18N.t('page_undone_toast', { page: activePage }) : `تم التراجع عن إتمام صفحة ${activePage} بنجاح ↩`);
 
+        if (isRabtOrMurajaah) {
+          PageAuditor.cleanupRecording(true);
+        }
         sessionStorage.setItem('selected_page_' + taskType, activePage);
         sessionStorage.removeItem('view_completed_' + taskType);
         await loadSharedData();
@@ -2628,6 +3082,9 @@ function renderActivePageStage(taskType, task, activePage) {
   const prevBtn = document.getElementById('btn-prev-page');
   if (prevBtn) {
     prevBtn.addEventListener('click', () => {
+      if (isRabtOrMurajaah) {
+        PageAuditor.cleanupRecording(true);
+      }
       sessionStorage.setItem('selected_page_' + taskType, activePage - 1);
       sessionStorage.setItem('view_completed_' + taskType, '1');
       renderTaskPage(taskType);
@@ -2637,6 +3094,9 @@ function renderActivePageStage(taskType, task, activePage) {
   const nextBtn = document.getElementById('btn-next-page');
   if (nextBtn) {
     nextBtn.addEventListener('click', () => {
+      if (isRabtOrMurajaah) {
+        PageAuditor.cleanupRecording(true);
+      }
       sessionStorage.setItem('selected_page_' + taskType, activePage + 1);
       sessionStorage.setItem('view_completed_' + taskType, '1');
       renderTaskPage(taskType);

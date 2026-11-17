@@ -49,8 +49,8 @@ if ($murajaahDays !== null) {
     if (is_string($murajaahDays) && ctype_digit($murajaahDays)) {
         $murajaahDays = (int) $murajaahDays;
     }
-    if (!is_int($murajaahDays) || $murajaahDays < 1 || $murajaahDays > 6) {
-        $errors['murajaah_days'] = 'مدة ختم المراجعة يجب أن تكون بين 1 و 6 أيام.';
+    if (!is_int($murajaahDays) || $murajaahDays < 1 || $murajaahDays > 10) {
+        $errors['murajaah_days'] = 'مدة ختم المراجعة يجب أن تكون بين 1 و 10 أيام.';
     }
 }
 

@@ -297,7 +297,7 @@
 
       <form id="plan-form" novalidate>
         <div class="field">
-          <label data-i18n="plan_days_label">كم يوماً تريد لختم مراجعتك كاملة؟ (١ – ٦ أيام كحد أقصى)</label>
+          <label data-i18n="plan_days_label">كم يوماً تريد لختم مراجعتك كاملة؟ (١ – ١٠ أيام كحد أقصى)</label>
           <div class="days-chip-grid" id="days-chip-grid">
             <button type="button" class="day-chip" data-days="1">
               <span class="day-num">١</span>
@@ -321,7 +321,23 @@
             </button>
             <button type="button" class="day-chip active" data-days="6">
               <span class="day-num">٦</span>
-              <span class="day-lbl" data-i18n="day_6">٦ أيام</span>
+              <span class="day-lbl" data-i18n="day_6">٦ أيام (الموصى به)</span>
+            </button>
+            <button type="button" class="day-chip" data-days="7">
+              <span class="day-num">٧</span>
+              <span class="day-lbl" data-i18n="day_7">٧ أيام</span>
+            </button>
+            <button type="button" class="day-chip" data-days="8">
+              <span class="day-num">٨</span>
+              <span class="day-lbl" data-i18n="day_8">٨ أيام</span>
+            </button>
+            <button type="button" class="day-chip" data-days="9">
+              <span class="day-num">٩</span>
+              <span class="day-lbl" data-i18n="day_9">٩ أيام</span>
+            </button>
+            <button type="button" class="day-chip" data-days="10">
+              <span class="day-num">١٠</span>
+              <span class="day-lbl" data-i18n="day_10">١٠ أيام</span>
             </button>
           </div>
           <input type="hidden" id="plan-days" value="6">

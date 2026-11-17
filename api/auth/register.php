@@ -74,7 +74,7 @@ $murajaahDays = $data['murajaah_days'] ?? 6;
 if (is_string($murajaahDays) && ctype_digit($murajaahDays)) {
     $murajaahDays = (int) $murajaahDays;
 }
-if (!is_int($murajaahDays) || $murajaahDays < 1 || $murajaahDays > 6) {
+if (!is_int($murajaahDays) || $murajaahDays < 1 || $murajaahDays > 10) {
     $murajaahDays = 6;
 }
 

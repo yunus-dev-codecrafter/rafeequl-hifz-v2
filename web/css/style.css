@@ -2840,7 +2840,7 @@ kbd {
 /* Days Selection Chips */
 .days-chip-grid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 0.4rem;
   margin-top: 0.4rem;
 }
