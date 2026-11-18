@@ -138,6 +138,15 @@ default), so “today” is consistent for every request.
 > repetition without changing the existing `RUB_TAMKIN` task or arrangement
 > progress. Run `php config/migrate_v12.php` (it also runs v7–v11), or open
 > `migrate.php` as an admin.
+>
+> **Page consolidation (v14)** creates `consolidation_selections` and
+> `consolidation_pages` and adds `PAGE_TAMKIN`. Migration v15 creates
+> `kalimaat_test_cycles` and `kalimaat_test_attempts`, adds
+> `kalimaat_progress.last_tested_at`, and backfills existing word mastery into
+> completed cycles. Run `php config/migrate_v15.php` (it also runs v7–v14), or
+> open `migrate.php` as an admin. After upgrading, run
+> `php config/verify_kalimaat_test.php` to check the cycle tables and mastery
+> logic (it rolls itself back and leaves no test data).
 
 ## New memorization (HIFZ_JADID)
 

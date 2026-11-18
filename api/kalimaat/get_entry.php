@@ -67,6 +67,14 @@ try {
         error_log('[Kalimaat get_entry] ' . $e->getMessage());
     }
 
+    $testPool = ['eligible' => 0, 'ready' => 0];
+    try {
+        $testPool = kal_test_pool_counts($pdo, $userId, $zone);
+        $stats['test_pool'] = $testPool['eligible'];
+    } catch (Throwable $e) {
+        error_log('[Kalimaat test pool] ' . $e->getMessage());
+    }
+
     $mistakeRow = null;
     try {
         $mistakeRow = kal_ensure_gate_mistake($pdo, $userId);
@@ -100,7 +108,9 @@ try {
         'zone_pages' => $zonePages,
         'zone_total' => $zoneTotal,
         'juz_counts' => $juzCounts,
-        'test_available' => $stats['test_pool'] > 0,
+        'test_available' => $testPool['eligible'] > 0,
+        'test_pool' => $testPool['eligible'],
+        'test_ready' => $testPool['ready'],
         'reason' => $reason,
     ];
 

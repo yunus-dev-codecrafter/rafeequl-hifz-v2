@@ -5,7 +5,7 @@ declare(strict_types=1);
  * Lightweight health check for monitoring and for distinguishing a code/API
  * problem from a host-level 502. It never exposes credentials or user data.
  *
- * 200 = PHP + database + v12 schema ready
+ * 200 = PHP + database + v15 schema ready
  * 503 = database or schema not ready
  *
  * The per-rub' tafsir bundle and the kalimaat catalog are reported separately
@@ -32,7 +32,9 @@ $required = [
     'madinah_pages_meta' => ['page_number'],
     'mistakes' => ['id', 'status', 'due_at', 'practice_count', 'practice_target'],
     'rub_history' => ['id', 'user_id', 'rub_id'],
-    'kalimaat_progress' => ['id', 'user_id', 'word_key', 'repeat_count', 'status', 'last_test_session'],
+    'kalimaat_progress' => ['id', 'user_id', 'word_key', 'repeat_count', 'status', 'last_tested_at'],
+    'kalimaat_test_cycles' => ['id', 'user_id', 'cycle_no', 'eligible_total', 'ready_total', 'started_at', 'completed_at'],
+    'kalimaat_test_attempts' => ['id', 'user_id', 'cycle_id', 'word_key', 'was_ready', 'correct', 'counted'],
     'waqf_flags' => ['id', 'user_id', 'station_key', 'segment_text', 'practice_count', 'practice_target', 'status'],
     'rub_sessions' => ['id', 'user_id', 'task_id', 'rub_id', 'status', 'plan_json', 'correct_count', 'wrong_count'],
     'rub_results' => ['id', 'session_id', 'user_id', 'exercise', 'item_id', 'status', 'is_correct'],

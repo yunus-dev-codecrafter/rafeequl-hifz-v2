@@ -888,6 +888,82 @@ body.entry-gate-open {
   padding: 0.9rem;
 }
 
+.kalimaat-test-cycle {
+  margin-bottom: 0.75rem;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--line-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+}
+
+.kalimaat-test-cycle-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.kalimaat-test-cycle .kalimaat-progress {
+  margin-top: 0.45rem;
+}
+
+.kalimaat-test-badge {
+  display: inline-block;
+  margin-bottom: 0.55rem;
+  padding: 0.24rem 0.55rem;
+  border: 1px solid var(--task-blue-border);
+  border-radius: 999px;
+  background: var(--task-blue-bg);
+  color: var(--task-blue);
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.kalimaat-test-complete {
+  padding: 0.5rem 0.25rem 0.25rem;
+  text-align: center;
+  color: var(--muted);
+}
+
+.kalimaat-test-complete strong {
+  display: block;
+  color: var(--ink);
+  font-size: 1rem;
+}
+
+.kalimaat-test-complete p {
+  margin: 0.3rem 0 0;
+  font-size: 0.8rem;
+  line-height: 1.7;
+}
+
+.kalimaat-test-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.4rem;
+  margin-top: 0.75rem;
+}
+
+.kalimaat-test-summary > div {
+  display: grid;
+  gap: 0.1rem;
+  padding: 0.55rem 0.4rem;
+  border: 1px solid var(--line-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  font-size: 0.66rem;
+  font-weight: 700;
+}
+
+.kalimaat-test-summary strong {
+  color: var(--accent);
+  font-size: 1rem;
+}
+
 .kalimaat-test-word {
   padding: 1.1rem 0.7rem;
   border: 1px solid var(--accent-soft-border);

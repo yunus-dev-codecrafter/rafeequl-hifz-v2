@@ -16,7 +16,6 @@
     q: '',
     list: null,
     test: null,
-    testSession: null,
     testResult: null,
     adding: false,
     loading: false,
@@ -60,34 +59,6 @@
       }
     } catch (e) {}
     return t('kalimaat_surah', 'سورة') + ' ' + id;
-  }
-
-  /**
-   * One test session per browser tab/app session. The API counts only the first
-   * correct answer per word per session, so mastery needs three separate app
-   * sessions rather than three clicks in one sitting.
-   */
-  function appTestSession() {
-    const key = 'rh_kalimaat_test_session';
-    let session = '';
-    try {
-      session = sessionStorage.getItem(key) || '';
-    } catch (e) {}
-    if (/^[a-f0-9]{32}$/i.test(session)) return session;
-
-    const bytes = new Uint8Array(16);
-    try {
-      if (window.crypto && typeof window.crypto.getRandomValues === 'function') {
-        window.crypto.getRandomValues(bytes);
-      } else {
-        for (let i = 0; i < bytes.length; i++) bytes[i] = Math.floor(Math.random() * 256);
-      }
-    } catch (e) {
-      for (let i = 0; i < bytes.length; i++) bytes[i] = Math.floor(Math.random() * 256);
-    }
-    session = Array.prototype.map.call(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
-    try { sessionStorage.setItem(key, session); } catch (e) {}
-    return session;
   }
 
   function toast(message) {
@@ -328,7 +299,8 @@
       if (ok && data && data.success) {
         state.entry.kalimaat.locked = data.word || word;
         state.entry.kalimaat.stats = data.stats || k.stats;
-        state.entry.kalimaat.test_available = Number((data.stats || {}).test_pool || 0) > 0;
+        state.entry.kalimaat.test_pool = Number((data.stats || {}).test_pool || 0);
+        state.entry.kalimaat.test_available = state.entry.kalimaat.test_pool > 0;
         renderHeader();
         renderLocked();
         toast(t('kalimaat_saved', 'تم حفظ التكرار.'));
@@ -552,30 +524,52 @@
         return;
       }
       if (event.target.closest('#kalimaat-test-next')) {
-        loadTest();
+        loadTest(false);
+      }
+      if (event.target.closest('#kalimaat-test-start')) {
+        loadTest(true);
       }
       if (event.target.closest('#kalimaat-test-study')) {
         switchView('study');
       }
-      if (event.target.closest('#kalimaat-test-start')) {
-        loadTest();
-      }
     });
   }
 
-  async function loadTest() {
+  function cycleCounter(cycle) {
+    if (!cycle) return '—';
+    const total = Number(cycle.round_target || cycle.eligible_total || 0);
+    return `${fmt(cycle.done || 0)} / ${fmt(total)}`;
+  }
+
+  function cycleProgressHtml(cycle) {
+    if (!cycle) return '';
+    const percent = Math.max(0, Math.min(100, Number(cycle.progress_percent) || 0));
+    return `
+      <div class="kalimaat-test-cycle">
+        <div class="kalimaat-test-cycle-meta">
+          <span>${esc(t('kalimaat_test_cycle_no', 'دورة الاختبار {n}', { n: fmt(cycle.cycle_no) }))}</span>
+          <span>${esc(t('kalimaat_test_cycle_progress', 'تم اختبار {done} من {total}', {
+            done: fmt(cycle.done || 0),
+            total: fmt(cycle.round_target || cycle.eligible_total || 0),
+          }))}</span>
+        </div>
+        <div class="kalimaat-progress"><span style="width:${percent}%"></span></div>
+      </div>`;
+  }
+
+  async function loadTest(start) {
     const body = $('kalimaat-test-body');
     if (!body) return;
     state.testResult = null;
     body.innerHTML = `<div class="kalimaat-test-empty"><p>${esc(t('kalimaat_loading', 'جارٍ التحميل…'))}</p></div>`;
     try {
-      const { ok, data } = await api('../api/kalimaat/test.php', { method: 'GET' });
+      const path = '../api/kalimaat/test.php' + (start ? '?start=1' : '');
+      const { ok, data } = await api(path, { method: 'GET' });
       if (!ok || !data || !data.success) {
         body.innerHTML = `<div class="kalimaat-test-empty"><strong>${esc(t('kalimaat_test_error_title', 'تعذر تحميل الاختبار'))}</strong><p>${esc((data && data.error) || t('kalimaat_network_error', 'تعذر الاتصال بالخادم.'))}</p></div>`;
         return;
       }
       state.test = data;
-      state.testSession = appTestSession();
       renderTest();
     } catch (e) {
       body.innerHTML = `<div class="kalimaat-test-empty"><strong>${esc(t('kalimaat_test_error_title', 'تعذر تحميل الاختبار'))}</strong></div>`;
@@ -586,25 +580,28 @@
     const body = $('kalimaat-test-body');
     if (!body) return;
     const data = state.test || {};
-    const q = data.question;
-    if (!q) {
-      setText('kalimaat-test-counter', '0 / 3');
-      body.innerHTML = `
-        <div class="kalimaat-test-empty">
-          <div class="kalimaat-empty-icon" aria-hidden="true">🎯</div>
-          <strong>${esc(t('kalimaat_test_empty_title', 'لا توجد كلمات جاهزة بعد'))}</strong>
-          <p>${esc(t('kalimaat_test_empty_desc', 'أكمل ٥٠٠ تكرار لكلمة واحدة على الأقل ليبدأ الاختبار.'))}</p>
-          <button type="button" class="btn btn-primary" id="kalimaat-test-study" style="margin-top:0.8rem;">${esc(t('kalimaat_back_study', 'العودة إلى المراجعة'))}</button>
-        </div>`;
+    const cycle = data.cycle || null;
+    setText('kalimaat-test-counter', cycleCounter(cycle));
+
+    if (data.state === 'NO_POOL') {
+      renderNoPool(data);
+      return;
+    }
+    if (data.state === 'CYCLE_COMPLETE' || !data.question) {
+      renderCycleComplete(data);
       return;
     }
 
+    const q = data.question;
     const word = q.word || {};
     const options = q.options || [];
     const result = state.testResult;
-    setText('kalimaat-test-counter', `${fmt(word.test_correct || 0)} / ${fmt(data.mastery_correct || 3)}`);
+    const mastery = Number(data.mastery_correct || 3);
+    const practiceOnly = word.status === 'LOCKED' || q.was_ready === false;
 
     body.innerHTML = `
+      ${cycleProgressHtml(cycle)}
+      ${practiceOnly ? `<div class="kalimaat-test-badge">${esc(t('kalimaat_test_practice_badge', 'كلمة تدريب — لا تُحتسب للإتقان'))}</div>` : ''}
       <div class="kalimaat-test-word" dir="rtl">${esc(word.text)}</div>
       <div class="kalimaat-test-ref">
         ${esc(surahName(word.surah_number))} • ${esc(t('entry_gate_ayah', 'الآية'))} ${fmt(word.ayah_number)}
@@ -614,8 +611,8 @@
         ${options.map((option, index) => {
           let cls = '';
           if (result) {
-            if (option.text === result.correct_meaning) cls = 'is-correct';
-            else if (option.text === result.selected_meaning) cls = 'is-wrong';
+            if (kalSame(option.text, result.correct_meaning)) cls = 'is-correct';
+            else if (kalSame(option.text, result.selected_meaning)) cls = 'is-wrong';
           }
           return `
             <button type="button" class="kalimaat-option ${cls}" data-test-option="${esc(option.id)}" data-test-meaning="${esc(option.text)}" ${result ? 'disabled' : ''}>
@@ -626,24 +623,94 @@
       </div>
       ${result ? testFeedbackHtml(result) : ''}
       <div class="kalimaat-test-actions">
-        ${result ? `<button type="button" class="btn btn-primary" id="kalimaat-test-next">${esc(t('kalimaat_test_next', 'سؤال جديد'))}</button>` : ''}
+        ${result ? `<button type="button" class="btn btn-primary" id="kalimaat-test-next">${esc(result.cycle_completed ? t('kalimaat_test_show_summary', 'عرض ملخص الدورة') : t('kalimaat_test_next', 'سؤال جديد'))}</button>` : ''}
         <button type="button" class="btn btn-ghost" id="kalimaat-test-study">${esc(t('kalimaat_back_study', 'العودة إلى المراجعة'))}</button>
       </div>
       <div class="kalimaat-test-stats">
         <span>${esc(t('kalimaat_test_attempts', 'المحاولات: {n}', { n: fmt(word.test_attempts) }))}</span>
-        <span>${esc(t('kalimaat_test_correct_count', 'الإجابات المحسوبة: {n}', { n: fmt(word.test_correct) }))}</span>
+        <span>${esc(t('kalimaat_test_mastery_progress', 'الإتقان: {n} من {m}', { n: fmt(word.test_correct || 0), m: fmt(mastery) }))}</span>
+      </div>`;
+  }
+
+  /** Normalise just enough to highlight the same option the server graded. */
+  function kalSame(a, b) {
+    const norm = (value) => String(value == null ? '' : value)
+      .replace(/[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06ED\u0640]/g, '')
+      .replace(/[أإآٱ]/g, 'ا')
+      .replace(/ى/g, 'ي')
+      .replace(/ة/g, 'ه')
+      .replace(/[\u060C\u061B\u061F\u066A-\u066D\u06D4]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    return norm(a) === norm(b);
+  }
+
+  function renderNoPool(data) {
+    const body = $('kalimaat-test-body');
+    if (!body) return;
+    const reason = data.reason || '';
+    const titles = {
+      ZONE_EMPTY: t('kalimaat_no_zone_title', 'حدّد نطاق حفظك أولًا'),
+      ALL_MASTERED: t('kalimaat_test_all_mastered_title', 'أتقنت كل الكلمات في نطاقك'),
+      NO_STARTED_WORDS: t('kalimaat_test_empty_title', 'لا توجد كلمات جاهزة بعد'),
+    };
+    const descriptions = {
+      ZONE_EMPTY: t('kalimaat_no_zone_desc', 'اذهب إلى دفتر اليوم وحدّد صفحة الحفظ الحالية، ثم عد إلى هنا.'),
+      ALL_MASTERED: t('kalimaat_test_all_mastered_desc', 'أكملت ثلاث دورات اختبار لكل كلمة جاهزة. تابع التكرار لكلمات جديدة لتظهر هنا.'),
+      NO_STARTED_WORDS: t('kalimaat_test_empty_desc', 'ابدأ بتكرار كلمة واحدة على الأقل ليبدأ الاختبار.'),
+    };
+    body.innerHTML = `
+      <div class="kalimaat-test-empty">
+        <div class="kalimaat-empty-icon" aria-hidden="true">🎯</div>
+        <strong>${esc(titles[reason] || t('kalimaat_test_empty_title', 'لا توجد كلمات جاهزة بعد'))}</strong>
+        <p>${esc(descriptions[reason] || t('kalimaat_test_empty_desc', 'ابدأ بتكرار كلمة واحدة على الأقل ليبدأ الاختبار.'))}</p>
+        <button type="button" class="btn btn-primary" id="kalimaat-test-study" style="margin-top:0.8rem;">${esc(t('kalimaat_back_study', 'العودة إلى المراجعة'))}</button>
+      </div>`;
+  }
+
+  function renderCycleComplete(data) {
+    const body = $('kalimaat-test-body');
+    if (!body) return;
+    const cycle = data.cycle || null;
+    if (!cycle) {
+      renderNoPool(data);
+      return;
+    }
+
+    body.innerHTML = `
+      <div class="kalimaat-test-complete">
+        <div class="kalimaat-empty-icon" aria-hidden="true">✅</div>
+        <strong>${esc(t('kalimaat_test_cycle_done_title', 'أكملت دورة الاختبار {n}', { n: fmt(cycle.cycle_no) }))}</strong>
+        <p>${esc(t('kalimaat_test_cycle_done_desc', 'اختبرت {done} كلمة في هذه الدورة، وأجبت إجابة صحيحة على {correct}.', {
+          done: fmt(cycle.done || 0),
+          correct: fmt(cycle.correct_count || 0),
+        }))}</p>
+        <div class="kalimaat-test-summary">
+          <div><span>${esc(t('kalimaat_test_summary_pool', 'كلمات الدورة'))}</span><strong>${fmt(cycle.eligible_total || 0)}</strong></div>
+          <div><span>${esc(t('kalimaat_test_summary_ready', 'كلمات جاهزة'))}</span><strong>${fmt(cycle.ready_total || 0)}</strong></div>
+          <div><span>${esc(t('kalimaat_test_summary_counted', 'إجابات محسوبة'))}</span><strong>${fmt(cycle.counted_count || 0)}</strong></div>
+        </div>
+        <div class="kalimaat-test-actions">
+          <button type="button" class="btn btn-primary" id="kalimaat-test-start">${esc(t('kalimaat_test_start_cycle', 'ابدأ الدورة التالية'))}</button>
+          <button type="button" class="btn btn-ghost" id="kalimaat-test-study">${esc(t('kalimaat_back_study', 'العودة إلى المراجعة'))}</button>
+        </div>
       </div>`;
   }
 
   function testFeedbackHtml(result) {
     if (result.correct && result.mastered) {
-      return `<div class="kalimaat-test-feedback is-correct">✓ ${esc(t('kalimaat_test_mastered', 'أتقنت هذه الكلمة! ثلاث إجابات صحيحة في جلسات منفصلة.'))}</div>`;
+      return `<div class="kalimaat-test-feedback is-correct">✓ ${esc(t('kalimaat_test_mastered', 'أتقنت هذه الكلمة! ثلاث إجابات صحيحة في ثلاث دورات اختبار.'))}</div>`;
     }
     if (result.correct && result.counted) {
-      return `<div class="kalimaat-test-feedback is-correct">✓ ${esc(t('kalimaat_test_correct_counted', 'إجابة صحيحة، وتم احتسابها. تبقّى {n} إجابة في جلسات قادمة.', { n: Math.max(0, Number(result.mastery_correct || 3) - Number((result.word || {}).test_correct || 0)) }))}</div>`;
+      const mastery = Number(result.mastery_correct || 3);
+      const current = Number((result.word || {}).test_correct || 0);
+      return `<div class="kalimaat-test-feedback is-correct">✓ ${esc(t('kalimaat_test_correct_counted', 'إجابة صحيحة، وتم احتسابها. تبقّى {n} دورة لإتقان الكلمة.', { n: Math.max(0, mastery - current) }))}</div>`;
     }
-    if (result.correct && !result.counted) {
-      return `<div class="kalimaat-test-feedback is-correct">✓ ${esc(t('kalimaat_test_correct_repeat', 'إجابة صحيحة، لكن هذه الجلسة محسوبة مسبقًا. ستُحتسب في اختبار جديد.'))}</div>`;
+    if (result.correct && result.was_ready === false) {
+      return `<div class="kalimaat-test-feedback is-correct">✓ ${esc(t('kalimaat_test_practice_correct', 'إجابة صحيحة. هذه كلمة تدريب لأنها لم تكن جاهزة عند بدء الدورة، لذلك لا تُحتسب للإتقان الآن.'))}</div>`;
+    }
+    if (result.correct) {
+      return `<div class="kalimaat-test-feedback is-correct">✓ ${esc(t('kalimaat_test_correct_repeat', 'إجابة صحيحة، لكنها لم تُحتسب في هذه الدورة.'))}</div>`;
     }
     return `<div class="kalimaat-test-feedback is-wrong">${esc(t('kalimaat_test_wrong', 'الإجابة الصحيحة: {meaning}', { meaning: result.correct_meaning || '' }))}</div>`;
   }
@@ -658,18 +725,21 @@
     }
 
     try {
-      const { ok, data: result } = await api('../api/kalimaat/test_answer.php', {
+      const { ok, data: result, status } = await api('../api/kalimaat/test_answer.php', {
         method: 'POST',
         body: {
           word_key: word.key,
           selected_meaning: selectedMeaning,
-          test_session: state.testSession,
         },
       });
 
       if (!ok || !result || !result.success) {
+        // A 409 means the question is stale (cycle changed, already answered,
+        // or the word left the pool). Reload instead of leaving a dead card.
         toast((result && result.error) || t('kalimaat_save_error', 'تعذر حفظ الإجابة.'));
-        if (body) {
+        if (status === 409) {
+          await loadTest(false);
+        } else if (body) {
           body.querySelectorAll('[data-test-option]').forEach((btn) => { btn.disabled = false; });
         }
         return;
@@ -679,6 +749,7 @@
         selected_meaning: selectedMeaning,
         mastery_correct: result.mastery_correct || data.mastery_correct || 3,
       });
+      state.test.cycle = result.cycle || data.cycle;
       state.test.question.word = result.word || word;
       if (result.stats && state.entry && state.entry.kalimaat) {
         state.entry.kalimaat.stats = result.stats;

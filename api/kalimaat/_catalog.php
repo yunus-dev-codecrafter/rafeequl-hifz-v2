@@ -12,6 +12,13 @@ declare(strict_types=1);
 const KALIMAAT_TARGET = 500;
 const KALIMAAT_TEST_MASTERY_CORRECT = 3;
 
+/**
+ * Questions per test cycle. 0 means "every started word in the zone", which is
+ * the intended behaviour. Set a positive number later to cap very large zones.
+ * Keep it at 0 for now so a cycle always covers the full pool.
+ */
+const KALIMAAT_TEST_ROUND_LIMIT = 0;
+
 function kal_json_out(int $code, array $payload): void
 {
     http_response_code($code);
@@ -189,6 +196,7 @@ function kal_word_payload(array $word, ?array $progress): array
         'test_attempts' => (int) ($progress['test_attempts'] ?? 0),
         'test_correct' => (int) ($progress['test_correct'] ?? 0),
         'last_repeated_at' => $progress['last_repeated_at'] ?? null,
+        'last_tested_at' => $progress['last_tested_at'] ?? null,
     ];
 }
 
@@ -403,6 +411,11 @@ function kal_test_options(array $word, string $correct, int $count = 4): array
 function kal_norm_key(string $text): string
 {
     $t = preg_replace('/[\x{0610}-\x{061A}\x{064B}-\x{065F}\x{0670}\x{06D6}-\x{06ED}\x{0640}]/u', '', $text) ?? $text;
+    // Match config/build_kalimaat.php so near-duplicate meanings collapse.
+    $t = str_replace(['أ', 'إ', 'آ', 'ٱ'], 'ا', $t);
+    $t = str_replace(['ى'], 'ي', $t);
+    $t = str_replace(['ة'], 'ه', $t);
+    $t = preg_replace('/[\x{060C}\x{061B}\x{061F}\x{066A}-\x{066D}\x{06D4}]/u', ' ', $t) ?? $t;
     $t = preg_replace('/\s+/u', ' ', $t) ?? $t;
     return trim($t);
 }
@@ -417,7 +430,7 @@ function kal_user_stats(PDO $pdo, int $userId): array
             SUM(CASE WHEN `status` = 'READY' THEN 1 ELSE 0 END) AS ready_words,
             SUM(CASE WHEN `status` = 'MASTERED' THEN 1 ELSE 0 END) AS mastered_words,
             COALESCE(SUM(`repeat_count`), 0) AS total_repetitions,
-            COALESCE(SUM(CASE WHEN `status` = 'READY' THEN 1 ELSE 0 END), 0) AS test_pool
+            COALESCE(SUM(CASE WHEN `repeat_count` > 0 AND `status` IN ('LOCKED', 'READY') THEN 1 ELSE 0 END), 0) AS test_pool
          FROM `kalimaat_progress` WHERE `user_id` = :u"
     );
     $stmt->execute([':u' => $userId]);
@@ -432,26 +445,334 @@ function kal_user_stats(PDO $pdo, int $userId): array
     ];
 }
 
-/** @return array<string,mixed>|null */
-function kal_test_question(PDO $pdo, int $userId, array $zone): ?array
+/**
+ * Started words in the user's zone: LOCKED practice words plus READY words.
+ * MASTERED words and words with zero repetitions never enter a test cycle.
+ *
+ * Pass $createdBefore to freeze the pool at a cycle's start time, so a word
+ * added from another tab mid-cycle cannot inflate or shrink the count.
+ *
+ * @return array{eligible:int,ready:int}
+ */
+function kal_test_pool_counts(PDO $pdo, int $userId, array $zone, ?string $createdBefore = null): array
 {
-    if ((int) $zone['end'] < (int) $zone['start']) return null;
+    if ((int) $zone['end'] < (int) $zone['start']) {
+        return ['eligible' => 0, 'ready' => 0];
+    }
+    $sql = "SELECT
+            COUNT(*) AS eligible,
+            COALESCE(SUM(CASE WHEN `status` = 'READY' THEN 1 ELSE 0 END), 0) AS ready
+           FROM `kalimaat_progress`
+          WHERE `user_id` = :u
+            AND `repeat_count` > 0
+            AND `status` IN ('LOCKED', 'READY')
+            AND `page_number` BETWEEN :start AND :end";
+    $params = [
+        ':u' => $userId,
+        ':start' => (int) $zone['start'],
+        ':end' => (int) $zone['end'],
+    ];
+    if ($createdBefore !== null) {
+        $sql .= ' AND `created_at` <= :cutoff';
+        $params[':cutoff'] = $createdBefore;
+    }
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+    $row = $stmt->fetch() ?: [];
+    return [
+        'eligible' => (int) ($row['eligible'] ?? 0),
+        'ready' => (int) ($row['ready'] ?? 0),
+    ];
+}
+
+/** How many questions this cycle is expected to cover. */
+function kal_test_round_target(array $cycle): int
+{
+    $total = max(0, (int) ($cycle['eligible_total'] ?? 0));
+    if (KALIMAAT_TEST_ROUND_LIMIT > 0) {
+        return min($total, KALIMAAT_TEST_ROUND_LIMIT);
+    }
+    return $total;
+}
+
+/** @return array<string,int> */
+function kal_test_cycle_counts(PDO $pdo, int $cycleId): array
+{
+    $stmt = $pdo->prepare(
+        "SELECT
+            COUNT(*) AS done,
+            COALESCE(SUM(`correct`), 0) AS correct_count,
+            COALESCE(SUM(`counted`), 0) AS counted_count
+           FROM `kalimaat_test_attempts`
+          WHERE `cycle_id` = :c"
+    );
+    $stmt->execute([':c' => $cycleId]);
+    $row = $stmt->fetch() ?: [];
+    return [
+        'done' => (int) ($row['done'] ?? 0),
+        'correct_count' => (int) ($row['correct_count'] ?? 0),
+        'counted_count' => (int) ($row['counted_count'] ?? 0),
+    ];
+}
+
+/** @return array<string,mixed> */
+function kal_test_cycle_payload(PDO $pdo, array $cycle): array
+{
+    $counts = kal_test_cycle_counts($pdo, (int) $cycle['id']);
+    $target = kal_test_round_target($cycle);
+    $done = $counts['done'];
+    return [
+        'id' => (int) $cycle['id'],
+        'cycle_no' => (int) $cycle['cycle_no'],
+        'eligible_total' => (int) $cycle['eligible_total'],
+        'ready_total' => (int) $cycle['ready_total'],
+        'round_target' => $target,
+        'done' => $done,
+        'remaining' => max(0, $target - $done),
+        'progress_percent' => $target > 0 ? min(100, (int) round(($done / $target) * 100)) : 0,
+        'correct_count' => $counts['correct_count'],
+        'counted_count' => $counts['counted_count'],
+        'started_at' => $cycle['started_at'] ?? null,
+        'completed_at' => $cycle['completed_at'] ?? null,
+        'is_active' => empty($cycle['completed_at']),
+    ];
+}
+
+/** @return array<string,mixed>|null */
+function kal_test_active_cycle(PDO $pdo, int $userId): ?array
+{
+    $stmt = $pdo->prepare(
+        'SELECT * FROM `kalimaat_test_cycles`
+          WHERE `user_id` = :u AND `completed_at` IS NULL
+          ORDER BY `cycle_no` DESC LIMIT 1'
+    );
+    $stmt->execute([':u' => $userId]);
+    $row = $stmt->fetch();
+    return $row ?: null;
+}
+
+/** @return array<string,mixed>|null */
+function kal_test_last_cycle(PDO $pdo, int $userId): ?array
+{
+    $stmt = $pdo->prepare(
+        'SELECT * FROM `kalimaat_test_cycles`
+          WHERE `user_id` = :u
+          ORDER BY `cycle_no` DESC LIMIT 1'
+    );
+    $stmt->execute([':u' => $userId]);
+    $row = $stmt->fetch();
+    return $row ?: null;
+}
+
+/**
+ * Start the next cycle. The users row is locked so two tabs cannot create two
+ * active cycles with the same number.
+ *
+ * @return array<string,mixed>|null Null when the zone has no started words.
+ */
+function kal_test_create_cycle(PDO $pdo, int $userId, array $zone): ?array
+{
+    if ((int) $zone['end'] < (int) $zone['start']) {
+        return null;
+    }
+
+    $pdo->beginTransaction();
+    try {
+        $stmt = $pdo->prepare('SELECT `id` FROM `users` WHERE `id` = :u FOR UPDATE');
+        $stmt->execute([':u' => $userId]);
+
+        $active = kal_test_active_cycle($pdo, $userId);
+        if ($active) {
+            $pdo->commit();
+            return $active;
+        }
+
+        // Freeze the pool boundary before counting: the queue uses the same
+        // timestamp, so words added later cannot be counted but unasked.
+        $startedAt = date('Y-m-d H:i:s');
+
+        $pool = kal_test_pool_counts($pdo, $userId, $zone, $startedAt);
+        if ($pool['eligible'] <= 0) {
+            $pdo->commit();
+            return null;
+        }
+
+        $stmt = $pdo->prepare(
+            'SELECT COALESCE(MAX(`cycle_no`), 0) + 1 FROM `kalimaat_test_cycles` WHERE `user_id` = :u'
+        );
+        $stmt->execute([':u' => $userId]);
+        $cycleNo = (int) $stmt->fetchColumn();
+
+        $stmt = $pdo->prepare(
+            "INSERT INTO `kalimaat_test_cycles`
+                (`user_id`, `cycle_no`, `eligible_total`, `ready_total`,
+                 `zone_start`, `zone_end`, `started_at`)
+             VALUES (:u, :n, :eligible, :ready, :zs, :ze, :started)"
+        );
+        $stmt->execute([
+            ':u' => $userId,
+            ':n' => $cycleNo,
+            ':eligible' => $pool['eligible'],
+            ':ready' => $pool['ready'],
+            ':zs' => (int) $zone['start'],
+            ':ze' => (int) $zone['end'],
+            ':started' => $startedAt,
+        ]);
+        $cycleId = (int) $pdo->lastInsertId();
+
+        $stmt = $pdo->prepare('SELECT * FROM `kalimaat_test_cycles` WHERE `id` = :id LIMIT 1');
+        $stmt->execute([':id' => $cycleId]);
+        $cycle = $stmt->fetch() ?: null;
+        $pdo->commit();
+        return $cycle;
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        throw $e;
+    }
+}
+
+/**
+ * Pick a started word from the cycle's zone that has no attempt in this cycle.
+ * This is the queue: once a word is answered it is never drawn again in the
+ * same cycle, so the round always advances instead of looping on one word.
+ *
+ * @return array<string,mixed>|null
+ */
+function kal_test_next_word(PDO $pdo, int $userId, array $cycle): ?array
+{
+    $target = kal_test_round_target($cycle);
+    if ($target <= 0) {
+        return null;
+    }
+
+    $counts = kal_test_cycle_counts($pdo, (int) $cycle['id']);
+    if ($counts['done'] >= $target) {
+        return null;
+    }
 
     $stmt = $pdo->prepare(
-        "SELECT * FROM `kalimaat_progress`
-         WHERE `user_id` = :u AND `status` = 'READY'
-           AND `page_number` BETWEEN :start AND :end
-         ORDER BY RAND() LIMIT 1"
+        "SELECT p.*
+           FROM `kalimaat_progress` p
+          WHERE p.`user_id` = :u
+            AND p.`status` IN ('LOCKED', 'READY')
+            AND p.`repeat_count` > 0
+            AND p.`created_at` <= :started
+            AND p.`page_number` BETWEEN :zs AND :ze
+            AND NOT EXISTS (
+                SELECT 1 FROM `kalimaat_test_attempts` a
+                 WHERE a.`cycle_id` = :cycle AND a.`word_key` = p.`word_key`
+            )
+          ORDER BY RAND()
+          LIMIT 1"
     );
-    $stmt->execute([':u' => $userId, ':start' => (int) $zone['start'], ':end' => (int) $zone['end']]);
+    $stmt->execute([
+        ':u' => $userId,
+        ':started' => (string) $cycle['started_at'],
+        ':zs' => (int) ($cycle['zone_start'] ?? 1),
+        ':ze' => (int) ($cycle['zone_end'] ?? 604),
+        ':cycle' => (int) $cycle['id'],
+    ]);
     $row = $stmt->fetch();
-    if (!$row) return null;
+    return $row ?: null;
+}
 
+/** Mark a cycle finished once every due word has an attempt. */
+function kal_test_finish_if_done(PDO $pdo, array $cycle): array
+{
+    if (!empty($cycle['completed_at'])) {
+        return $cycle;
+    }
+    $counts = kal_test_cycle_counts($pdo, (int) $cycle['id']);
+    if ($counts['done'] < kal_test_round_target($cycle)) {
+        return $cycle;
+    }
+    $stmt = $pdo->prepare(
+        'UPDATE `kalimaat_test_cycles` SET `completed_at` = NOW()
+          WHERE `id` = :id AND `completed_at` IS NULL'
+    );
+    $stmt->execute([':id' => (int) $cycle['id']]);
+    $cycle['completed_at'] = date('Y-m-d H:i:s');
+    return $cycle;
+}
+
+/**
+ * Force-complete a cycle that has no drawable question left. This protects the
+ * UI from a dead "next question" loop if old data and the snapshot disagree.
+ */
+function kal_test_close_cycle(PDO $pdo, array $cycle): array
+{
+    if (!empty($cycle['completed_at'])) {
+        return $cycle;
+    }
+    $stmt = $pdo->prepare(
+        'UPDATE `kalimaat_test_cycles` SET `completed_at` = NOW()
+          WHERE `id` = :id AND `completed_at` IS NULL'
+    );
+    $stmt->execute([':id' => (int) $cycle['id']]);
+    $cycle['completed_at'] = date('Y-m-d H:i:s');
+    return $cycle;
+}
+
+/**
+ * Why a cycle cannot start, using the three observable states.
+ *
+ * @return array{reason:string,pool:array{eligible:int,ready:int}}
+ */
+function kal_test_no_pool_state(PDO $pdo, int $userId, array $zone): array
+{
+    $pool = kal_test_pool_counts($pdo, $userId, $zone);
+    if ((int) $zone['end'] < (int) $zone['start']) {
+        return ['reason' => 'ZONE_EMPTY', 'pool' => $pool];
+    }
+
+    $stmt = $pdo->prepare(
+        "SELECT
+            COUNT(*) AS words,
+            COALESCE(SUM(CASE WHEN `status` = 'MASTERED' THEN 1 ELSE 0 END), 0) AS mastered,
+            COALESCE(SUM(CASE WHEN `repeat_count` > 0 AND `status` IN ('LOCKED', 'READY') THEN 1 ELSE 0 END), 0) AS started
+           FROM `kalimaat_progress`
+          WHERE `user_id` = :u AND `page_number` BETWEEN :start AND :end"
+    );
+    $stmt->execute([
+        ':u' => $userId,
+        ':start' => (int) $zone['start'],
+        ':end' => (int) $zone['end'],
+    ]);
+    $row = $stmt->fetch() ?: [];
+    $words = (int) ($row['words'] ?? 0);
+    $mastered = (int) ($row['mastered'] ?? 0);
+    $started = (int) ($row['started'] ?? 0);
+
+    if ($started <= 0 && $mastered > 0 && $mastered >= $words) {
+        return ['reason' => 'ALL_MASTERED', 'pool' => $pool];
+    }
+    return ['reason' => 'NO_STARTED_WORDS', 'pool' => $pool];
+}
+
+/** @return array<string,mixed> */
+function kal_test_question_payload(array $row, ?array $cycle = null): array
+{
     $payload = kal_word_payload([], $row);
-    $options = kal_test_options($payload, (string) $row['meaning']);
+    $wasReady = (string) $row['status'] === 'READY';
+    if ($wasReady && $cycle !== null) {
+        $wasReady = empty($row['last_repeated_at'])
+            || (string) $row['last_repeated_at'] <= (string) $cycle['started_at'];
+    }
     return [
         'word' => $payload,
-        'options' => $options,
+        'options' => kal_test_options($payload, (string) $row['meaning']),
+        'was_ready' => $wasReady,
         'mastery_correct' => KALIMAAT_TEST_MASTERY_CORRECT,
     ];
+}
+
+/** Recompute mastery from attempts only, capped at the mastery target. */
+function kal_test_correct_count(PDO $pdo, int $userId, string $wordKey): int
+{
+    $stmt = $pdo->prepare(
+        'SELECT COUNT(DISTINCT `cycle_id`) FROM `kalimaat_test_attempts`
+          WHERE `user_id` = :u AND `word_key` = :k AND `correct` = 1 AND `counted` = 1'
+    );
+    $stmt->execute([':u' => $userId, ':k' => $wordKey]);
+    return min(KALIMAAT_TEST_MASTERY_CORRECT, (int) $stmt->fetchColumn());
 }

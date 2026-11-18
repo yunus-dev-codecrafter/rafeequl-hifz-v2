@@ -49,6 +49,9 @@ function mh_schema(PDO $pdo): array
         'index'           => false,
         'kalimaat_table'  => false,
         'kalimaat_session' => false,
+        'kalimaat_tested_at' => false,
+        'kalimaat_cycles_table' => false,
+        'kalimaat_attempts_table' => false,
         'gate_column'     => false,
         'waqf_table'      => false,
         'waqf_gate_column' => false,
@@ -66,6 +69,8 @@ function mh_schema(PDO $pdo): array
     try {
         $out['users'] = (bool) $pdo->query("SHOW TABLES LIKE 'users'")->fetchColumn();
         $out['kalimaat_table'] = (bool) $pdo->query("SHOW TABLES LIKE 'kalimaat_progress'")->fetchColumn();
+        $out['kalimaat_cycles_table'] = (bool) $pdo->query("SHOW TABLES LIKE 'kalimaat_test_cycles'")->fetchColumn();
+        $out['kalimaat_attempts_table'] = (bool) $pdo->query("SHOW TABLES LIKE 'kalimaat_test_attempts'")->fetchColumn();
         $out['waqf_table'] = (bool) $pdo->query("SHOW TABLES LIKE 'waqf_flags'")->fetchColumn();
         $out['rub_session_table'] = (bool) $pdo->query("SHOW TABLES LIKE 'rub_sessions'")->fetchColumn();
         $out['rub_results_table'] = (bool) $pdo->query("SHOW TABLES LIKE 'rub_results'")->fetchColumn();
@@ -115,8 +120,10 @@ function mh_schema(PDO $pdo): array
             $kalCols[strtolower((string) $row['Field'])] = true;
         }
         $out['kalimaat_session'] = isset($kalCols['last_test_session']);
+        $out['kalimaat_tested_at'] = isset($kalCols['last_tested_at']);
     } catch (Throwable $t) {
         $out['kalimaat_session'] = false;
+        $out['kalimaat_tested_at'] = false;
     }
 
     $cols = [];
@@ -148,6 +155,9 @@ function mh_schema(PDO $pdo): array
         && !$hasLegacy
         && $out['kalimaat_table']
         && $out['kalimaat_session']
+        && $out['kalimaat_tested_at']
+        && $out['kalimaat_cycles_table']
+        && $out['kalimaat_attempts_table']
         && $out['gate_column']
         && $out['waqf_table']
         && $out['waqf_gate_column']
@@ -338,6 +348,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 throw new RuntimeException('Could not load config/migrate_v14.php.');
             }
             $stats14 = rh_migrate_v14($pdo, $log);
+            require_once __DIR__ . '/config/migrate_v15.php';
+            if (!function_exists('rh_migrate_v15')) {
+                throw new RuntimeException('تعذر تحميل ملف الترقية config/migrate_v15.php.');
+            }
+            $stats15 = rh_migrate_v15($pdo, $log);
             foreach (['columns_added', 'indexes_added', 'tables_created', 'enum_updates'] as $statKey) {
                 $stats[$statKey] = (int) ($stats[$statKey] ?? 0) + (int) ($stats10[$statKey] ?? 0);
             }
@@ -345,8 +360,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 + (int) ($stats11['tables_created'] ?? 0)
                 + (int) ($stats12['tables_created'] ?? 0)
                 + (int) ($stats13['tables_created'] ?? 0)
-                + (int) ($stats14['tables_created'] ?? 0);
-            $stats['columns_added'] = (int) $stats['columns_added'] + (int) ($stats11['columns_added'] ?? 0) + (int) ($stats13['columns_added'] ?? 0);
+                + (int) ($stats14['tables_created'] ?? 0)
+                + (int) ($stats15['tables_created'] ?? 0);
+            $stats['columns_added'] = (int) $stats['columns_added'] + (int) ($stats11['columns_added'] ?? 0) + (int) ($stats13['columns_added'] ?? 0) + (int) ($stats15['columns_added'] ?? 0);
             $stats['enum_updates'] = (int) ($stats['enum_updates'] ?? 0) + (int) ($stats13['enum_updates'] ?? 0) + (int) ($stats14['enum_updates'] ?? 0);
             $stats['mistakes_purged'] = (int) ($stats11['mistakes_purged'] ?? 0);
         } catch (Throwable $t) {
@@ -362,10 +378,10 @@ $enumDisplay = $schema['enum'] !== '' ? $schema['enum'] : '—';
 mh_page_start('رفيق الحفظ — ترقية قاعدة البيانات');
 ?>
 <span class="badge">ترقية قاعدة البيانات</span>
-<h1>ترقية قاعدة البيانات إلى v14</h1>
+<h1>ترقية قاعدة البيانات إلى v15</h1>
 <p class="muted">
-  مرحباً <?= mh_h($user['name'] ?? $user['email'] ?? '') ?>. هذه الصفحة تطبّق ترقية v14
-  (وتشمل v7 حتى v13) على قاعدة البيانات الحالية. لا تحذف
+  مرحباً <?= mh_h($user['name'] ?? $user['email'] ?? '') ?>. هذه الصفحة تطبّق ترقية v15
+  (وتشمل v7 حتى v14) على قاعدة البيانات الحالية. لا تحذف
   <code>config/installed.lock</code> ولا تعيد تفعيل المثبّت.
 </p>
 <p class="warn" style="margin-top:0">
@@ -387,6 +403,9 @@ mh_page_start('رفيق الحفظ — ترقية قاعدة البيانات');
     <li><span>فهرس <code>idx_mistakes_user_status_practice</code></span><span class="<?= $schema['index'] ? 'pass' : 'fail' ?>"><?= $schema['index'] ? '✓' : '✗' ?></span></li>
     <li><span>جدول <code>kalimaat_progress</code></span><span class="<?= $schema['kalimaat_table'] ? 'pass' : 'fail' ?>"><?= $schema['kalimaat_table'] ? '✓' : '✗' ?></span></li>
     <li><span>العمود <code>kalimaat_progress.last_test_session</code></span><span class="<?= $schema['kalimaat_session'] ? 'pass' : 'fail' ?>"><?= $schema['kalimaat_session'] ? '✓' : '✗' ?></span></li>
+    <li><span>العمود <code>kalimaat_progress.last_tested_at</code></span><span class="<?= $schema['kalimaat_tested_at'] ? 'pass' : 'fail' ?>"><?= $schema['kalimaat_tested_at'] ? '✓' : '✗' ?></span></li>
+    <li><span>جدول <code>kalimaat_test_cycles</code></span><span class="<?= $schema['kalimaat_cycles_table'] ? 'pass' : 'fail' ?>"><?= $schema['kalimaat_cycles_table'] ? '✓' : '✗' ?></span></li>
+    <li><span>جدول <code>kalimaat_test_attempts</code></span><span class="<?= $schema['kalimaat_attempts_table'] ? 'pass' : 'fail' ?>"><?= $schema['kalimaat_attempts_table'] ? '✓' : '✗' ?></span></li>
     <li><span>عمودا <code>users.gate_mistake_*</code></span><span class="<?= $schema['gate_column'] ? 'pass' : 'fail' ?>"><?= $schema['gate_column'] ? '✓' : '✗' ?></span></li>
     <li><span>جدول <code>waqf_flags</code></span><span class="<?= $schema['waqf_table'] ? 'pass' : 'fail' ?>"><?= $schema['waqf_table'] ? '✓' : '✗' ?></span></li>
     <li><span>عمودا <code>users.gate_waqf_*</code></span><span class="<?= $schema['waqf_gate_column'] ? 'pass' : 'fail' ?>"><?= $schema['waqf_gate_column'] ? '✓' : '✗' ?></span></li>
@@ -409,8 +428,8 @@ mh_page_start('رفيق الحفظ — ترقية قاعدة البيانات');
   </div>
 <?php elseif ($schema['ready']): ?>
   <div class="ok">
-    <strong>قاعدة البيانات جاهزة لـ v14.</strong>
-    عدّاد التكرار، وجدول تقدّم معاني الكلمات، وجدول المواقف المعلّمة، وجداول تثبيت الربع القديمة،
+    <strong>قاعدة البيانات جاهزة لـ v15.</strong>
+    عدّاد التكرار، ودورات اختبار معاني الكلمات، وجدول المواقف المعلّمة، وجداول تثبيت الربع القديمة،
     وجداول تثبيت الصفحة الجديدة موجودة. يمكنك إعادة تشغيل الترقية بأمان إذا أردت إصلاح أي شيء.
   </div>
   <?php if (!$schema['index']): ?>
@@ -419,17 +438,17 @@ mh_page_start('رفيق الحفظ — ترقية قاعدة البيانات');
     </div>
   <?php endif; ?>
   <div class="card">
-    <form method="post" action="migrate.php" onsubmit="return confirm('إعادة تشغيل ترقية v14 آمنة ومتكررة. هل تريد المتابعة؟');">
+    <form method="post" action="migrate.php" onsubmit="return confirm('إعادة تشغيل ترقية v15 آمنة ومتكررة. هل تريد المتابعة؟');">
       <input type="hidden" name="csrf" value="<?= mh_h($csrf) ?>">
       <input type="hidden" name="action" value="migrate">
-      <button type="submit" class="secondary">إعادة تشغيل ترقية v14</button>
+      <button type="submit" class="secondary">إعادة تشغيل ترقية v15</button>
     </form>
   </div>
 <?php else: ?>
   <div class="warn">
     <strong>الترقية مطلوبة.</strong>
     ستُضاف أعمدة عدّاد التكرار وجدول المواقف المعلّمة، ويُحوَّل نوع الخطأ إلى التصنيفات الثلاثة،
-    وتُحذف البطاقات المكتملة نهائيًا عند 15/15، ويُضاف جدول تقدّم معاني الكلمات،
+    وتُحذف البطاقات المكتملة نهائيًا عند 15/15، ويُضاف جدول تقدّم معاني الكلمات ودورات اختبارها،
     وجداول تثبيت الربع القديمة، وجداول تثبيت الصفحة الجديدة مع نوع المهمة PAGE_TAMKIN.
     الترقية آمنة ومتكررة.
   </div>
@@ -437,7 +456,7 @@ mh_page_start('رفيق الحفظ — ترقية قاعدة البيانات');
     <form method="post" action="migrate.php">
       <input type="hidden" name="csrf" value="<?= mh_h($csrf) ?>">
       <input type="hidden" name="action" value="migrate">
-      <button type="submit">تشغيل ترقية v14 الآن</button>
+      <button type="submit">تشغيل ترقية v15 الآن</button>
     </form>
     <p class="muted" style="margin-bottom:0">قد تستغرق الترقية بعض الثواني على قاعدة بيانات كبيرة. لا تغلق الصفحة.</p>
   </div>

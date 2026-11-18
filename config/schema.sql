@@ -5,7 +5,7 @@
 -- hosts pre-create the database and usually forbid CREATE DATABASE.
 --
 -- Fresh installs: create the database, select it in phpMyAdmin, then import
--- this file. Upgrades: run config/migrate_v12.php (CLI) or use setup.php.
+-- this file. Upgrades: run config/migrate_v15.php (CLI) or use setup.php.
 
 -- 1. users table
 CREATE TABLE IF NOT EXISTS `users` (
@@ -296,6 +296,7 @@ CREATE TABLE IF NOT EXISTS `kalimaat_progress` (
     `status` ENUM('LOCKED','READY','MASTERED') NOT NULL DEFAULT 'LOCKED',
     `locked_at` DATETIME NULL,
     `last_repeated_at` DATETIME NULL,
+    `last_tested_at` DATETIME NULL,
     `test_attempts` INT NOT NULL DEFAULT 0,
     `test_correct` INT NOT NULL DEFAULT 0,
     `last_test_session` CHAR(40) NULL,
@@ -309,6 +310,51 @@ CREATE TABLE IF NOT EXISTS `kalimaat_progress` (
     KEY `idx_kalimaat_user_page` (`user_id`, `page_number`),
     CONSTRAINT `fk_kalimaat_progress_user`
         FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
+        ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 10b. Kalimaat test cycles (v15)
+-- A cycle is one full pass over every started word in the user's zone. The
+-- attempts table doubles as the cycle queue: a word without an attempt in the
+-- current cycle is still due, so a word can never be skipped or asked forever.
+CREATE TABLE IF NOT EXISTS `kalimaat_test_cycles` (
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `user_id` INT NOT NULL,
+    `cycle_no` INT NOT NULL,
+    `eligible_total` INT NOT NULL DEFAULT 0,
+    `ready_total` INT NOT NULL DEFAULT 0,
+    `zone_start` SMALLINT UNSIGNED NOT NULL DEFAULT 1,
+    `zone_end` SMALLINT UNSIGNED NOT NULL DEFAULT 604,
+    `started_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `completed_at` DATETIME NULL,
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_kalimaat_cycle_no` (`user_id`, `cycle_no`),
+    KEY `idx_kalimaat_cycles_user_state` (`user_id`, `completed_at`, `cycle_no`),
+    CONSTRAINT `fk_kalimaat_cycles_user`
+        FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
+        ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `kalimaat_test_attempts` (
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `user_id` INT NOT NULL,
+    `cycle_id` INT NOT NULL,
+    `word_key` CHAR(40) NOT NULL,
+    `was_ready` TINYINT NOT NULL DEFAULT 0,
+    `correct` TINYINT NOT NULL DEFAULT 0,
+    `counted` TINYINT NOT NULL DEFAULT 0,
+    `selected_meaning` TEXT NULL,
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_kalimaat_attempt_word` (`cycle_id`, `word_key`),
+    KEY `idx_kalimaat_attempts_user_word` (`user_id`, `word_key`),
+    KEY `idx_kalimaat_attempts_cycle` (`cycle_id`),
+    CONSTRAINT `fk_kalimaat_attempts_user`
+        FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_kalimaat_attempts_cycle`
+        FOREIGN KEY (`cycle_id`) REFERENCES `kalimaat_test_cycles` (`id`)
         ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
