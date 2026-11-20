@@ -76,7 +76,18 @@ try {
         $stmt->execute([':u' => $userId]);
     } catch (Throwable $t) {}
 
+    // 2d. Clear tafreet logs & user absences (v16)
+    try {
+        $stmt = $pdo->prepare("DELETE FROM `tafreet_logs` WHERE `user_id` = :u");
+        $stmt->execute([':u' => $userId]);
+    } catch (Throwable $t) {}
+    try {
+        $stmt = $pdo->prepare("DELETE FROM `user_absences` WHERE `user_id` = :u");
+        $stmt->execute([':u' => $userId]);
+    } catch (Throwable $t) {}
+
     // 3. Reset user table fields to default baseline (0 current page, NEW user, default 6 days / 100 pages target)
+    $today = date('Y-m-d');
     $stmt = $pdo->prepare("
         UPDATE `users`
         SET `current_hifz_page` = 0,
@@ -85,11 +96,14 @@ try {
             `daily_murajaah_target_pages` = 100,
             `murajaah_days` = 6,
             `rabt_extra_pages` = 0,
+            `rabt_base_pages` = 30,
+            `tafreet_count` = 0,
+            `last_tafreet_check_date` = :today,
             `gate_mistake_id` = NULL,
             `gate_mistake_locked_at` = NULL
         WHERE `id` = :u
     ");
-    $stmt->execute([':u' => $userId]);
+    $stmt->execute([':u' => $userId, ':today' => $today]);
 
     $pdo->commit();
 

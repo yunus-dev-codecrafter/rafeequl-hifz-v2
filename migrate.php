@@ -63,6 +63,9 @@ function mh_schema(PDO $pdo): array
         'consolidation_pages_table' => false,
         'consolidation_selections_table' => false,
         'page_task_enum' => false,
+        'tafreet_logs_table' => false,
+        'user_absences_table' => false,
+        'tafreet_column' => false,
         'ready'           => false,
     ];
 
@@ -78,6 +81,8 @@ function mh_schema(PDO $pdo): array
         $out['rub_word_misses_table'] = (bool) $pdo->query("SHOW TABLES LIKE 'rub_word_misses'")->fetchColumn();
         $out['consolidation_pages_table'] = (bool) $pdo->query("SHOW TABLES LIKE 'consolidation_pages'")->fetchColumn();
         $out['consolidation_selections_table'] = (bool) $pdo->query("SHOW TABLES LIKE 'consolidation_selections'")->fetchColumn();
+        $out['tafreet_logs_table'] = (bool) $pdo->query("SHOW TABLES LIKE 'tafreet_logs'")->fetchColumn();
+        $out['user_absences_table'] = (bool) $pdo->query("SHOW TABLES LIKE 'user_absences'")->fetchColumn();
     } catch (Throwable $t) {
         $out['users'] = false;
     }
@@ -110,6 +115,7 @@ function mh_schema(PDO $pdo): array
         }
         $out['gate_column'] = isset($userCols['gate_mistake_id'], $userCols['gate_mistake_locked_at']);
         $out['waqf_gate_column'] = isset($userCols['gate_waqf_id'], $userCols['gate_waqf_locked_at']);
+        $out['tafreet_column'] = isset($userCols['tafreet_count'], $userCols['rabt_base_pages']);
     } catch (Throwable $t) {
         $out['gate_column'] = false;
     }
@@ -168,7 +174,10 @@ function mh_schema(PDO $pdo): array
         && $out['rub_exercise_enum']
         && $out['consolidation_pages_table']
         && $out['consolidation_selections_table']
-        && $out['page_task_enum'];
+        && $out['page_task_enum']
+        && $out['tafreet_logs_table']
+        && $out['user_absences_table']
+        && $out['tafreet_column'];
 
     try {
         foreach ($pdo->query('SHOW INDEX FROM `mistakes`') as $row) {
@@ -353,6 +362,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 throw new RuntimeException('تعذر تحميل ملف الترقية config/migrate_v15.php.');
             }
             $stats15 = rh_migrate_v15($pdo, $log);
+            require_once __DIR__ . '/config/migrate_v16.php';
+            if (!function_exists('rh_migrate_v16')) {
+                throw new RuntimeException('تعذر تحميل ملف الترقية config/migrate_v16.php.');
+            }
+            $stats16 = rh_migrate_v16($pdo, $log);
             foreach (['columns_added', 'indexes_added', 'tables_created', 'enum_updates'] as $statKey) {
                 $stats[$statKey] = (int) ($stats[$statKey] ?? 0) + (int) ($stats10[$statKey] ?? 0);
             }
@@ -361,8 +375,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 + (int) ($stats12['tables_created'] ?? 0)
                 + (int) ($stats13['tables_created'] ?? 0)
                 + (int) ($stats14['tables_created'] ?? 0)
-                + (int) ($stats15['tables_created'] ?? 0);
-            $stats['columns_added'] = (int) $stats['columns_added'] + (int) ($stats11['columns_added'] ?? 0) + (int) ($stats13['columns_added'] ?? 0) + (int) ($stats15['columns_added'] ?? 0);
+                + (int) ($stats15['tables_created'] ?? 0)
+                + (int) ($stats16['tables_created'] ?? 0);
+            $stats['columns_added'] = (int) $stats['columns_added']
+                + (int) ($stats11['columns_added'] ?? 0)
+                + (int) ($stats13['columns_added'] ?? 0)
+                + (int) ($stats15['columns_added'] ?? 0)
+                + (int) ($stats16['columns_added'] ?? 0);
             $stats['enum_updates'] = (int) ($stats['enum_updates'] ?? 0) + (int) ($stats13['enum_updates'] ?? 0) + (int) ($stats14['enum_updates'] ?? 0);
             $stats['mistakes_purged'] = (int) ($stats11['mistakes_purged'] ?? 0);
         } catch (Throwable $t) {
@@ -378,10 +397,10 @@ $enumDisplay = $schema['enum'] !== '' ? $schema['enum'] : '—';
 mh_page_start('رفيق الحفظ — ترقية قاعدة البيانات');
 ?>
 <span class="badge">ترقية قاعدة البيانات</span>
-<h1>ترقية قاعدة البيانات إلى v15</h1>
+<h1>ترقية قاعدة البيانات إلى v16</h1>
 <p class="muted">
-  مرحباً <?= mh_h($user['name'] ?? $user['email'] ?? '') ?>. هذه الصفحة تطبّق ترقية v15
-  (وتشمل v7 حتى v14) على قاعدة البيانات الحالية. لا تحذف
+  مرحباً <?= mh_h($user['name'] ?? $user['email'] ?? '') ?>. هذه الصفحة تطبّق ترقية v16
+  (وتشمل v7 حتى v15) على قاعدة البيانات الحالية. لا تحذف
   <code>config/installed.lock</code> ولا تعيد تفعيل المثبّت.
 </p>
 <p class="warn" style="margin-top:0">
@@ -417,6 +436,9 @@ mh_page_start('رفيق الحفظ — ترقية قاعدة البيانات');
     <li><span>جدول <code>consolidation_selections</code></span><span class="<?= $schema['consolidation_selections_table'] ? 'pass' : 'fail' ?>"><?= $schema['consolidation_selections_table'] ? '✓' : '✗' ?></span></li>
     <li><span>جدول <code>consolidation_pages</code></span><span class="<?= $schema['consolidation_pages_table'] ? 'pass' : 'fail' ?>"><?= $schema['consolidation_pages_table'] ? '✓' : '✗' ?></span></li>
     <li><span>نوع المهمة <code>PAGE_TAMKIN</code></span><span class="<?= $schema['page_task_enum'] ? 'pass' : 'fail' ?>"><?= $schema['page_task_enum'] ? '✓' : '✗' ?></span></li>
+    <li><span>جدول أيام التفريط <code>tafreet_logs</code></span><span class="<?= $schema['tafreet_logs_table'] ? 'pass' : 'fail' ?>"><?= $schema['tafreet_logs_table'] ? '✓' : '✗' ?></span></li>
+    <li><span>جدول الغياب المخطط <code>user_absences</code></span><span class="<?= $schema['user_absences_table'] ? 'pass' : 'fail' ?>"><?= $schema['user_absences_table'] ? '✓' : '✗' ?></span></li>
+    <li><span>أعمدة التفريط والربط في <code>users</code></span><span class="<?= $schema['tafreet_column'] ? 'pass' : 'fail' ?>"><?= $schema['tafreet_column'] ? '✓' : '✗' ?></span></li>
   </ul>
   <p class="muted" style="margin-bottom:0">نوع الخطأ الحالي: <code><?= mh_h($enumDisplay) ?></code></p>
 </div>
@@ -428,9 +450,8 @@ mh_page_start('رفيق الحفظ — ترقية قاعدة البيانات');
   </div>
 <?php elseif ($schema['ready']): ?>
   <div class="ok">
-    <strong>قاعدة البيانات جاهزة لـ v15.</strong>
-    عدّاد التكرار، ودورات اختبار معاني الكلمات، وجدول المواقف المعلّمة، وجداول تثبيت الربع القديمة،
-    وجداول تثبيت الصفحة الجديدة موجودة. يمكنك إعادة تشغيل الترقية بأمان إذا أردت إصلاح أي شيء.
+    <strong>قاعدة البيانات جاهزة لـ v16.</strong>
+    جداول تثبيت الصفحة، ونظام أيام التفريط، والإجازات والغياب المخطط، وديناميكية الربط جاهزة. يمكنك إعادة تشغيل الترقية بأمان إذا أردت إصلاح أي شيء.
   </div>
   <?php if (!$schema['index']): ?>
     <div class="warn">
@@ -438,10 +459,10 @@ mh_page_start('رفيق الحفظ — ترقية قاعدة البيانات');
     </div>
   <?php endif; ?>
   <div class="card">
-    <form method="post" action="migrate.php" onsubmit="return confirm('إعادة تشغيل ترقية v15 آمنة ومتكررة. هل تريد المتابعة؟');">
+    <form method="post" action="migrate.php" onsubmit="return confirm('إعادة تشغيل ترقية v16 آمنة ومتكررة. هل تريد المتابعة؟');">
       <input type="hidden" name="csrf" value="<?= mh_h($csrf) ?>">
       <input type="hidden" name="action" value="migrate">
-      <button type="submit" class="secondary">إعادة تشغيل ترقية v15</button>
+      <button type="submit" class="secondary">إعادة تشغيل ترقية v16</button>
     </form>
   </div>
 <?php else: ?>
@@ -449,14 +470,14 @@ mh_page_start('رفيق الحفظ — ترقية قاعدة البيانات');
     <strong>الترقية مطلوبة.</strong>
     ستُضاف أعمدة عدّاد التكرار وجدول المواقف المعلّمة، ويُحوَّل نوع الخطأ إلى التصنيفات الثلاثة،
     وتُحذف البطاقات المكتملة نهائيًا عند 15/15، ويُضاف جدول تقدّم معاني الكلمات ودورات اختبارها،
-    وجداول تثبيت الربع القديمة، وجداول تثبيت الصفحة الجديدة مع نوع المهمة PAGE_TAMKIN.
+    وجداول تثبيت الصفحة، ونظام أيام التفريط والغياب المخطط (v16).
     الترقية آمنة ومتكررة.
   </div>
   <div class="card">
     <form method="post" action="migrate.php">
       <input type="hidden" name="csrf" value="<?= mh_h($csrf) ?>">
       <input type="hidden" name="action" value="migrate">
-      <button type="submit">تشغيل ترقية v15 الآن</button>
+      <button type="submit">تشغيل ترقية v16 الآن</button>
     </form>
     <p class="muted" style="margin-bottom:0">قد تستغرق الترقية بعض الثواني على قاعدة بيانات كبيرة. لا تغلق الصفحة.</p>
   </div>

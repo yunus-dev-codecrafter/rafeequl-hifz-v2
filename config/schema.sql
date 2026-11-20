@@ -17,6 +17,8 @@ CREATE TABLE IF NOT EXISTS `users` (
     `role` ENUM('USER', 'ADMIN', 'SUPER_ADMIN') NOT NULL DEFAULT 'USER',
     `status` ENUM('ACTIVE', 'SUSPENDED', 'DISABLED') NOT NULL DEFAULT 'ACTIVE',
     `status_reason` VARCHAR(255) NULL,
+    `tafreet_count` INT NOT NULL DEFAULT 0,
+    `last_tafreet_check_date` DATE NULL,
     `suspended_at` DATETIME NULL,
     `last_login_at` DATETIME NULL,
     `last_seen_at` DATETIME NULL,
@@ -26,6 +28,7 @@ CREATE TABLE IF NOT EXISTS `users` (
     `daily_murajaah_target_pages` INT NOT NULL DEFAULT 100,
     `murajaah_days` INT NOT NULL DEFAULT 6,
     `rabt_extra_pages` INT NOT NULL DEFAULT 0,
+    `rabt_base_pages` INT NOT NULL DEFAULT 30,
     `last_tikrar_page` INT NOT NULL DEFAULT 0,
     `gate_mistake_id` INT NULL,
     `gate_mistake_locked_at` DATETIME NULL,
@@ -461,6 +464,36 @@ CREATE TABLE IF NOT EXISTS `rub_word_misses` (
     UNIQUE KEY `uq_rub_word_misses_user_word` (`user_id`, `rub_id`, `verse_key`, `word_index`),
     KEY `idx_rub_word_misses_user_rub` (`user_id`, `rub_id`, `miss_count`),
     CONSTRAINT `fk_rub_word_misses_user`
+        FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
+        ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 12. tafreet_logs table (v16: penalties for missed days)
+CREATE TABLE IF NOT EXISTS `tafreet_logs` (
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `user_id` INT NOT NULL,
+    `missed_date` DATE NOT NULL,
+    `reason` VARCHAR(255) NOT NULL DEFAULT 'MISSED_DAY',
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_tafreet_user_date` (`user_id`, `missed_date`),
+    KEY `idx_tafreet_user` (`user_id`),
+    CONSTRAINT `fk_tafreet_logs_user`
+        FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
+        ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 13. user_absences table (v16: planned student skip days, max 30 days)
+CREATE TABLE IF NOT EXISTS `user_absences` (
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `user_id` INT NOT NULL,
+    `absence_date` DATE NOT NULL,
+    `notes` VARCHAR(255) NULL,
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_absence_user_date` (`user_id`, `absence_date`),
+    KEY `idx_absence_user` (`user_id`),
+    CONSTRAINT `fk_user_absences_user`
         FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
         ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

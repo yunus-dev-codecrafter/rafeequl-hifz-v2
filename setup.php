@@ -467,17 +467,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action !== '' && $action !== 'save
                     throw new RuntimeException('تعذر تحميل ملف الترقية config/migrate_v15.php.');
                 }
                 $stats15 = rh_migrate_v15($pdo, $log);
+                require_once __DIR__ . '/config/migrate_v16.php';
+                if (!function_exists('rh_migrate_v16')) {
+                    throw new RuntimeException('تعذر تحميل ملف الترقية config/migrate_v16.php.');
+                }
+                $stats16 = rh_migrate_v16($pdo, $log);
                 $notices[] = sprintf(
-                    'الترقية: %d عموداً، %d فهرساً، %d جدولاً إضافياً (v11: %d جدولاً، %d خطأ مكتملاً محذوفاً، v12: %d جدولاً، v13: %d تحديثاً، v14: %d جدولاً، v15: %d جدولاً).',
-                    $stats['columns_added'] + (int) ($stats11['columns_added'] ?? 0) + (int) ($stats13['columns_added'] ?? 0) + (int) ($stats15['columns_added'] ?? 0),
+                    'الترقية: %d عموداً، %d فهرساً، %d جدولاً إضافياً (v11: %d جدولاً، %d خطأ مكتملاً محذوفاً، v12: %d جدولاً، v13: %d تحديثاً، v14: %d جدولاً، v15: %d جدولاً، v16: %d جدولاً).',
+                    $stats['columns_added'] + (int) ($stats11['columns_added'] ?? 0) + (int) ($stats13['columns_added'] ?? 0) + (int) ($stats15['columns_added'] ?? 0) + (int) ($stats16['columns_added'] ?? 0),
                     $stats['indexes_added'],
-                    $stats['tables_created'] + (int) ($stats11['tables_created'] ?? 0) + (int) ($stats12['tables_created'] ?? 0) + (int) ($stats13['tables_created'] ?? 0) + (int) ($stats14['tables_created'] ?? 0) + (int) ($stats15['tables_created'] ?? 0),
+                    $stats['tables_created'] + (int) ($stats11['tables_created'] ?? 0) + (int) ($stats12['tables_created'] ?? 0) + (int) ($stats13['tables_created'] ?? 0) + (int) ($stats14['tables_created'] ?? 0) + (int) ($stats15['tables_created'] ?? 0) + (int) ($stats16['tables_created'] ?? 0),
                     $stats11['tables_created'],
                     $stats11['mistakes_purged'],
                     $stats12['tables_created'],
                     $stats13['rows_updated'] ?? 0,
                     $stats14['tables_created'] ?? 0,
-                    $stats15['tables_created'] ?? 0
+                    $stats15['tables_created'] ?? 0,
+                    $stats16['tables_created'] ?? 0
                 );
 
                 $pageCount = rh_setup_seed_pages($pdo);

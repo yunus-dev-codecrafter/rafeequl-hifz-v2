@@ -146,6 +146,12 @@
 
   <main class="container">
 
+    <!-- Critical Penalty (Tafreet) Warnings -->
+    <div id="tafreet-alert-container" class="hidden" style="margin-bottom: 1.25rem;"></div>
+
+    <!-- Planned Absence Active Banner -->
+    <div id="absence-active-banner" class="hidden" style="margin-bottom: 1.25rem;"></div>
+
     <!-- PWA Install Banner (Mobile & Desktop) -->
     <section id="pwa-install-banner" class="pwa-install-banner hidden" aria-label="تثبيت التطبيق">
       <div class="pwa-banner-content">
@@ -169,19 +175,23 @@
 
     <!-- Daily Focus Card -->
     <section class="daily-focus-card" aria-label="التركيز اليومي">
-      <div style="display:flex; align-items:center; gap:0.75rem;">
-        <span class="streak-badge">
+      <div style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap;">
+        <span class="streak-badge" id="cycle-badge" style="background:rgba(15, 118, 110, 0.1); color:var(--accent); border-color:rgba(15, 118, 110, 0.25);">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path>
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
           </svg>
-          <span data-i18n="streak_active">التزام مستمر</span>
+          <span id="cycle-day-text">دورة المراجعة</span>
         </span>
         <div>
           <strong style="font-size:1.05rem;" data-i18n="focus_card_title">خطة تلاوة اليوم</strong>
-          <p class="hint" style="margin:0;" data-i18n="focus_card_desc">أكمل تلاوة صفحات المهام وسجل أي تعثرات لتدريبها في بطاقات المعالجة</p>
+          <p class="hint" style="margin:0;" id="cycle-target-hint">أكمل تلاوة صفحات المهام وسجل أي تعثرات لتدريبها في بطاقات المعالجة</p>
         </div>
       </div>
       <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+        <button type="button" id="btn-open-absences" class="btn btn-ghost" style="font-size:0.82rem; padding:0.45rem 0.85rem;" title="جدولة أيام الغياب المخطط" data-i18n="btn_manage_absence">
+          🌴 الغياب المخطط
+        </button>
         <button type="button" id="btn-quick-plan" class="btn btn-ghost" style="font-size:0.82rem; padding:0.45rem 0.85rem;" title="تعديل خطة المراجعة اليومية" data-i18n="btn_quick_plan">
           ⚙️ تعديل الخطة
         </button>
@@ -233,6 +243,20 @@
           <span class="stat-value" id="stat-active-mistakes">—</span>
         </div>
       </a>
+
+      <div class="stat-item" id="stat-tafreet-item" style="cursor:pointer;" title="أيام التفريط المسجلة (الحد الأقصى ٢٥ يوماً قبل حذف الحساب)">
+        <div class="stat-icon" style="background:var(--danger-soft); color:var(--danger); border-color:var(--danger-border);">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label" data-i18n="stat_tafreet">أيام التفريط</span>
+          <span class="stat-value" id="stat-tafreet">0 / 25</span>
+        </div>
+      </div>
     </section>
 
     <!-- Daily Focus Head -->
@@ -391,6 +415,45 @@
         <button type="button" id="btn-confirm-reset" class="btn btn-danger-outline" style="background:var(--danger); color:#fff; border-color:var(--danger);" data-i18n="btn_confirm_reset">
           نعم، صفّر كل شيء وابدأ من جديد
         </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Planned Absence Management Modal -->
+  <div id="absence-modal" class="modal-overlay hidden">
+    <div class="modal" role="dialog" aria-modal="true">
+      <div class="modal-head">
+        <div style="display:flex; align-items:center; gap:0.5rem; color:var(--accent);">
+          <span style="font-size:1.3rem;">🌴</span>
+          <h3 data-i18n="absence_modal_title">جدولة أيام الغياب المخطط</h3>
+        </div>
+        <button type="button" id="absence-modal-close" class="btn btn-ghost" style="padding:0.25rem 0.5rem; font-size:1.1rem;" aria-label="إغلاق">✕</button>
+      </div>
+
+      <div style="font-size:0.92rem; line-height:1.6; color:var(--ink-secondary); margin-bottom:1.25rem;">
+        <p data-i18n="absence_modal_desc">يمكنك جدولة أيام انشغالك مقدماً لحفظ رصيدك (الحد الأقصى ٣٠ يوماً). خلال أيام الغياب يُوقف الحفظ الجديد ولا تُحسب أيام تفريط، مع وجوب استمرار المراجعة والربط.</p>
+        <div style="background:var(--accent-soft); border:1px solid var(--accent-soft-border); padding:0.6rem 0.85rem; border-radius:8px; font-weight:600; color:var(--accent); margin-top:0.5rem;" id="absence-quota-display">
+          رصيد الغياب المتبقي: 30 من 30 يوماً
+        </div>
+      </div>
+
+      <form id="absence-add-form" style="display:flex; gap:0.5rem; margin-bottom:1.25rem; align-items:flex-end;">
+        <div class="field" style="flex:1; margin:0;">
+          <label for="absence-date-input" data-i18n="absence_date_label" style="font-size:0.85rem;">اختر تاريخ الغياب:</label>
+          <input type="date" id="absence-date-input" required style="padding:0.45rem 0.65rem;">
+        </div>
+        <button type="submit" class="btn btn-primary" style="padding:0.5rem 1rem; white-space:nowrap;" data-i18n="btn_add_absence">إضافة</button>
+      </form>
+
+      <div style="max-height: 220px; overflow-y: auto;">
+        <h4 style="margin: 0 0 0.5rem 0; font-size: 0.9rem;">أيام الغياب المجدولة:</h4>
+        <div id="absence-dates-list" style="display:flex; flex-direction:column; gap:0.4rem;">
+          <div style="color:var(--muted); font-size:0.85rem;" data-i18n="absence_no_dates">لا توجد أيام غياب مجدولة حالياً.</div>
+        </div>
+      </div>
+
+      <div class="modal-actions" style="margin-top:1.5rem;">
+        <button type="button" id="absence-modal-done" class="btn btn-ghost">إغلاق</button>
       </div>
     </div>
   </div>

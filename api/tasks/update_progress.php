@@ -218,7 +218,7 @@ try {
     // Load profile & activation gates
     // -----------------------------------------------------------------------
 
-    $stmt = $pdo->prepare('SELECT `id`, `user_type`, `current_hifz_page`, COALESCE(`rabt_extra_pages`, 0) AS `rabt_extra_pages`, COALESCE(`murajaah_days`, 6) AS `murajaah_days`, COALESCE(`last_tikrar_page`, 0) AS `last_tikrar_page` FROM `users` WHERE `id` = :id');
+    $stmt = $pdo->prepare('SELECT `id`, `user_type`, `current_hifz_page`, COALESCE(`rabt_extra_pages`, 0) AS `rabt_extra_pages`, COALESCE(`rabt_base_pages`, 30) AS `rabt_base_pages`, COALESCE(`murajaah_days`, 6) AS `murajaah_days`, COALESCE(`last_tikrar_page`, 0) AS `last_tikrar_page` FROM `users` WHERE `id` = :id');
     $stmt->execute([':id' => $userId]);
     $user = $stmt->fetch();
     if (!$user) {
@@ -230,6 +230,7 @@ try {
     $utype      = (string) $user['user_type'];
     $murDays    = max(1, min(10, (int) ($user['murajaah_days'] ?? 6)));
     $rabtExtra  = (int) ($user['rabt_extra_pages'] ?? 0);
+    $rabtBase   = max(0, min(30, (int) ($user['rabt_base_pages'] ?? 30)));
     $today      = date('Y-m-d');
 
     if ($utype === 'COMPLETE' && $taskType !== 'MURAJAAH') {
@@ -389,21 +390,24 @@ try {
             if ($isTaskDone) {
                 $newLastTikrar = max($lastTikrar, $completedPage);
                 if ($newLastTikrar > $lastTikrar) {
-                    if ($lastTikrar >= 30) {
+                    if ($rabtBase < 30) {
+                        // Rabt base is rebuilding after pause
+                        $rabtBase++;
+                        $stmt = $pdo->prepare('UPDATE `users` SET `last_tikrar_page` = :tp, `rabt_base_pages` = :base WHERE `id` = :id');
+                        $stmt->execute([':tp' => $newLastTikrar, ':base' => $rabtBase, ':id' => $userId]);
+                    } else {
+                        // Normal cycle expansion
                         $rabtExtra++;
                         $stmt = $pdo->prepare('UPDATE `users` SET `last_tikrar_page` = :tp, `rabt_extra_pages` = :extra WHERE `id` = :id');
                         $stmt->execute([':tp' => $newLastTikrar, ':extra' => $rabtExtra, ':id' => $userId]);
-                    } else {
-                        $stmt = $pdo->prepare('UPDATE `users` SET `last_tikrar_page` = :tp WHERE `id` = :id');
-                        $stmt->execute([':tp' => $newLastTikrar, ':id' => $userId]);
                     }
                     $lastTikrar = $newLastTikrar;
                 }
 
                 // Auto-update or insert today's Rabt window now that page has graduated
+                $rabtWindow = $rabtBase + $rabtExtra;
                 $rabtActive = ($utype === 'EXISTING' && $lastTikrar >= 1) || ($utype === 'NEW' && $lastTikrar >= 1);
-                if ($rabtActive) {
-                    $rabtWindow = 30 + $rabtExtra;
+                if ($rabtActive && $rabtWindow > 0) {
                     $rabtStart  = max(1, $lastTikrar - ($rabtWindow - 1));
                     $rabtEnd    = min($lastTikrar, 604);
                     $rrow       = findLogRow($pdo, $userId, 'RABT', $today);
@@ -483,16 +487,25 @@ try {
 
             // If Murajaah task is completed and end_page reaches or exceeds the current Murajaah boundary,
             // or accumulated extra pages reached the cycle days, roll extra pages into Murajaah and reset rabt_extra_pages to 0.
+            // If new memorization was paused, Rabt reduces by standard cycle portion ($murDays) until 0.
             if ($taskType === 'MURAJAAH' && $isTaskDone) {
                 $murajaahLimit = 604;
                 if ($utype === 'NEW' || $utype === 'EXISTING') {
-                    $rabtWin = 30 + $rabtExtra;
+                    $rabtWin = $rabtBase + $rabtExtra;
                     $murajaahLimit = max(0, $lastTikrar - $rabtWin);
                 }
-                if (($end >= $murajaahLimit || $rabtExtra >= $murDays) && $rabtExtra > 0) {
-                    $pdo->prepare('UPDATE `users` SET `rabt_extra_pages` = 0 WHERE `id` = :id')
-                        ->execute([':id' => $userId]);
-                    $rabtExtra = 0;
+                if ($end >= $murajaahLimit || $rabtExtra >= $murDays) {
+                    if ($rabtExtra > 0) {
+                        $pdo->prepare('UPDATE `users` SET `rabt_extra_pages` = 0 WHERE `id` = :id')
+                            ->execute([':id' => $userId]);
+                        $rabtExtra = 0;
+                    } else {
+                        // Memorization paused: reduce Rabt base by standard portion equivalent down to 0
+                        $newRabtBase = max(0, $rabtBase - $murDays);
+                        $pdo->prepare('UPDATE `users` SET `rabt_base_pages` = :base WHERE `id` = :id')
+                            ->execute([':base' => $newRabtBase, ':id' => $userId]);
+                        $rabtBase = $newRabtBase;
+                    }
                 }
             }
         }

@@ -786,6 +786,9 @@ const sharedState = {
   history: [],
   badges: {},
   surahs: null,
+  cycle: null,
+  tafreet: null,
+  absence: null,
 };
 
 let sharedDataPromise = null;
@@ -802,6 +805,9 @@ async function loadSharedData() {
     sharedState.tasks = tasksRes.tasks || [];
     sharedState.user = tasksRes.user || null;
     sharedState.date = tasksRes.date || '';
+    sharedState.cycle = tasksRes.cycle || null;
+    sharedState.tafreet = tasksRes.tafreet || null;
+    sharedState.absence = tasksRes.absence || null;
 
     // A forced first-login password change takes priority over everything else.
     if (sharedState.user && sharedState.user.must_change_password) {
@@ -998,6 +1004,7 @@ async function initDashboard() {
   initHeaderDropdown();
   initResetModal();
   initPlanModal();
+  initAbsenceModal();
 
   if (window.I18N && !window._dashLangBound) {
     I18N.onChange(() => {
@@ -1237,6 +1244,111 @@ function initPlanModal() {
   }
 }
 
+function initAbsenceModal() {
+  const modal = document.getElementById('absence-modal');
+  const openBtn = document.getElementById('btn-open-absences');
+  const statBtn = document.getElementById('stat-tafreet-item');
+  const closeBtn = document.getElementById('absence-modal-close');
+  const doneBtn = document.getElementById('absence-modal-done');
+  const addForm = document.getElementById('absence-add-form');
+  const dateInput = document.getElementById('absence-date-input');
+  const quotaDisplay = document.getElementById('absence-quota-display');
+  const listContainer = document.getElementById('absence-dates-list');
+
+  if (!modal) return;
+
+  const todayStr = new Date().toISOString().split('T')[0];
+  if (dateInput) {
+    dateInput.min = todayStr;
+    dateInput.value = todayStr;
+  }
+
+  async function refreshAbsenceList() {
+    try {
+      const res = await API.call('tasks/manage_absences.php');
+      if (res && res.success) {
+        sharedState.absence = {
+          is_absence_today: Array.isArray(res.absences) && res.absences.includes(sharedState.date || todayStr),
+          remaining_quota: res.remaining,
+          total_planned: res.total,
+          max: res.max,
+        };
+        if (quotaDisplay) {
+          quotaDisplay.textContent = window.I18N
+            ? I18N.t('absence_remaining_label') + ` ${res.remaining} من ${res.max} يوماً`
+            : `رصيد الغياب المتبقي: ${res.remaining} من ${res.max} يوماً`;
+        }
+        if (listContainer) {
+          if (!res.absences || res.absences.length === 0) {
+            listContainer.innerHTML = `<div style="color:var(--muted); font-size:0.85rem;">${window.I18N ? I18N.t('absence_no_dates') : 'لا توجد أيام غياب مجدولة حالياً.'}</div>`;
+          } else {
+            listContainer.innerHTML = res.absences.map((d) => `
+              <div style="display:flex; justify-content:space-between; align-items:center; background:var(--bg); border:1px solid var(--line); padding:0.4rem 0.75rem; border-radius:6px; font-size:0.88rem;">
+                <span>📅 <strong>${d}</strong></span>
+                <button type="button" class="btn btn-ghost btn-remove-absence" data-date="${d}" style="padding:0.2rem 0.5rem; font-size:0.8rem; color:var(--danger);" title="إلغاء">✕</button>
+              </div>
+            `).join('');
+
+            listContainer.querySelectorAll('.btn-remove-absence').forEach((btn) => {
+              btn.addEventListener('click', async () => {
+                const targetDate = btn.getAttribute('data-date');
+                if (!confirm(`هل تريد بالتأكيد إلغاء يوم الغياب (${targetDate})؟`)) return;
+                try {
+                  await API.call('tasks/manage_absences.php', {
+                    method: 'POST',
+                    body: { action: 'REMOVE', date: targetDate },
+                  });
+                  await refreshAbsenceList();
+                  await loadSharedData();
+                  renderDashboardUI();
+                } catch (e) {
+                  showToast(e.message || 'تعذر إلغاء يوم الغياب', true);
+                }
+              });
+            });
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load absences', e);
+    }
+  }
+
+  function openModal() {
+    modal.classList.remove('hidden');
+    refreshAbsenceList();
+  }
+
+  function closeModal() {
+    modal.classList.add('hidden');
+  }
+
+  if (openBtn) openBtn.addEventListener('click', openModal);
+  if (statBtn) statBtn.addEventListener('click', openModal);
+  if (closeBtn) closeBtn.addEventListener('click', closeModal);
+  if (doneBtn) doneBtn.addEventListener('click', closeModal);
+
+  if (addForm) {
+    addForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const chosenDate = dateInput ? dateInput.value : '';
+      if (!chosenDate) return;
+      try {
+        await API.call('tasks/manage_absences.php', {
+          method: 'POST',
+          body: { action: 'ADD', date: chosenDate },
+        });
+        showToast('تمت إضافة يوم الغياب بنجاح');
+        await refreshAbsenceList();
+        await loadSharedData();
+        renderDashboardUI();
+      } catch (err) {
+        showToast(err.message || 'تعذر إضافة يوم الغياب', true);
+      }
+    });
+  }
+}
+
 function renderDashboardUI() {
   const user = sharedState.user;
   if (!user) return;
@@ -1253,6 +1365,97 @@ function renderDashboardUI() {
     targetVal.textContent = window.I18N
       ? I18N.t('khatm_every_days', { days, pages: user.daily_murajaah_target_pages, hizb: hizbText })
       : `ختم كل ${days} أيام (${user.daily_murajaah_target_pages} ص / اليوم ≈ ${hizbText} أحزاب)`;
+  }
+
+  // Render Cycle progression
+  const cycleData = sharedState.cycle;
+  if (cycleData) {
+    const cycleText = document.getElementById('cycle-day-text');
+    if (cycleText) {
+      cycleText.textContent = window.I18N
+        ? I18N.t('cycle_day_indicator', { current: cycleData.current_day, total: cycleData.total_days })
+        : `اليوم ${cycleData.current_day} من ${cycleData.total_days}`;
+    }
+    const cycleHint = document.getElementById('cycle-target-hint');
+    if (cycleHint && cycleData.projected_end_date) {
+      cycleHint.innerHTML = (window.I18N
+        ? I18N.t('cycle_projected_end', { date: cycleData.projected_end_date })
+        : `موعد الختم المتوقع: <strong>${cycleData.projected_end_date}</strong>`);
+    }
+  }
+
+  // Render Tafreet count
+  const tafreetVal = document.getElementById('stat-tafreet');
+  const tafreetData = sharedState.tafreet || {};
+  const tafreetCount = Number(tafreetData.count || (user.tafreet_count || 0));
+  if (tafreetVal) {
+    tafreetVal.textContent = `${tafreetCount} / 25`;
+  }
+
+  // Render Tafreet Warning Banners
+  const alertContainer = document.getElementById('tafreet-alert-container');
+  if (alertContainer) {
+    const warnLevel = tafreetData.warning_level || (tafreetCount >= 24 ? 'FINAL_24' : (tafreetCount >= 20 ? 'URGENT_20' : (tafreetCount >= 10 ? 'WARNING_10' : 'NONE')));
+    if (warnLevel === 'FINAL_24') {
+      alertContainer.className = 'alert alert-danger';
+      alertContainer.style.display = 'block';
+      alertContainer.style.background = '#fff1f2';
+      alertContainer.style.border = '1px solid #fecdd3';
+      alertContainer.style.color = '#be123c';
+      alertContainer.style.padding = '0.85rem 1rem';
+      alertContainer.style.borderRadius = '10px';
+      alertContainer.innerHTML = window.I18N
+        ? I18N.t('tafreet_warn_24')
+        : '⛔ <strong>تحذير أخير وحاسم:</strong> لديك <strong>٢٤</strong> يوم تفريط! تبقّى يوم واحد فقط قبل حذف الحساب نهائياً.';
+    } else if (warnLevel === 'URGENT_20') {
+      alertContainer.className = 'alert alert-danger';
+      alertContainer.style.display = 'block';
+      alertContainer.style.background = '#fff1f2';
+      alertContainer.style.border = '1px solid #fecdd3';
+      alertContainer.style.color = '#be123c';
+      alertContainer.style.padding = '0.85rem 1rem';
+      alertContainer.style.borderRadius = '10px';
+      alertContainer.innerHTML = window.I18N
+        ? I18N.t('tafreet_warn_20', { count: tafreetCount })
+        : `🚨 <strong>تحذير عاجل:</strong> بلغت <strong>${tafreetCount}</strong> أيام تفريط! التزم بإتمام وردك اليومي لتفادي إلغاء وحذف حسابك.`;
+    } else if (warnLevel === 'WARNING_10') {
+      alertContainer.className = 'alert alert-warning';
+      alertContainer.style.display = 'block';
+      alertContainer.style.background = '#fffbeb';
+      alertContainer.style.border = '1px solid #fde68a';
+      alertContainer.style.color = '#b45309';
+      alertContainer.style.padding = '0.85rem 1rem';
+      alertContainer.style.borderRadius = '10px';
+      alertContainer.innerHTML = window.I18N
+        ? I18N.t('tafreet_warn_10', { count: tafreetCount })
+        : `⚠️ <strong>تنبيه تفريط:</strong> تم تسجيل <strong>${tafreetCount}</strong> أيام تفريط من أصل ٢٥ يوماً قبل الحذف النهائي للحساب.`;
+    } else {
+      alertContainer.className = 'hidden';
+      alertContainer.style.display = 'none';
+      alertContainer.innerHTML = '';
+    }
+  }
+
+  // Render Absence Active Banner
+  const absenceBanner = document.getElementById('absence-active-banner');
+  const absenceData = sharedState.absence || {};
+  if (absenceBanner) {
+    if (absenceData.is_absence_today) {
+      absenceBanner.className = 'alert alert-info';
+      absenceBanner.style.display = 'block';
+      absenceBanner.style.background = '#f0fdfa';
+      absenceBanner.style.border = '1px solid #ccfbf1';
+      absenceBanner.style.color = '#0f766e';
+      absenceBanner.style.padding = '0.85rem 1rem';
+      absenceBanner.style.borderRadius = '10px';
+      absenceBanner.innerHTML = window.I18N
+        ? I18N.t('absence_badge_active')
+        : '🌴 أنت في يوم غياب مخطط: الحفظ الجديد وتكرار الأمس متوقفان، والربط والمراجعة مستمران.';
+    } else {
+      absenceBanner.className = 'hidden';
+      absenceBanner.style.display = 'none';
+      absenceBanner.innerHTML = '';
+    }
   }
 
   const activeMistakesCount = sharedState.history.filter((m) => m.status === 'ACTIVE').length;
@@ -1373,12 +1576,8 @@ function renderDashboardUI() {
           </div>`;
       }
 
-      if (task.carried_over || Number(task.rollover_count || 0) > 0) {
-        const rolloverCount = Number(task.rollover_count || 0);
-        const carriedText = rolloverCount > 0
-          ? (window.I18N ? I18N.t('task_flag_carried_count', { count: rolloverCount }) : `مُرجَّلة ×${rolloverCount}`)
-          : (window.I18N ? I18N.t('task_flag_carried') : 'محولة من أمس');
-        carriedFlag = `<span class="task-flag">${carriedText}</span>`;
+      if (sharedState.absence && sharedState.absence.is_absence_today && (type === 'HIFZ_JADID' || type === 'TIKRAR_AMS')) {
+        carriedFlag = `<span class="task-flag" style="background:var(--task-blue-bg); color:var(--task-blue); border-color:var(--task-blue-border);">${window.I18N ? I18N.t('task_flag_absence_paused') : 'متوقف (غياب مخطط)'}</span>`;
       }
     } else {
       rangeHtml = type === 'PAGE_TAMKIN'
@@ -1845,12 +2044,8 @@ function scrollSessionRailToActive(rail) {
 }
 
 function rolloverNoticeHtml(task) {
-  const count = Number(task && task.rollover_count ? task.rollover_count : 0);
-  if (!count || (task && task.is_completed)) return '';
-  const text = window.I18N
-    ? I18N.t('task_rollover_notice', { count })
-    : `هذه المهمة غير مكتملة وتُرحَّل يومياً حتى إتمامها. مرّ عليها <strong>${count}</strong> يوم ترحيل.`;
-  return `<div class="rollover-notice" role="status">${text}</div>`;
+  // Cancelled: Rollover notices replaced by shift progression
+  return '';
 }
 
 function renderTaskPage(taskType) {

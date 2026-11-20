@@ -11,6 +11,7 @@ require __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/_page.php';
 require_once __DIR__ . '/_rollover.php';
 require_once __DIR__ . '/_hifz.php';
+require_once __DIR__ . '/_tafreet.php';
 
 const TASK_TITLES = [
     'HIFZ_JADID' => ['ar' => 'الحفظ الجديد',     'en' => 'New Memorization'],
@@ -170,8 +171,8 @@ function formatTask(array $row, string $today, ?PDO $pdo = null, int $userId = 0
 
     $totalPages = ($start !== null && $end !== null && $end >= $start) ? ($end - $start + 1) : 0;
     $completedCount = count($completedPages);
-    $rolloverCount = (int) ($row['rollover_count'] ?? 0);
-    $carriedOver = $rolloverCount > 0 || ((string) $row['task_date'] !== $today);
+    $rolloverCount = 0;
+    $carriedOver = false;
 
     if ($type === 'PAGE_TAMKIN') {
         $payload = ($pdo !== null) ? rh_pg_task_payload($pdo, $row, true) : [];
@@ -291,6 +292,25 @@ $userId   = rh_resolve_user_id($pdo, $authUser, $input['user_id'] ?? null);
 
 try {
     // -----------------------------------------------------------------------
+    // Penalty (يوم تفريط) Audit & Account Deletion Check
+    // -----------------------------------------------------------------------
+    $today = date('Y-m-d');
+    $tafreetAudit = rh_evaluate_tafreet($pdo, $userId, $today);
+    if ($tafreetAudit['deleted']) {
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_destroy();
+        }
+        json_out(403, [
+            'success' => false,
+            'code'    => 'ACCOUNT_DELETED_TAFREET',
+            'error'   => 'تم حذف حسابك نهائياً لتجاوزك الحد المسموح به لأيام التفريط (٢٥ يوماً).',
+        ]);
+    }
+
+    $isAbsenceDay = rh_is_absence_day($pdo, $userId, $today);
+    $absenceInfo  = rh_get_user_absences($pdo, $userId);
+
+    // -----------------------------------------------------------------------
     // Load profile
     // -----------------------------------------------------------------------
 
@@ -298,7 +318,9 @@ try {
         'SELECT `id`, `name`, `user_type`, `current_hifz_page`, `daily_murajaah_target_pages`,
                 COALESCE(`murajaah_days`, 6) AS `murajaah_days`,
                 COALESCE(`rabt_extra_pages`, 0) AS `rabt_extra_pages`,
-                COALESCE(`last_tikrar_page`, 0) AS `last_tikrar_page`
+                COALESCE(`rabt_base_pages`, 30) AS `rabt_base_pages`,
+                COALESCE(`last_tikrar_page`, 0) AS `last_tikrar_page`,
+                COALESCE(`tafreet_count`, 0) AS `tafreet_count`
          FROM `users` WHERE `id` = :id'
     );
     $stmt->execute([':id' => $userId]);
@@ -307,21 +329,23 @@ try {
         json_out(401, ['success' => false, 'error' => 'Authentication required.']);
     }
 
-    $today       = date('Y-m-d');
     $current     = (int) $user['current_hifz_page'];
     $lastTikrar  = (int) ($user['last_tikrar_page'] ?? 0);
     $utype       = (string) $user['user_type'];
     $murDays     = max(1, min(10, (int) ($user['murajaah_days'] ?? 6)));
     $rabtExtra   = max(0, (int) ($user['rabt_extra_pages'] ?? 0));
+    $rabtBase    = max(0, min(30, (int) ($user['rabt_base_pages'] ?? 30)));
+    $tafreetCnt  = (int) ($user['tafreet_count'] ?? 0);
 
     // -----------------------------------------------------------------------
     // Muraja'ah Cycle & Rabt Reset Analysis (Day 7 transition)
     // -----------------------------------------------------------------------
     // Days 1 to $murDays: New pages memorized pass Tikrar Ams and enter Rabt
-    // (Rabt expands from 30 to 30 + $rabtExtra pages).
+    // (Rabt expands from rabtBase to rabtBase + $rabtExtra pages).
     // On Day ($murDays + 1) [e.g. Day 7]: The cycle is complete!
-    // The accumulated extra pages leave Rabt and join Muraja'ah. Rabt resets to 30 pages.
-    // A brand new round begins for Muraja'ah starting from Page 1!
+    // 1. If extra pages accumulated ($rabtExtra > 0): they graduate to Muraja'ah and $rabtExtra resets to 0.
+    // 2. If new memorization was paused ($rabtExtra == 0): Rabt reduces by $murDays pages down to 0.
+    // 3. Muraja'ah restarts from Page 1!
     // -----------------------------------------------------------------------
     $mStmt = $pdo->prepare(
         "SELECT `id`, `start_page`, `end_page`, `task_date`
@@ -350,7 +374,7 @@ try {
     if ($utype === 'COMPLETE') {
         $prevPoolEnd = 604;
     } else {
-        $prevRabtWin = 30 + $rabtExtra;
+        $prevRabtWin = $rabtBase + $rabtExtra;
         $prevPoolEnd = max(0, $lastTikrar - $prevRabtWin);
     }
 
@@ -364,21 +388,32 @@ try {
     }
 
     // If cycle completed and today's MURAJAAH task doesn't already exist:
-    // 1. Release accumulated rabt_extra_pages to Muraja'ah (reset rabt_extra_pages to 0).
-    // 2. Rabt returns to 30 pages.
-    // 3. Muraja'ah restarts from Page 1!
     $existingMurajaah = findExistingTask($pdo, $userId, 'MURAJAAH', $today);
     if ($cycleCompleted && $existingMurajaah === null) {
         if ($rabtExtra > 0) {
+            // Extra pages graduate to Muraja'ah!
             try {
                 $pdo->prepare("UPDATE `users` SET `rabt_extra_pages` = 0 WHERE `id` = :u")
                     ->execute([':u' => $userId]);
             } catch (Throwable $e) {}
             $rabtExtra = 0;
+        } else {
+            // New memorization was paused/absent: Rabt shrinks by standard daily portion equivalent
+            $newRabtBase = max(0, $rabtBase - $murDays);
+            try {
+                $pdo->prepare("UPDATE `users` SET `rabt_base_pages` = :base WHERE `id` = :u")
+                    ->execute([':base' => $newRabtBase, ':u' => $userId]);
+            } catch (Throwable $e) {}
+            $rabtBase = $newRabtBase;
         }
     }
 
-    $rabtWindow  = 30 + $rabtExtra;
+    $rabtWindow = $rabtBase + $rabtExtra;
+
+    // Cycle day progression & projected completion date
+    $currentCycleDay = $cycleCompleted ? 1 : min($murDays, $tasksInRound + 1);
+    $daysRemaining   = max(0, $murDays - $currentCycleDay);
+    $projectedEndDate = date('Y-m-d', strtotime('+' . $daysRemaining . ' days', strtotime($today)));
 
     // Active mistakes -> Task 5 (المعالجة), dynamic only (never persisted)
     $stmt = $pdo->prepare("SELECT COUNT(*) FROM `mistakes` WHERE `user_id` = :id AND `status` = 'ACTIVE'");
@@ -392,39 +427,37 @@ try {
     $fresh     = [];   // task_type => [start, end]
 
     if ($utype === 'EXISTING' || $utype === 'NEW') {
-        // Task 1 - Hifz Jadid: next page (always active unless finished)
-        if ($current < 604) {
-            $fresh['HIFZ_JADID'] = [$current + 1, $current + 1];
-        }
+        // When in planned absence, new memorization & yesterday's repetition are paused
+        if (!$isAbsenceDay) {
+            // Task 1 - Hifz Jadid: next page (always active unless finished)
+            if ($current < 604) {
+                $fresh['HIFZ_JADID'] = [$current + 1, $current + 1];
+            }
 
-        // Task 2 - Tikrar Ams (تكرار حفظ الأمس):
-        // When a page is completed in Hifz Jadid, it doesn't immediately join Rabt.
-        // It has to go through Tikrar Ams first (recited 10 times).
-        // The last page memorized today will appear here tomorrow.
-        $existingTikrar = findExistingTask($pdo, $userId, 'TIKRAR_AMS', $today);
-        if ($existingTikrar !== null) {
-            $fresh['TIKRAR_AMS'] = [(int) $existingTikrar['start_page'], (int) $existingTikrar['end_page']];
-        } elseif ($lastTikrar < $current) {
-            $nextTikrarPage = $lastTikrar + 1;
-            // Check if $nextTikrarPage was memorized TODAY in HIFZ_JADID
-            $hstmt = $pdo->prepare(
-                "SELECT COUNT(*) FROM `daily_task_logs`
-                 WHERE `user_id` = :u AND `task_type` = 'HIFZ_JADID' AND `start_page` = :p AND `task_date` = :d AND `is_completed` = 1"
-            );
-            $hstmt->execute([':u' => $userId, ':p' => $nextTikrarPage, ':d' => $today]);
-            $memorizedToday = ((int) $hstmt->fetchColumn()) > 0;
+            // Task 2 - Tikrar Ams (تكرار حفظ الأمس):
+            $existingTikrar = findExistingTask($pdo, $userId, 'TIKRAR_AMS', $today);
+            if ($existingTikrar !== null) {
+                $fresh['TIKRAR_AMS'] = [(int) $existingTikrar['start_page'], (int) $existingTikrar['end_page']];
+            } elseif ($lastTikrar < $current) {
+                $nextTikrarPage = $lastTikrar + 1;
+                // Check if $nextTikrarPage was memorized TODAY in HIFZ_JADID
+                $hstmt = $pdo->prepare(
+                    "SELECT COUNT(*) FROM `daily_task_logs`
+                     WHERE `user_id` = :u AND `task_type` = 'HIFZ_JADID' AND `start_page` = :p AND `task_date` = :d AND `is_completed` = 1"
+                );
+                $hstmt->execute([':u' => $userId, ':p' => $nextTikrarPage, ':d' => $today]);
+                $memorizedToday = ((int) $hstmt->fetchColumn()) > 0;
 
-            if (!$memorizedToday) {
-                $fresh['TIKRAR_AMS'] = [$nextTikrarPage, $nextTikrarPage];
+                if (!$memorizedToday) {
+                    $fresh['TIKRAR_AMS'] = [$nextTikrarPage, $nextTikrarPage];
+                }
             }
         }
 
         // Task 3 - Rabt:
-        // Rabt will NOT count any page until it has gone through Tikrar Ams!
-        // Therefore Rabt's frontier is $lastTikrar.
+        // Active as long as rabtWindow > 0 and lastTikrar >= 1
         $rabtEnd = min($lastTikrar, 604);
-        $rabtActive = ($utype === 'EXISTING' && $rabtEnd >= 1) || ($utype === 'NEW' && $rabtEnd >= 1);
-        if ($rabtActive && $rabtEnd >= 1) {
+        if ($rabtWindow > 0 && $rabtEnd >= 1) {
             $rabtStart = max(1, $rabtEnd - ($rabtWindow - 1));
             $fresh['RABT'] = [$rabtStart, $rabtEnd];
         }
@@ -436,11 +469,16 @@ try {
         $fresh['MURAJAAH'] = [1, 604];
         $murajaahTotalPages = 604;
     } elseif ($utype === 'EXISTING' || $utype === 'NEW') {
-        $effectiveRabtStart = isset($fresh['RABT']) ? $fresh['RABT'][0] : (max(1, $lastTikrar - ($rabtWindow - 1)));
-        $murActive = ($utype === 'EXISTING') || ($lastTikrar > 30);
-        if ($murActive && $effectiveRabtStart > 1) {
-            $fresh['MURAJAAH'] = [1, $effectiveRabtStart - 1];
-            $murajaahTotalPages = $effectiveRabtStart - 1;
+        if ($rabtWindow > 0 && isset($fresh['RABT'])) {
+            $effectiveRabtStart = $fresh['RABT'][0];
+            if ($effectiveRabtStart > 1) {
+                $fresh['MURAJAAH'] = [1, $effectiveRabtStart - 1];
+                $murajaahTotalPages = $effectiveRabtStart - 1;
+            }
+        } elseif ($lastTikrar >= 1) {
+            // When Rabt has completely reduced to 0 during pause, all memorized pages join Muraja'ah
+            $fresh['MURAJAAH'] = [1, $lastTikrar];
+            $murajaahTotalPages = $lastTikrar;
         }
     }
 
@@ -535,6 +573,23 @@ try {
     json_out(200, [
         'success' => true,
         'date'    => $today,
+        'cycle'   => [
+            'current_day'        => $currentCycleDay,
+            'total_days'         => $murDays,
+            'projected_end_date' => $projectedEndDate,
+        ],
+        'tafreet' => [
+            'count'         => $tafreetAudit['tafreet_count'],
+            'max'           => 25,
+            'warning_level' => $tafreetAudit['warning_level'],
+            'new_penalties' => $tafreetAudit['new_penalties'],
+        ],
+        'absence' => [
+            'is_absence_today' => $isAbsenceDay,
+            'remaining_quota'  => $absenceInfo['remaining'],
+            'total_planned'    => $absenceInfo['total'],
+            'max'              => $absenceInfo['max'],
+        ],
         'user'    => [
             'id'                          => (int) $user['id'],
             'name'                        => (string) ($authUser['name'] ?? $user['name'] ?? ''),
@@ -547,9 +602,11 @@ try {
             'last_tikrar_page'            => $lastTikrar,
             'daily_murajaah_target_pages' => $target,
             'murajaah_days'               => $murDays,
+            'rabt_base_pages'             => $rabtBase,
             'rabt_extra_pages'            => $rabtExtra,
             'rabt_window_size'            => $rabtWindow,
             'murajaah_total_pages'        => $murajaahTotalPages,
+            'tafreet_count'               => $tafreetAudit['tafreet_count'],
         ],
         'tasks'   => $tasks,
     ]);

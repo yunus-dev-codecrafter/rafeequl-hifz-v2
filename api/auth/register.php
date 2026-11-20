@@ -102,11 +102,12 @@ if ($errors) {
 
 $passwordHash = password_hash($password, PASSWORD_DEFAULT);
 
+$today = date('Y-m-d');
 $sql = 'INSERT INTO `users`
             (`name`, `email`, `password_hash`, `user_type`,
-             `current_hifz_page`, `daily_murajaah_target_pages`, `murajaah_days`, `rabt_extra_pages`, `last_tikrar_page`)
+             `current_hifz_page`, `daily_murajaah_target_pages`, `murajaah_days`, `rabt_extra_pages`, `rabt_base_pages`, `last_tikrar_page`, `tafreet_count`, `last_tafreet_check_date`)
         VALUES (:name, :email, :password_hash, :user_type,
-                :current_hifz_page, :daily_murajaah_target_pages, :murajaah_days, 0, :last_tikrar_page)';
+                :current_hifz_page, :daily_murajaah_target_pages, :murajaah_days, 0, 30, :last_tikrar_page, 0, :today)';
 
 try {
     $stmt = $pdo->prepare($sql);
@@ -119,6 +120,7 @@ try {
         ':daily_murajaah_target_pages' => $dailyTarget,
         ':murajaah_days'               => $murajaahDays,
         ':last_tikrar_page'            => $currentPage,
+        ':today'                       => $today,
     ]);
     $userId = (int) $pdo->lastInsertId();
 } catch (PDOException $e) {

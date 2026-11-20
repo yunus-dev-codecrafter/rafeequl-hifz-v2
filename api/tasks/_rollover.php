@@ -77,15 +77,11 @@ if (!function_exists('rh_task_log_select')) {
 
 if (!function_exists('rh_apply_rollover')) {
     /**
-     * Count every missed calendar day for a pending task exactly once.
+     * Shift uncompleted task to become today's active task (cancels rollover accumulation and shifts day).
      * Safe to call repeatedly and from concurrent requests.
      */
     function rh_apply_rollover(PDO $pdo, array $row, string $today): array
     {
-        if (!rh_task_has_rollover($pdo)) {
-            return $row;
-        }
-
         if ((int) ($row['is_completed'] ?? 0) === 1) {
             return $row;
         }
@@ -96,33 +92,27 @@ if (!function_exists('rh_apply_rollover')) {
         }
 
         try {
+            // Shift date to today and clear rollover count
             $stmt = $pdo->prepare(
                 'UPDATE `daily_task_logs`
-                 SET `rollover_count` = `rollover_count` + GREATEST(
-                         0,
-                         DATEDIFF(:today1, COALESCE(`last_rollover_date`, `task_date`))
-                     ),
+                 SET `task_date` = :today,
+                     `rollover_count` = 0,
                      `last_rollover_date` = :today2
                  WHERE `id` = :id
-                   AND `is_completed` = 0
-                   AND `task_date` < :today3
-                   AND (`last_rollover_date` IS NULL OR `last_rollover_date` < :today4)'
+                   AND `is_completed` = 0'
             );
             $stmt->execute([
-                ':today1' => $today,
+                ':today'  => $today,
                 ':today2' => $today,
                 ':id'     => (int) $row['id'],
-                ':today3' => $today,
-                ':today4' => $today,
             ]);
 
-            $select = rh_task_log_select($pdo);
-            $stmt = $pdo->prepare('SELECT ' . $select . ' FROM `daily_task_logs` WHERE `id` = :id LIMIT 1');
-            $stmt->execute([':id' => (int) $row['id']]);
-            $fresh = $stmt->fetch();
-            return $fresh ?: $row;
+            $row['task_date'] = $today;
+            $row['rollover_count'] = 0;
+            $row['last_rollover_date'] = $today;
+            return $row;
         } catch (Throwable $t) {
-            error_log('[Rollover] ' . $t->getMessage());
+            error_log('[Task Shift] ' . $t->getMessage());
             return $row;
         }
     }
