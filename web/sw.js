@@ -1,10 +1,11 @@
 'use strict';
 
-const CACHE_NAME = 'rafeequl-hifz-v40';
+const CACHE_NAME = 'rafeequl-hifz-v41';
 const AUDIO_CACHE = 'rafeequl-hifz-audio-v1';
 const PRECACHE_TIMEOUT_MS = 12000;
 
 const STATIC_ASSETS = [
+  'manifest.json',
   'index.html',
   'dashboard.html',
   'hifz.html',
@@ -116,6 +117,23 @@ self.addEventListener('fetch', (event) => {
             .catch(() => new Response('', { status: 504, statusText: 'Audio unavailable offline' }));
         })
       )
+    );
+    return;
+  }
+
+  // Web App Manifest: cache-first to avoid hosting challenge page
+  if (url.pathname.endsWith('manifest.json')) {
+    event.respondWith(
+      caches.match(req).then((cached) => {
+        if (cached) return cached;
+        return fetch(req).then((networkRes) => {
+          if (networkRes && networkRes.status === 200) {
+            const resClone = networkRes.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(req, resClone));
+          }
+          return networkRes;
+        });
+      })
     );
     return;
   }

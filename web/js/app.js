@@ -622,20 +622,26 @@ function showInstallGuideModal() {
           </div>
 
           <!-- iOS Steps -->
-          <ul id="guide-steps-ios" class="ios-guide-list ${userIsIOS ? '' : 'hidden'}">
-            <li class="ios-guide-step">
-              <span class="ios-step-num">1</span>
-              <span class="ios-step-text" data-i18n="ios_install_step1">اضغط على زر المشاركة (Share ⎋) في شريط متصفح Safari.</span>
-            </li>
-            <li class="ios-guide-step">
-              <span class="ios-step-num">2</span>
-              <span class="ios-step-text" data-i18n="ios_install_step2">مرر للأسفل واختر «إضافة إلى الشاشة الرئيسية» (Add to Home Screen ⊞).</span>
-            </li>
-            <li class="ios-guide-step">
-              <span class="ios-step-num">3</span>
-              <span class="ios-step-text" data-i18n="ios_install_step3">اضغط «إضافة» (Add) في الزاوية وسيظهر التطبيق كأيقونة على شاشتك.</span>
-            </li>
-          </ul>
+          <div id="guide-steps-ios" class="${userIsIOS ? '' : 'hidden'}">
+            <div style="background:rgba(15, 118, 110, 0.08); border:1px solid var(--accent, #0f766e); border-radius:8px; padding:0.6rem 0.8rem; margin-bottom:0.8rem; font-size:0.82rem; line-height:1.6;">
+              <strong>💡 تنبيه لمستخدمي iPhone:</strong><br>
+              تأكد من فتح الرابط عبر متصفح <strong>Safari الأصلي</strong> (إذا فتحته من واتساب أو تطبيق آخر، اضغط أولاً على فتح في Safari).
+            </div>
+            <ul class="ios-guide-list">
+              <li class="ios-guide-step">
+                <span class="ios-step-num">1</span>
+                <span class="ios-step-text" data-i18n="ios_install_step1">اضغط على زر المشاركة (Share ⎋) في شريط متصفح Safari السفلي.</span>
+              </li>
+              <li class="ios-guide-step">
+                <span class="ios-step-num">2</span>
+                <span class="ios-step-text" data-i18n="ios_install_step2">مرر للأسفل في القائمة واختر «إضافة إلى الشاشة الرئيسية» (Add to Home Screen ⊞).</span>
+              </li>
+              <li class="ios-guide-step">
+                <span class="ios-step-num">3</span>
+                <span class="ios-step-text" data-i18n="ios_install_step3">اضغط «إضافة» (Add) في الزاوية العلوية وسيتم تثبيت التطبيق كأيقونة مستقلة.</span>
+              </li>
+            </ul>
+          </div>
 
           <!-- Desktop Steps -->
           <div id="guide-steps-desktop" class="${userIsDesktop ? '' : 'hidden'}">
@@ -719,28 +725,6 @@ function showInstallGuideModal() {
 
     const btnQuickDesktop = modal.querySelector('#btn-quick-install-prompt-desktop');
     if (btnQuickDesktop) btnQuickDesktop.addEventListener('click', handlePrompt);
-
-    // iOS Safari never fires `appinstalled`. If the user leaves the page while
-    // the install guide is open (to use "Add to Home Screen") and comes back,
-    // remember it so the button does not keep reappearing on iPhone/iPad.
-    if (isIOS() && !document._pwaIosInstallHooked) {
-      document._pwaIosInstallHooked = true;
-      let guideWasOpen = false;
-      document.addEventListener('visibilitychange', () => {
-        const m = document.getElementById('install-guide-modal');
-        if (document.hidden) {
-          guideWasOpen = !!m && !m.classList.contains('hidden');
-        } else if (guideWasOpen) {
-          guideWasOpen = false;
-          markAppInstalled();
-          if (m) m.classList.add('hidden');
-          const headerBtn = document.getElementById('btn-install-app');
-          if (headerBtn) headerBtn.classList.add('hidden');
-          const pwaBanner = document.getElementById('pwa-install-banner');
-          if (pwaBanner) pwaBanner.classList.add('hidden');
-        }
-      });
-    }
 
     const selectTab = (activeBtn, activeSteps) => {
       [btnAndroid, btnIos, btnDesktop].forEach((b) => b && b.classList.remove('btn-primary'));
