@@ -151,7 +151,7 @@ if (!is_int($page) || $page < 1 || $page > 604) {
 }
 
 try {
-    $stmt = $pdo->prepare('SELECT `id`, `user_type`, `current_hifz_page`, COALESCE(`rabt_extra_pages`, 0) AS `rabt_extra_pages`, COALESCE(`murajaah_days`, 6) AS `murajaah_days`, COALESCE(`last_tikrar_page`, 0) AS `last_tikrar_page` FROM `users` WHERE `id` = :id');
+    $stmt = $pdo->prepare('SELECT `id`, `user_type`, `current_hifz_page`, COALESCE(`rabt_extra_pages`, 0) AS `rabt_extra_pages`, COALESCE(`rabt_base_pages`, 10) AS `rabt_base_pages`, COALESCE(`murajaah_days`, 6) AS `murajaah_days`, COALESCE(`last_tikrar_page`, 0) AS `last_tikrar_page` FROM `users` WHERE `id` = :id');
     $stmt->execute([':id' => $userId]);
     $user = $stmt->fetch();
     if (!$user) {
@@ -162,6 +162,7 @@ try {
     $lastTikrar = (int) ($user['last_tikrar_page'] ?? 0);
     $utype      = (string) $user['user_type'];
     $rabtExtra  = (int) ($user['rabt_extra_pages'] ?? 0);
+    $rabtBase   = max(0, min(10, (int) ($user['rabt_base_pages'] ?? 10)));
     $today      = date('Y-m-d');
 
     $pdo->beginTransaction();
@@ -220,7 +221,7 @@ try {
                 if ($wasDone) {
                     if ($lastTikrar >= $page) {
                         $newLastTikrar = max(0, $page - 1);
-                        $newRabtExtra = ($lastTikrar >= 30 && $rabtExtra > 0) ? ($rabtExtra - 1) : $rabtExtra;
+                        $newRabtExtra = ($lastTikrar >= 10 && $rabtExtra > 0) ? ($rabtExtra - 1) : $rabtExtra;
                         $stmt = $pdo->prepare('UPDATE `users` SET `last_tikrar_page` = :p, `rabt_extra_pages` = :extra WHERE `id` = :id');
                         $stmt->execute([':p' => $newLastTikrar, ':extra' => $newRabtExtra, ':id' => $userId]);
                         $lastTikrar = $newLastTikrar;
@@ -230,7 +231,7 @@ try {
                     // Revert today's uncompleted Rabt window if needed
                     $rrow = findLogForUndo($pdo, $userId, 'RABT', $today);
                     if ($rrow && !(int) $rrow['is_completed']) {
-                        $rabtWindow = 30 + $rabtExtra;
+                        $rabtWindow = $rabtBase + $rabtExtra;
                         $rabtStart  = max(1, $lastTikrar - ($rabtWindow - 1));
                         $rabtEnd    = min($lastTikrar, 604);
                         $stmt = $pdo->prepare('UPDATE `daily_task_logs` SET `start_page` = :s, `end_page` = :e WHERE `id` = :id');

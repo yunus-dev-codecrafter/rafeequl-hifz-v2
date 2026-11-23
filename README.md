@@ -51,13 +51,22 @@ location ~ ^/(config|api/data)/ { deny all; return 404; }
 
 ## Upgrading an existing database
 
-The current release needs **migration v14**. It runs v7–v13 first, then:
+The current release needs **migration v17**. It runs v7–v16 first, then:
 
-- adds `PAGE_TAMKIN` to the task and mistake-source enums;
-- creates `consolidation_selections` and `consolidation_pages` for the
-  page-by-page consolidation queue and per-page history;
-- leaves the legacy Rub' tables and data untouched for safety, while runtime code
-  stops using them.
+- modifies `users.rabt_base_pages` DEFAULT to 10 (reduced from 30);
+- automatically adjusts legacy users with `rabt_base_pages > 10` down to 10 for a sustainable workload;
+- caps Rabt window expansion between 10 and 16 pages (for 6-day cycle) or 20 pages (for 10-day cycle).
+
+Migration v16 adds `users.tafreet_count`, `users.last_tafreet_check_date`, and
+`users.rabt_base_pages`, creates `tafreet_logs` for audit tracking and
+`user_absences` for planned breaks (up to 30 days).
+
+Migration v15 creates `kalimaat_test_cycles` and `kalimaat_test_attempts`, adds
+`kalimaat_progress.last_tested_at`, and backfills existing word mastery into
+completed cycles.
+
+Migration v14 adds `PAGE_TAMKIN` to the task and mistake-source enums, and creates
+`consolidation_selections` and `consolidation_pages` for the page-by-page consolidation queue.
 
 Migration v11 creates the legacy `waqf_flags` table and the
 `users.gate_waqf_*` columns. They are kept for compatibility and existing data,
@@ -147,6 +156,15 @@ default), so “today” is consistent for every request.
 > open `migrate.php` as an admin. After upgrading, run
 > `php config/verify_kalimaat_test.php` to check the cycle tables and mastery
 > logic (it rolls itself back and leaves no test data).
+>
+> **Tafreet & Absences (v16)** adds `users.tafreet_count`,
+> `users.last_tafreet_check_date`, and `users.rabt_base_pages`, and creates
+> `tafreet_logs` and `user_absences`. Run `php config/migrate_v16.php`.
+>
+> **Sustainable Rabt Base 10 (v17)** updates `users.rabt_base_pages` default to 10
+> (from 30) and caps Rabt expansion between 10 and 16 pages (for 6-day cycle) or
+> 20 pages (for 10-day cycle), preventing burnout and eliminating *Tafreet*.
+> Run `php config/migrate_v17.php`.
 
 ## New memorization (HIFZ_JADID)
 
@@ -167,6 +185,57 @@ Progress is saved locally after every tap and mirrored with a debounce to
 Completion still goes through `api/tasks/update_progress.php`. If the required
 migration is not applied yet, local progress and task completion still work, but
 the screen warns that server-side verse progress is pending.
+
+## Yesterday's consolidation (TIKRAR_AMS)
+
+The yesterday's consolidation room is an interactive **4-step mastery gauntlet**
+(`web/tikrar.html`) designed to thoroughly test and anchor yesterday's memorized page
+(*طرف الحفظ*):
+
+1. **Ayah Sequencing Challenge (تحدي ترتيب تسلسل الآيات):**
+   The student reconstructs the correct order of the scrambled page's ayat from
+   memory using an interactive ayah bank.
+2. **Endings & Transitions Challenge (تحدي فواصل الآيات وروابط الانتقال):**
+   A high-difficulty active recall test that challenges the student on exact ayah
+   endings (*فواصل الآيات*) and inter-ayah transitions (*الانتقال للآية التالية*)
+   without hints or looking at the Mushaf.
+3. **Voice Recitation & Recording (التسميع والتسجيل الصوتي غيباً):**
+   The student recites and records yesterday's full page completely from memory
+   into the browser with no Mushaf peeking allowed (clean single-stop recording engine).
+4. **Mushaf Audit & Verification (المطابقة والاستماع مع المصحف):**
+   The full Madinah Mushaf page is revealed for the first time. The student
+   listens back to their recording, verifies word-by-word against the text and
+   professional Qari audio (EveryAyah Alafasy), logs any mistakes if found, and
+   confirms consolidation.
+
+Tapping **تأكيد وإتمام التكرار** completes the task, sets `repetition_count = 10`,
+advances `last_tikrar_page`, and graduates the page to join the active **Rabt** stream.
+
+## Rabt & Muraja'ah cycle (الربط والمراجعة)
+
+The app operates a dual-layer review cycle to ensure newly memorized pages are deeply
+consolidated before entering the long-term revision pool:
+
+- **Rabt (الربط — Near Review):**
+  - **Base capacity:** **10 pages** (`rabt_base_pages`, ~1 Hizb), keeping daily workload
+    realistic and high-quality.
+  - **Expansion:** Each newly graduated page increments `rabt_extra_pages` by 1.
+  - **Maximum window:** Determined by the user's selected Muraja'ah cycle duration:
+    - **6-day cycle:** Expands from **10 to 16 pages** (`10 + 6`).
+    - **10-day cycle:** Expands from **10 to 20 pages** (`10 + 10` = 1 full Juz).
+  - Rabt is split across the five daily prayers into "before prayer" chunks.
+
+- **Muraja'ah (المراجعة الكبرى — Distant Review):**
+  - Covers all pages preceding the active Rabt window: `[1 … rabtStart - 1]`.
+  - The pool is divided evenly across the user's chosen cycle days (6–10 days).
+  - Split across the five daily prayers into "after prayer" chunks.
+
+- **Cycle Close & Restart (Day 7 / Day 11):**
+  - When the cycle completes (e.g. Day 7 for 6-day cycle, or Day 11 for 10-day cycle),
+    `rabt_extra_pages` resets to `0`.
+  - Rabt contracts back to the base of **10 pages**.
+  - The graduated 6 (or 10) pages roll into the Muraja'ah pool.
+  - Muraja'ah restarts from **Page 1**, beginning the next full Khatmah round.
 >
 > **Offline Quran text?** `php api/data/build_quran_text.php` downloads the
 > Uthmani text once and writes `web/data/quran-uthmani.json`. It is fetched on

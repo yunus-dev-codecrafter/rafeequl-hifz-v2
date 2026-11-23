@@ -1,115 +1,100 @@
 # Rafeequl Hifz — What happens on Day 7 (revision set to 6 days)
 
-Precise, code-grounded answer to the questions in `bug.txt`.
+Precise, code-grounded explanation of the Rabt & Muraja'ah cycle dynamics.
 
-**Scope:** a `NEW` or `EXISTING` user who has set **`murajaah_days = 6`** and who memorizes
+**Scope:** a `NEW` or `EXISTING` user who has set **`murajaah_days = 6`** (or `10`) and who memorizes
 **one new page per day** (the app's normal rhythm). `COMPLETE` users behave differently
 (their review pool is always all 604 pages) and are covered at the end.
 
-Sources (verified against the current code):
+Sources (verified against current codebase):
 `api/tasks/get_daily_tasks.php`, `api/tasks/update_progress.php`,
 `api/tasks/undo_progress.php`, `api/tasks/update_plan.php`.
 
 ---
 
-## 0. Short answers to your questions
+## 0. Short answers
 
-1. **What is supposed to happen on Day 7?** The rabt cycle closes. `rabt_extra_pages`
-   is reset to `0`, so **Rabt shrinks back to exactly the last 30 graduated pages**, and
+1. **What is supposed to happen on Day 7 (with `murajaah_days = 6`)?** The Rabt cycle closes. `rabt_extra_pages` (`E`)
+   is reset to `0`, so **Rabt shrinks back to exactly the base of 10 graduated pages**, and
    **Muraja'ah restarts from page 1**, covering the whole range `[1 … rabtStart − 1]`
    (i.e. *all pages that are not in Rabt*), split into 6 daily chunks.
-2. **Is your description of rabt correct?** Yes. On Day 7 Rabt = the last 30 graduated
-   pages = the newest 6 pages + the remaining 24 older ones. The 6 pages that were
-   ejected from Rabt join the Muraja'ah pool.
-3. **Why did Day 7 previously show only the 6 pages that left Rabt, only in revision?**
-   That was a real bug (the chunk cursor continued from `max(end_page)+1` instead of
-   restarting). It is **already fixed** in commit `a6df11b`
-   ("Fix Muraja'ah Day 7 cycle restart bug"). Section 5 below explains it.
-   In the current code the Day-7 revision chunk starts at **page 1**, not at the 6 ejected pages.
+2. **How does Rabt behave during the round?**
+   - **Base:** 10 pages (`rabt_base_pages`).
+   - **Max window:** Determined by the user's Muraja'ah cycle length:
+     - If `murajaah_days = 6`: expands from **10 to 16 pages** (`10 + 6`).
+     - If `murajaah_days = 10`: expands from **10 to 20 pages** (`10 + 10`).
+   - On Day 7 (for 6 days) or Day 11 (for 10 days): Rabt resets back to 10 pages. The ejected pages join the Muraja'ah pool.
+3. **Why did Day 7 previously show only the 6 pages that left Rabt?**
+   That was a cursor bug fixed in commit `a6df11b`. The revision chunk on Day 7 starts at **page 1**, covering the entire older pool.
 
 ---
 
 ## 1. The four moving pieces of state
 
-Stored on the `users` row (`get_daily_tasks.php:256-264`, `update_progress.php:217`):
+Stored on the `users` row (`get_daily_tasks.php`, `update_progress.php`):
 
 | Variable | DB column | Meaning |
 |---|---|---|
 | `current` | `current_hifz_page` | Highest page the user has memorized (Hifz Jadid). |
-| `lastTikrar` | `last_tikrar_page` | Highest page that has **graduated** Tikrar Ams (recited 10×). Only graduated pages are eligible for Rabt. |
-| `E` | `rabt_extra_pages` | How many pages the Rabt window has grown past its base of 30 **during the current round**. This is effectively the round's day/page counter. |
-| `D` | `murajaah_days` | The user's chosen cycle length (here `6`). |
+| `lastTikrar` | `last_tikrar_page` | Highest page that has **graduated** Tikrar Ams (passed the 4-step consolidation gauntlet). Only graduated pages enter Rabt. |
+| `B` | `rabt_base_pages` | Base Rabt capacity (now **10** pages). |
+| `E` | `rabt_extra_pages` | How many pages the Rabt window has expanded past its base of 10 **during the current round** (effectively the round's day/page counter). |
+| `D` | `murajaah_days` | The user's chosen cycle length (default `6`, or up to `10`). |
 
 ### Derived ranges (recomputed every time the dashboard loads)
 
 ```
-rabtWindow = 30 + E
+rabtWindow = B + E          -- 10 + E (expands up to 16 or 20)
 rabtEnd    = min(lastTikrar, 604)
 rabtStart  = max(1, rabtEnd - (rabtWindow - 1))
 RABT       = [rabtStart, rabtEnd]
 
-MURAJAAH range = [1, rabtStart - 1]          -- "everything that is not Rabt"
-pool           = rabtStart - 1 = lastTiklar - 30 - E
+MURAJAAH range = [1, rabtStart - 1]          -- "everything that is not in Rabt"
+pool           = rabtStart - 1 = lastTikrar - 10 - E
 dailyTarget    = ceil(pool / D)
 ```
 
-`get_daily_tasks.php:384-412`.
+### The graduation rule (where `E` grows)
 
-### The graduation rule (the only place `E` grows)
-
-When a Tikrar Ams page reaches 10 repetitions (`update_progress.php:319-332`):
+When a Tikrar Ams page completes its 4-step consolidation gauntlet (`update_progress.php`):
 
 ```
 if (page > lastTikrar) {
-    if (lastTikrar >= 30) E = E + 1;   // past the first 30 -> Rabt window grows
+    if (rabtBase < 10) {
+        rabtBase = rabtBase + 1; // rebuilding base up to 10
+    } else {
+        E = E + 1;               // expands Rabt window past base 10
+    }
     lastTikrar = page;
 }
 ```
-
-So, memorizing at 1 page/day, **`lastTikrar` and `E` both advance by exactly 1 per day**
-once the first 30 pages are full. A consequence used throughout this document:
-
-> While a round is running, `lastTikrar − E` is **constant**, therefore
-> `pool = lastTiklar − 30 − E` is **constant during the round**.
-> Newly memorized pages sit in Rabt; they do **not** enter Muraja'ah until the round ends.
 
 ---
 
 ## 2. Days 1 → 6 (the "expansion" days)
 
 During these days, each new page that passes Tikrar Ams:
-
 - increments `lastTikrar` by 1,
-- increments `E` by 1 (because `lastTikrar ≥ 30`),
+- increments `E` by 1 (once `lastTikrar ≥ 10`),
 
-so **Rabt grows from 30 pages to 30 + E pages** (e.g. 30 → 36 over a 6-day round), and the
-new pages stay in Rabt.
+so **Rabt grows from 10 pages to 10 + E pages** (e.g. 10 → 16 over a 6-day round, or 10 → 20 over a 10-day round), and the new pages stay in Rabt.
 
-Muraja'ah runs normally over its current range, one chunk per day, advancing
-sequentially (`nextMurajaahChunk`, `get_daily_tasks.php:81-115`).
+Muraja'ah runs normally over its current range, one chunk per day, advancing sequentially.
 
 ---
 
-## 3. Day 7 — the cycle close
+## 3. Day 7 (or Day 11) — the cycle close
 
-On the morning the dashboard is opened for the 7th day, `get_daily_tasks.php:295-338`
-first decides whether the round is finished, using **three alternative triggers**
-(`:316-323`):
+On the morning the dashboard is opened for the new cycle, `get_daily_tasks.php` evaluates cycle completion triggers:
 
 ```
 cycleCompleted = true  if ANY of:
-   (a) tasksInRound    >= D          -- 6 completed revision chunks since the last restart
+   (a) tasksInRound    >= D          -- D completed revision chunks since the last restart
    (b) prevPoolEnd > 0 && lastCompletedEnd >= prevPoolEnd  -- the last chunk reached the end of the pool
-   (c) E               >= D          -- 6 new pages have entered Rabt this round
+   (c) E               >= D          -- D new pages have entered Rabt this round (e.g. E >= 6 or E >= 10)
 ```
 
-where `prevPoolEnd = lastTiklar − (30 + E)` was the pool end **before** any release, and
-`tasksInRound` counts completed Muraja'ah tasks back to the last one that started at page 1.
-
-For a user memorizing one page/day with `D = 6`, trigger **(c)** fires: by Day 7 morning
-`E = 6`.
-
-### The reset (`:330-338`)
+### The reset
 
 ```
 if (cycleCompleted && no existing/pending Muraja'ah task for today) {
@@ -119,100 +104,33 @@ if (cycleCompleted && no existing/pending Muraja'ah task for today) {
 
 Then everything downstream is recomputed with `E = 0`:
 
-| Task | Days 1–6 (E = 6) | Day 7 (E reset to 0) |
+| Task | Days 1–6 (E = 6, D = 6) | Day 7 (E reset to 0) |
 |---|---|---|
-| **Rabt** | `[lastTiklar − 35 … lastTiklar]` → 36 pages | `[lastTiklar − 29 … lastTiklar]` → **exactly 30 pages** |
-| **Muraja'ah range** | `[1 … lastTiklar − 36]` | `[1 … lastTiklar − 30]` (pool grew by 6) |
+| **Rabt** | `[lastTikrar − 15 … lastTikrar]` → 16 pages | `[lastTikrar − 9 … lastTikrar]` → **exactly 10 pages** |
+| **Muraja'ah range** | `[1 … lastTikrar − 16]` | `[1 … lastTikrar − 10]` (pool grew by 6) |
 | **Daily target** | pool / 6 | `ceil(pool / 6)` |
 | **Chunk start** | sequential (continues forward) | **restarts with page 1** |
-
-The restart is explicit: `$shouldRestart = $cycleCompleted` (`:426-427`), and
-`nextMurajaahChunk` then returns `[rangeStart, min(rangeStart + target − 1, rangeEnd)]`
-`= [1, target]`.
-
-> **This is the answer to your main question.** On Day 7 the revision does **not** contain
-> "only the six pages that left Rabt". It contains **all pages outside Rabt**, and the
-> day's slice begins at **page 1**.
 
 ---
 
 ## 4. Worked example — brand-new user, 1 page/day, 6-day revision
 
-`lastTiklar` reaches page *p* on day *p+1* (the day after memorizing it). The Rabt round
-starts the moment page 31 graduates and `E` becomes 1.
+The user completes their initial 10 pages. Starting at page 11:
 
-| Morning | `lastTiklar` | `E` | Rabt window | Muraja'ah range | Muraja'ah today |
+| Morning | `lastTikrar` | `E` | Rabt window | Muraja'ah range | Muraja'ah today |
 |---|---|---|---|---|---|
-| D32 | 31 | 1 | 30+1 → `[1, 31]` | `[1, 0]` → inactive | — |
-| D33 | 32 | 2 | `[1, 32]` | inactive | — |
-| D34 | 33 | 3 | `[1, 33]` | inactive | — |
-| D35 | 34 | 4 | `[1, 34]` | inactive | — |
-| D36 | 35 | 5 | `[1, 35]` | inactive | — |
-| D37 | 36 | 6 | `[1, 36]` | inactive | — |
-| **D38 (Day 7)** | **36** | **0 (reset)** | **`[7, 36]` → 30 pages** | **`[1, 6]`, pool 6** | **`[1, 1]`** (target `ceil(6/6)=1`) |
+| D12 | 11 | 1 | 10+1 = 11 → `[1, 11]` | `[1, 0]` → inactive | — |
+| D13 | 12 | 2 | 10+2 = 12 → `[1, 12]` | inactive | — |
+| D14 | 13 | 3 | 10+3 = 13 → `[1, 13]` | inactive | — |
+| D15 | 14 | 4 | 10+4 = 14 → `[1, 14]` | inactive | — |
+| D16 | 15 | 5 | 10+5 = 15 → `[1, 15]` | inactive | — |
+| D17 | 16 | 6 | 10+6 = 16 → `[1, 16]` | inactive | — |
+| **D18 (Day 7)** | **16** | **0 (reset)** | **`[7, 16]` → 10 pages** | **`[1, 6]`, pool 6** | **`[1, 1]`** (target `ceil(6/6)=1`) |
 
-On D38: Rabt = pages 7–36 (24 older + 6 newest = 30) ✅ (exactly as you described),
-and revision restarts at page 1, one page per day, so pages 1–6 are covered across D38–D43.
-
-For a user who already had, say, 100 graduated pages (`lastTiklar = 100`, `E = 0`):
-RABT = `[71, 100]`, pool = `[1, 70]`, `dailyTarget = ceil(70/6) = 12`, and Day 7 restarts
-at `[1, 12]`. Revision shows **70 pages, not 6** — it is the whole non-Rabt pool.
+On D18: Rabt = pages 7–16 (4 older + 6 newest = 10 pages), and revision begins at page 1, covering pages 1–6 across D18–D23.
 
 ---
 
-## 5. The bug you saw on Day 7 (why it showed only the six ejected pages)
+## 5. One-line summary
 
-Before commit `a6df11b`, `nextMurajaahChunk()` started each new chunk from
-
-```
-MAX(end_page) over all completed Muraja'ah tasks  + 1
-```
-
-and the "restart at page 1" branch was only reached *after* the cursor passed the range
-end. So while the pool grew, the next chunk was `[maxEnd+1 … poolEnd]`. If the previous
-round had reviewed `[1, 30]` and the pool had grown to `[1, 36]`, the new chunk became
-
-```
-[31, 36]   <-- exactly the six pages that had just been ejected from Rabt
-```
-
-…which is precisely what you reported. The fix:
-
-- explicit `cycleCompleted` detection (three triggers above), and
-- a `shouldRestart` flag so the first chunk of a new round starts at **page 1**
-  (`get_daily_tasks.php:81-115, 426-427`),
-- the `E → 0` reset now happens in the morning, before the ranges are computed (`:330-338`).
-
----
-
-## 6. Edge cases worth knowing
-
-- **A pending (unfinished) revision blocks the reset.** The reset only runs when no
-  Muraja'ah task for today exists (`$existingMurajaah === null`). If the user did not finish
-  revision, the old task rolls forward (`findExistingTask`, `:55-73`) and `E` is **not**
-  reset that day — Rabt keeps its expanded window until revision is completed.
-  This is the "rollover" rule: the cycle only advances when the user keeps up.
-- **Missed days** do not shift the schedule; the earliest pending task is reused, so the
-  round simply takes longer in wall-clock time.
-- **Spacing of memorization matters, not the calendar.** `E` is incremented **per
-  graduated page**, not per calendar day. A user memorizing 2 pages/day reaches `E = 6`
-  in 3 days; a user who stops memorizing never increments `E`, and the round instead ends
-  via trigger (a) `tasksInRound >= 6` or (b) "last chunk reached the pool end".
-- **Breaking the cycle mid-round** with `Undo` on Tikrar Ams decrements `E`
-  (`undo_progress.php:226-234`), and changing `current_hifz_page` via the plan modal
-  resets `E` to 0 (`update_plan.php:113-116`).
-- **`COMPLETE` users** skip all of this: their Muraja'ah range is always `[1, 604]`
-  (`get_daily_tasks.php:394-396`), with `prevPoolEnd = 604`.
-- **Round-over-round growth.** Because each round releases `D` pages (6) and always
-  restarts at page 1, the revision pool increases by exactly 6 pages per completed round
-  while the user keeps memorizing. Once memorization stops, the pool freezes at
-  `lastTiklar − 30` and the user reviews the *entire* non-Rabt portion once every 6 days.
-
----
-
-## 7. One-line summary
-
-**Day 7 (with `murajaah_days = 6`): `rabt_extra_pages` resets to 0 → Rabt = the last 30
-graduated pages; Muraja'ah = every page before Rabt, restarting at page 1, split into
-6 daily chunks of `ceil(pool / 6)` pages.** The "only the 6 ejected pages" behaviour you
-observed was the pre-`a6df11b` cursor bug and is no longer what the code does.
+**Day 7 (with `murajaah_days = 6`): `rabt_extra_pages` resets to 0 → Rabt shrinks to the last 10 graduated pages (max was 16); Muraja'ah = every page before Rabt, restarting at page 1, split into 6 daily chunks.**

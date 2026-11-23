@@ -1129,8 +1129,9 @@ function initPlanModal() {
     const days = parseInt(daysInput.value, 10) || 6;
     const current = parseInt(pageInput.value, 10) || 0;
     const type = typeSelect.value;
+    const base = (sharedState.user && sharedState.user.rabt_base_pages != null) ? Number(sharedState.user.rabt_base_pages) : 10;
     const extra = (sharedState.user && sharedState.user.rabt_extra_pages) ? sharedState.user.rabt_extra_pages : 0;
-    const rabtWindow = 30 + extra;
+    const rabtWindow = base + extra;
 
     let pool = 0;
     if (type === 'COMPLETE') {
@@ -1143,7 +1144,7 @@ function initPlanModal() {
     }
 
     if (pool <= 0) {
-      calcPreview.innerHTML = window.I18N ? I18N.t('plan_calc_inactive') : `📊 <strong>المراجعة غير نشطة حالياً:</strong> ستنطلق المراجعة الدورية تلقائياً بعد تجاوز أول ٣٠ صفحة حفظ.`;
+      calcPreview.innerHTML = window.I18N ? I18N.t('plan_calc_inactive') : `📊 <strong>المراجعة غير نشطة حالياً:</strong> ستنطلق المراجعة الدورية تلقائياً بعد تجاوز أول ١٠ صفحات حفظ.`;
     } else {
       const dailyPages = Math.ceil(pool / days);
       const hizb = dailyPages / 10;

@@ -107,7 +107,7 @@ $sql = 'INSERT INTO `users`
             (`name`, `email`, `password_hash`, `user_type`,
              `current_hifz_page`, `daily_murajaah_target_pages`, `murajaah_days`, `rabt_extra_pages`, `rabt_base_pages`, `last_tikrar_page`, `tafreet_count`, `last_tafreet_check_date`)
         VALUES (:name, :email, :password_hash, :user_type,
-                :current_hifz_page, :daily_murajaah_target_pages, :murajaah_days, 0, 30, :last_tikrar_page, 0, :today)';
+                :current_hifz_page, :daily_murajaah_target_pages, :murajaah_days, 0, 10, :last_tikrar_page, 0, :today)';
 
 try {
     $stmt = $pdo->prepare($sql);

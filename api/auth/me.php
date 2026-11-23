@@ -24,7 +24,7 @@ rh_json_out(200, [
         'must_change_password' => (int) $user['must_change_password'] === 1,
         'current_hifz_page'    => (int) $user['current_hifz_page'],
         'tafreet_count'        => (int) ($user['tafreet_count'] ?? 0),
-        'rabt_base_pages'      => (int) ($user['rabt_base_pages'] ?? 30),
+        'rabt_base_pages'      => (int) ($user['rabt_base_pages'] ?? 10),
         'last_login_at'        => $user['last_login_at'] !== null ? (string) $user['last_login_at'] : null,
         'last_seen_at'         => $user['last_seen_at'] !== null ? (string) $user['last_seen_at'] : null,
     ],

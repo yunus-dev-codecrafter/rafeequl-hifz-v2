@@ -96,7 +96,7 @@ try {
             `daily_murajaah_target_pages` = 100,
             `murajaah_days` = 6,
             `rabt_extra_pages` = 0,
-            `rabt_base_pages` = 30,
+            `rabt_base_pages` = 10,
             `tafreet_count` = 0,
             `last_tafreet_check_date` = :today,
             `gate_mistake_id` = NULL,

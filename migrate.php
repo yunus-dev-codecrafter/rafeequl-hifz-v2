@@ -367,6 +367,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 throw new RuntimeException('تعذر تحميل ملف الترقية config/migrate_v16.php.');
             }
             $stats16 = rh_migrate_v16($pdo, $log);
+            require_once __DIR__ . '/config/migrate_v17.php';
+            if (!function_exists('rh_migrate_v17')) {
+                throw new RuntimeException('تعذر تحميل ملف الترقية config/migrate_v17.php.');
+            }
+            $stats17 = rh_migrate_v17($pdo, $log);
             foreach (['columns_added', 'indexes_added', 'tables_created', 'enum_updates'] as $statKey) {
                 $stats[$statKey] = (int) ($stats[$statKey] ?? 0) + (int) ($stats10[$statKey] ?? 0);
             }
@@ -382,6 +387,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 + (int) ($stats13['columns_added'] ?? 0)
                 + (int) ($stats15['columns_added'] ?? 0)
                 + (int) ($stats16['columns_added'] ?? 0);
+            $stats['columns_modified'] = (int) ($stats17['columns_modified'] ?? 0);
+            $stats['rows_updated'] = (int) ($stats['rows_updated'] ?? 0) + (int) ($stats17['rows_updated'] ?? 0);
             $stats['enum_updates'] = (int) ($stats['enum_updates'] ?? 0) + (int) ($stats13['enum_updates'] ?? 0) + (int) ($stats14['enum_updates'] ?? 0);
             $stats['mistakes_purged'] = (int) ($stats11['mistakes_purged'] ?? 0);
         } catch (Throwable $t) {
@@ -397,10 +404,10 @@ $enumDisplay = $schema['enum'] !== '' ? $schema['enum'] : '—';
 mh_page_start('رفيق الحفظ — ترقية قاعدة البيانات');
 ?>
 <span class="badge">ترقية قاعدة البيانات</span>
-<h1>ترقية قاعدة البيانات إلى v16</h1>
+<h1>ترقية قاعدة البيانات إلى v17</h1>
 <p class="muted">
-  مرحباً <?= mh_h($user['name'] ?? $user['email'] ?? '') ?>. هذه الصفحة تطبّق ترقية v16
-  (وتشمل v7 حتى v15) على قاعدة البيانات الحالية. لا تحذف
+  مرحباً <?= mh_h($user['name'] ?? $user['email'] ?? '') ?>. هذه الصفحة تطبّق ترقية v17
+  (وتشمل v7 حتى v16) على قاعدة البيانات الحالية. لا تحذف
   <code>config/installed.lock</code> ولا تعيد تفعيل المثبّت.
 </p>
 <p class="warn" style="margin-top:0">
@@ -450,8 +457,8 @@ mh_page_start('رفيق الحفظ — ترقية قاعدة البيانات');
   </div>
 <?php elseif ($schema['ready']): ?>
   <div class="ok">
-    <strong>قاعدة البيانات جاهزة لـ v16.</strong>
-    جداول تثبيت الصفحة، ونظام أيام التفريط، والإجازات والغياب المخطط، وديناميكية الربط جاهزة. يمكنك إعادة تشغيل الترقية بأمان إذا أردت إصلاح أي شيء.
+    <strong>قاعدة البيانات جاهزة لـ v17.</strong>
+    جداول تثبيت الصفحة، ونظام أيام التفريط، والإجازات والغياب المخطط، وضبط قاعدة الربط إلى ١٠ صفحات بحد أقصى ١٦-٢٠ صفحة جاهزة. يمكنك إعادة تشغيل الترقية بأمان إذا أردت إصلاح أي شيء.
   </div>
   <?php if (!$schema['index']): ?>
     <div class="warn">
@@ -459,10 +466,10 @@ mh_page_start('رفيق الحفظ — ترقية قاعدة البيانات');
     </div>
   <?php endif; ?>
   <div class="card">
-    <form method="post" action="migrate.php" onsubmit="return confirm('إعادة تشغيل ترقية v16 آمنة ومتكررة. هل تريد المتابعة؟');">
+    <form method="post" action="migrate.php" onsubmit="return confirm('إعادة تشغيل ترقية v17 آمنة ومتكررة. هل تريد المتابعة؟');">
       <input type="hidden" name="csrf" value="<?= mh_h($csrf) ?>">
       <input type="hidden" name="action" value="migrate">
-      <button type="submit" class="secondary">إعادة تشغيل ترقية v16</button>
+      <button type="submit" class="secondary">إعادة تشغيل ترقية v17</button>
     </form>
   </div>
 <?php else: ?>
@@ -470,14 +477,14 @@ mh_page_start('رفيق الحفظ — ترقية قاعدة البيانات');
     <strong>الترقية مطلوبة.</strong>
     ستُضاف أعمدة عدّاد التكرار وجدول المواقف المعلّمة، ويُحوَّل نوع الخطأ إلى التصنيفات الثلاثة،
     وتُحذف البطاقات المكتملة نهائيًا عند 15/15، ويُضاف جدول تقدّم معاني الكلمات ودورات اختبارها،
-    وجداول تثبيت الصفحة، ونظام أيام التفريط والغياب المخطط (v16).
+    وجداول تثبيت الصفحة، ونظام أيام التفريط والغياب المخطط، وتحديث قاعدة الربط الأساسي إلى ١٠ صفحات (v17).
     الترقية آمنة ومتكررة.
   </div>
   <div class="card">
     <form method="post" action="migrate.php">
       <input type="hidden" name="csrf" value="<?= mh_h($csrf) ?>">
       <input type="hidden" name="action" value="migrate">
-      <button type="submit">تشغيل ترقية v16 الآن</button>
+      <button type="submit">تشغيل ترقية v17 الآن</button>
     </form>
     <p class="muted" style="margin-bottom:0">قد تستغرق الترقية بعض الثواني على قاعدة بيانات كبيرة. لا تغلق الصفحة.</p>
   </div>

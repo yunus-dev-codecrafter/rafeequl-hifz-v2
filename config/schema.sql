@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS `users` (
     `daily_murajaah_target_pages` INT NOT NULL DEFAULT 100,
     `murajaah_days` INT NOT NULL DEFAULT 6,
     `rabt_extra_pages` INT NOT NULL DEFAULT 0,
-    `rabt_base_pages` INT NOT NULL DEFAULT 30,
+    `rabt_base_pages` INT NOT NULL DEFAULT 10,
     `last_tikrar_page` INT NOT NULL DEFAULT 0,
     `gate_mistake_id` INT NULL,
     `gate_mistake_locked_at` DATETIME NULL,

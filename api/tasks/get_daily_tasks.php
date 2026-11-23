@@ -318,7 +318,7 @@ try {
         'SELECT `id`, `name`, `user_type`, `current_hifz_page`, `daily_murajaah_target_pages`,
                 COALESCE(`murajaah_days`, 6) AS `murajaah_days`,
                 COALESCE(`rabt_extra_pages`, 0) AS `rabt_extra_pages`,
-                COALESCE(`rabt_base_pages`, 30) AS `rabt_base_pages`,
+                COALESCE(`rabt_base_pages`, 10) AS `rabt_base_pages`,
                 COALESCE(`last_tikrar_page`, 0) AS `last_tikrar_page`,
                 COALESCE(`tafreet_count`, 0) AS `tafreet_count`
          FROM `users` WHERE `id` = :id'
@@ -334,15 +334,15 @@ try {
     $utype       = (string) $user['user_type'];
     $murDays     = max(1, min(10, (int) ($user['murajaah_days'] ?? 6)));
     $rabtExtra   = max(0, (int) ($user['rabt_extra_pages'] ?? 0));
-    $rabtBase    = max(0, min(30, (int) ($user['rabt_base_pages'] ?? 30)));
+    $rabtBase    = max(0, min(10, (int) ($user['rabt_base_pages'] ?? 10)));
     $tafreetCnt  = (int) ($user['tafreet_count'] ?? 0);
 
     // -----------------------------------------------------------------------
-    // Muraja'ah Cycle & Rabt Reset Analysis (Day 7 transition)
+    // Muraja'ah Cycle & Rabt Reset Analysis (Day 7 / Day 11 transition)
     // -----------------------------------------------------------------------
     // Days 1 to $murDays: New pages memorized pass Tikrar Ams and enter Rabt
-    // (Rabt expands from rabtBase to rabtBase + $rabtExtra pages).
-    // On Day ($murDays + 1) [e.g. Day 7]: The cycle is complete!
+    // (Rabt expands from rabtBase [10] to rabtBase + $rabtExtra pages: max 16 for 6-day cycle, max 20 for 10-day cycle).
+    // On Day ($murDays + 1) [e.g. Day 7 or Day 11]: The cycle is complete!
     // 1. If extra pages accumulated ($rabtExtra > 0): they graduate to Muraja'ah and $rabtExtra resets to 0.
     // 2. If new memorization was paused ($rabtExtra == 0): Rabt reduces by $murDays pages down to 0.
     // 3. Muraja'ah restarts from Page 1!

@@ -84,7 +84,7 @@ if (!empty($errors)) {
 }
 
 try {
-    $stmt = $pdo->prepare('SELECT `id`, `user_type`, `current_hifz_page`, `daily_murajaah_target_pages`, COALESCE(`murajaah_days`, 6) AS `murajaah_days`, COALESCE(`rabt_extra_pages`, 0) AS `rabt_extra_pages` FROM `users` WHERE `id` = :id');
+    $stmt = $pdo->prepare('SELECT `id`, `user_type`, `current_hifz_page`, `daily_murajaah_target_pages`, COALESCE(`murajaah_days`, 6) AS `murajaah_days`, COALESCE(`rabt_extra_pages`, 0) AS `rabt_extra_pages`, COALESCE(`rabt_base_pages`, 10) AS `rabt_base_pages` FROM `users` WHERE `id` = :id');
     $stmt->execute([':id' => $userId]);
     $user = $stmt->fetch();
     if (!$user) {
@@ -95,6 +95,7 @@ try {
     $effectiveCurrent = $currentPage !== null ? $currentPage : (int) $user['current_hifz_page'];
     $effectiveType = $userType !== null ? $userType : (string) $user['user_type'];
     $effectiveExtra = (int) $user['rabt_extra_pages'];
+    $rabtBase = max(0, min(10, (int) ($user['rabt_base_pages'] ?? 10)));
 
     // If current page changed drastically, we can reset rabt_extra_pages
     if ($currentPage !== null && $currentPage !== (int) $user['current_hifz_page']) {
@@ -102,7 +103,7 @@ try {
     }
 
     // Determine Muraja'ah pool pages
-    $rabtWindow = 30 + $effectiveExtra;
+    $rabtWindow = $rabtBase + $effectiveExtra;
     $murajaahTotalPages = 0;
     if ($effectiveType === 'COMPLETE') {
         $murajaahTotalPages = 604;

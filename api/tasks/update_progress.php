@@ -218,7 +218,7 @@ try {
     // Load profile & activation gates
     // -----------------------------------------------------------------------
 
-    $stmt = $pdo->prepare('SELECT `id`, `user_type`, `current_hifz_page`, COALESCE(`rabt_extra_pages`, 0) AS `rabt_extra_pages`, COALESCE(`rabt_base_pages`, 30) AS `rabt_base_pages`, COALESCE(`murajaah_days`, 6) AS `murajaah_days`, COALESCE(`last_tikrar_page`, 0) AS `last_tikrar_page` FROM `users` WHERE `id` = :id');
+    $stmt = $pdo->prepare('SELECT `id`, `user_type`, `current_hifz_page`, COALESCE(`rabt_extra_pages`, 0) AS `rabt_extra_pages`, COALESCE(`rabt_base_pages`, 10) AS `rabt_base_pages`, COALESCE(`murajaah_days`, 6) AS `murajaah_days`, COALESCE(`last_tikrar_page`, 0) AS `last_tikrar_page` FROM `users` WHERE `id` = :id');
     $stmt->execute([':id' => $userId]);
     $user = $stmt->fetch();
     if (!$user) {
@@ -230,7 +230,7 @@ try {
     $utype      = (string) $user['user_type'];
     $murDays    = max(1, min(10, (int) ($user['murajaah_days'] ?? 6)));
     $rabtExtra  = (int) ($user['rabt_extra_pages'] ?? 0);
-    $rabtBase   = max(0, min(30, (int) ($user['rabt_base_pages'] ?? 30)));
+    $rabtBase   = max(0, min(10, (int) ($user['rabt_base_pages'] ?? 10)));
     $today      = date('Y-m-d');
 
     if ($utype === 'COMPLETE' && $taskType !== 'MURAJAAH') {
@@ -390,7 +390,7 @@ try {
             if ($isTaskDone) {
                 $newLastTikrar = max($lastTikrar, $completedPage);
                 if ($newLastTikrar > $lastTikrar) {
-                    if ($rabtBase < 30) {
+                    if ($rabtBase < 10) {
                         // Rabt base is rebuilding after pause
                         $rabtBase++;
                         $stmt = $pdo->prepare('UPDATE `users` SET `last_tikrar_page` = :tp, `rabt_base_pages` = :base WHERE `id` = :id');
