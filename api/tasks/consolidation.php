@@ -52,6 +52,15 @@ if ($method === 'POST') {
     }
 }
 
+if (!function_exists('rh_today')) {
+    function rh_today(?int $timestamp = null): string
+    {
+        $ts = $timestamp ?? time();
+        $offset = (int) (defined('RH_DAY_CUTOFF_HOUR') ? RH_DAY_CUTOFF_HOUR : 6) * 3600;
+        return date('Y-m-d', $ts - $offset);
+    }
+}
+
 try {
     $authUser = rh_require_login($pdo);
     $userId = (int) $authUser['id'];

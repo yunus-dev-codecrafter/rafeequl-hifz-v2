@@ -12,6 +12,15 @@ declare(strict_types=1);
  *   5. During planned absence, Hifz Jadid & Tikrar Ams are paused, while Rabt & Muraja'ah continue.
  */
 
+if (!function_exists('rh_today')) {
+    function rh_today(?int $timestamp = null): string
+    {
+        $ts = $timestamp ?? time();
+        $offset = (int) (defined('RH_DAY_CUTOFF_HOUR') ? RH_DAY_CUTOFF_HOUR : 6) * 3600;
+        return date('Y-m-d', $ts - $offset);
+    }
+}
+
 if (!function_exists('rh_is_absence_day')) {
     function rh_is_absence_day(PDO $pdo, int $userId, string $date): bool
     {

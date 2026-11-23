@@ -11,6 +11,15 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/_rollover.php';
 
+if (!function_exists('rh_today')) {
+    function rh_today(?int $timestamp = null): string
+    {
+        $ts = $timestamp ?? time();
+        $offset = (int) (defined('RH_DAY_CUTOFF_HOUR') ? RH_DAY_CUTOFF_HOUR : 6) * 3600;
+        return date('Y-m-d', $ts - $offset);
+    }
+}
+
 /** True when migration v14 has been applied. Gate callers fail open otherwise. */
 function rh_pg_schema_ready(PDO $pdo): bool
 {

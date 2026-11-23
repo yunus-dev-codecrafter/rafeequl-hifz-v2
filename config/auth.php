@@ -23,6 +23,19 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/database.php';
 
+if (!defined('RH_DAY_CUTOFF_HOUR')) {
+    define('RH_DAY_CUTOFF_HOUR', 6);
+}
+
+if (!function_exists('rh_today')) {
+    function rh_today(?int $timestamp = null): string
+    {
+        $ts = $timestamp ?? time();
+        $offset = (int) (defined('RH_DAY_CUTOFF_HOUR') ? RH_DAY_CUTOFF_HOUR : 6) * 3600;
+        return date('Y-m-d', $ts - $offset);
+    }
+}
+
 /** JSON response helper (namespaced to avoid clashing with local json_out()). */
 function rh_json_out(int $code, array $payload): void
 {
