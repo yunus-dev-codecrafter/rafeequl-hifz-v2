@@ -294,7 +294,7 @@ try {
     // -----------------------------------------------------------------------
     // Penalty (يوم تفريط) Audit & Account Deletion Check
     // -----------------------------------------------------------------------
-    $today = date('Y-m-d');
+    $today = rh_today();
     $tafreetAudit = rh_evaluate_tafreet($pdo, $userId, $today);
     if ($tafreetAudit['deleted']) {
         if (session_status() === PHP_SESSION_ACTIVE) {

@@ -50,6 +50,27 @@ if (!defined('RH_APP_TIMEZONE')) {
     define('RH_APP_TIMEZONE', $timezone);
 }
 
+if (!defined('RH_DAY_CUTOFF_HOUR')) {
+    define('RH_DAY_CUTOFF_HOUR', 6); // A new day starts at 06:00 AM
+}
+
+if (!function_exists('rh_today')) {
+    /**
+     * Return the current logical app date (YYYY-MM-DD).
+     *
+     * In Rafeequl Hifz, the day boundary is 06:00 AM.
+     * Between 00:00:00 and 05:59:59, the active session still belongs
+     * to the previous calendar day so users reciting at night / before Fajr
+     * are not penalized with early Tafreet.
+     */
+    function rh_today(?int $timestamp = null): string
+    {
+        $ts = $timestamp ?? time();
+        $offsetSeconds = (int) (defined('RH_DAY_CUTOFF_HOUR') ? RH_DAY_CUTOFF_HOUR : 6) * 3600;
+        return date('Y-m-d', $ts - $offsetSeconds);
+    }
+}
+
 if (!defined('RH_FATAL_HANDLER_REGISTERED')) {
     define('RH_FATAL_HANDLER_REGISTERED', true);
 

@@ -163,7 +163,7 @@ try {
     $utype      = (string) $user['user_type'];
     $rabtExtra  = (int) ($user['rabt_extra_pages'] ?? 0);
     $rabtBase   = max(0, min(10, (int) ($user['rabt_base_pages'] ?? 10)));
-    $today      = date('Y-m-d');
+    $today      = rh_today();
 
     $pdo->beginTransaction();
     $row = findLogForUndo($pdo, $userId, $taskType, $today);

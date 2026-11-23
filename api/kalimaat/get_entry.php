@@ -90,7 +90,7 @@ try {
     ];
     if (!$mustChange) {
         try {
-            $consolidation = rh_pg_gate_payload($pdo, $userId, date('Y-m-d'));
+            $consolidation = rh_pg_gate_payload($pdo, $userId, function_exists('rh_today') ? rh_today() : date('Y-m-d'));
         } catch (Throwable $e) {
             error_log('[Page gate get_entry] ' . $e->getMessage());
             $consolidation = ['available' => false, 'reason' => 'ERROR'];

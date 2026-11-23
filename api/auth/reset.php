@@ -87,7 +87,7 @@ try {
     } catch (Throwable $t) {}
 
     // 3. Reset user table fields to default baseline (0 current page, NEW user, default 6 days / 100 pages target)
-    $today = date('Y-m-d');
+    $today = function_exists('rh_today') ? rh_today() : date('Y-m-d');
     $stmt = $pdo->prepare("
         UPDATE `users`
         SET `current_hifz_page` = 0,

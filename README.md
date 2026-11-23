@@ -107,14 +107,14 @@ The remaining waqf table/columns are never read by the app. Local device data is
 not deleted; the page-consolidation queue starts empty and fills as the user
 selects weak targets or lets the server pick pages.
 
-## Rollover counting
+## Daily cycle & 6:00 AM day boundary (بداية اليوم الدراسي)
 
-A pending task keeps its original `task_date` until it is completed. Each
-calendar day it remains unfinished increments `rollover_count` once and updates
-`last_rollover_date`; opening the app twice on the same day never double-counts.
-The dashboard badge and task pages show the number of rollover days (for
-example, `مُرجَّلة ×2`). The count uses `APP_TIMEZONE` (`Africa/Lagos` by
-default), so “today” is consistent for every request.
+To accommodate night recitation (قيام الليل والمذاكرة الليلية) and pre-Fajr revision without penalizing students who study past midnight:
+
+- **The logical app day runs from 06:00 AM to 05:59 AM the following morning** (`RH_DAY_CUTOFF_HOUR = 6`, calculated via `rh_today()`).
+- Hours between **00:00:00 and 05:59:59** belong to the preceding day's study session.
+- **Tafreet (يوم تفريط) evaluation** only triggers at **06:00 AM** when the day truly turns over. An unfinished day's tasks can be completed up to 05:59 AM without penalty.
+- A pending task keeps its original `task_date` until it is completed. Each logical day it remains unfinished increments `rollover_count` once and updates `last_rollover_date`; opening the app multiple times within the same logical day never double-counts. The count uses `APP_TIMEZONE` (`Africa/Lagos` by default).
 
 > **Page recall notes (v3)** creates the `page_notes` table.
 >

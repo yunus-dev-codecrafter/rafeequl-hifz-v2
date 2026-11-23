@@ -55,7 +55,7 @@ if ($method === 'POST') {
 try {
     $authUser = rh_require_login($pdo);
     $userId = (int) $authUser['id'];
-    $today = date('Y-m-d');
+    $today = rh_today();
 
     if (!rh_pg_schema_ready($pdo)) {
         json_out(503, [

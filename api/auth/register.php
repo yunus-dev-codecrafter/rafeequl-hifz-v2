@@ -102,7 +102,7 @@ if ($errors) {
 
 $passwordHash = password_hash($password, PASSWORD_DEFAULT);
 
-$today = date('Y-m-d');
+$today = function_exists('rh_today') ? rh_today() : date('Y-m-d');
 $sql = 'INSERT INTO `users`
             (`name`, `email`, `password_hash`, `user_type`,
              `current_hifz_page`, `daily_murajaah_target_pages`, `murajaah_days`, `rabt_extra_pages`, `rabt_base_pages`, `last_tikrar_page`, `tafreet_count`, `last_tafreet_check_date`)

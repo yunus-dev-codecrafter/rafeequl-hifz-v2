@@ -64,7 +64,7 @@ if (!function_exists('rh_add_user_absence')) {
      */
     function rh_add_user_absence(PDO $pdo, int $userId, string $date, ?string $notes = null): array
     {
-        $today = date('Y-m-d');
+        $today = function_exists('rh_today') ? rh_today() : date('Y-m-d');
         if ($date < $today) {
             return ['success' => false, 'error' => 'لا يمكن تسجيل غياب لتاريخ مضى.'];
         }

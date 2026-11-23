@@ -151,8 +151,8 @@ try {
         $stmt->execute($params);
     }
 
-    // Today's date
-    $today = date('Y-m-d');
+    // Today's date (logical day cutoff at 06:00 AM)
+    $today = rh_today();
 
     // Recalculate pending tasks for today if requested or if current page/type/target changed
     $recalculate = (bool) ($input['recalculate_today'] ?? true);

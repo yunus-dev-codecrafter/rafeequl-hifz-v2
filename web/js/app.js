@@ -1242,7 +1242,13 @@ function initAbsenceModal() {
 
   if (!modal) return;
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const getAppDateStr = () => {
+    if (sharedState.date) return sharedState.date;
+    const d = new Date();
+    d.setHours(d.getHours() - 6); // 6:00 AM logical day cutoff
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  };
+  const todayStr = getAppDateStr();
   if (dateInput) {
     dateInput.min = todayStr;
     dateInput.value = todayStr;

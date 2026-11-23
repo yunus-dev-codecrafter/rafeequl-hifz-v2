@@ -231,7 +231,7 @@ try {
     $murDays    = max(1, min(10, (int) ($user['murajaah_days'] ?? 6)));
     $rabtExtra  = (int) ($user['rabt_extra_pages'] ?? 0);
     $rabtBase   = max(0, min(10, (int) ($user['rabt_base_pages'] ?? 10)));
-    $today      = date('Y-m-d');
+    $today      = rh_today();
 
     if ($utype === 'COMPLETE' && $taskType !== 'MURAJAAH') {
         json_out(400, ['success' => false, 'error' => $taskType . ' is disabled for COMPLETE users.']);
