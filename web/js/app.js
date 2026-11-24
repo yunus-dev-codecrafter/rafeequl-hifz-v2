@@ -950,9 +950,9 @@ function initAuthPage() {
 const TASK_DESTINATIONS = {
   HIFZ_JADID: { url: 'hifz.html',       cls: 'task-green',  keyTitle: 'task_hifz_title',     keySub: 'task_hifz_sub',     title: 'الحفظ الجديد',     sub: 'صفحة جديدة اليوم' },
   TIKRAR_AMS: { url: 'tikrar.html',     cls: 'task-amber',  keyTitle: 'task_tikrar_title',   keySub: 'task_tikrar_sub',   title: 'تكرار حفظ الأمس',   sub: 'تكرار ١٠ مرات لتثبيت الحفظ قبل الربط' },
-  RABT:       { url: 'rabt.html',       cls: 'task-blue',   keyTitle: 'task_rabt_title',     keySub: 'task_rabt_sub',     title: 'الربط',            sub: 'نافذة الربط المستمرة' },
+  RABT:       { url: 'rabt.html',       cls: 'task-blue',   keyTitle: 'task_rabt_title',     keySub: 'task_rabt_sub',     title: 'الربط',            sub: 'جلسة واحدة حرة لربط الحفظ القريب' },
   PAGE_TAMKIN: { url: 'consolidation.html', cls: 'task-teal', keyTitle: 'task_page_title',  keySub: 'task_page_sub',  title: 'تثبيت الصفحة',      sub: 'صفحة واحدة من محفوظك، ترتيب كلمات ثم تسميع واستماع' },
-  MURAJAAH:   { url: 'murajaah.html',   cls: 'task-purple', keyTitle: 'task_murajaah_title', keySub: 'task_murajaah_sub', title: 'المراجعة',         sub: 'ختم دوري مقسم على الأيام' },
+  MURAJAAH:   { url: 'murajaah.html',   cls: 'task-purple', keyTitle: 'task_murajaah_title', keySub: 'task_murajaah_sub', title: 'المراجعة',         sub: 'مقسمة قبل الصلوات الخمس وبعدها' },
   MISTAKES:   { url: 'flashcards.html', cls: 'task-red',    keyTitle: 'task_mistakes_title', keySub: 'task_mistakes_sub', title: 'المعالجة',         sub: 'تدريب البطاقات الذكية' },
 };
 
@@ -1623,25 +1623,23 @@ async function initDedicatedTaskPage(taskType) {
 /* ---------------- 7b. Muraja'ah / Rabt five-prayer plan ---------------- */
 
 const PRAYER_SESSIONS = [
-  { key: 'fajr', labelKey: 'prayer_fajr', beforeLabelKey: 'prayer_before_fajr', nameAr: 'الفجر', icon: '🌅' },
-  { key: 'dhuhr', labelKey: 'prayer_dhuhr', beforeLabelKey: 'prayer_before_dhuhr', nameAr: 'الظهر', icon: '☀️' },
-  { key: 'asr', labelKey: 'prayer_asr', beforeLabelKey: 'prayer_before_asr', nameAr: 'العصر', icon: '🌤️' },
-  { key: 'maghrib', labelKey: 'prayer_maghrib', beforeLabelKey: 'prayer_before_maghrib', nameAr: 'المغرب', icon: '🌇' },
-  { key: 'isha', labelKey: 'prayer_isha', beforeLabelKey: 'prayer_before_isha', nameAr: 'العشاء', icon: '🌙' },
+  { key: 'fajr', labelKey: 'prayer_fajr', nameAr: 'الفجر', icon: '🌅' },
+  { key: 'dhuhr', labelKey: 'prayer_dhuhr', nameAr: 'الظهر', icon: '☀️' },
+  { key: 'asr', labelKey: 'prayer_asr', nameAr: 'العصر', icon: '🌤️' },
+  { key: 'maghrib', labelKey: 'prayer_maghrib', nameAr: 'المغرب', icon: '🌇' },
+  { key: 'isha', labelKey: 'prayer_isha', nameAr: 'العشاء', icon: '🌙' },
 ];
 
-function prayerSessionName(session, before) {
+function prayerSessionName(session) {
   if (!session) return '';
-  const key = before ? session.beforeLabelKey : session.labelKey;
-  if (window.I18N) return I18N.t(key);
-  return before ? `قبل ${session.nameAr}` : session.nameAr;
+  if (window.I18N) return I18N.t(session.labelKey);
+  return session.nameAr;
 }
 
 /**
- * Split a muraja'ah/Rabt page range into five contiguous sessions, one per
- * prayer. For Rabt the labels read "before <prayer>"; for Muraja'ah they read
- * "after <prayer>". The remainder pages are distributed over the first
- * sessions, so 42 pages become 9 + 9 + 8 + 8 + 8.
+ * Split a muraja'ah page range into five contiguous sessions, one per prayer.
+ * Each prayer session is further divided into two parts: before prayer and after prayer.
+ * The remainder pages are distributed over the first sessions, so 42 pages become 9 + 9 + 8 + 8 + 8.
  */
 function buildPrayerSessions(task, completedList) {
   const start = parseInt(task && task.start_page, 10);
@@ -1660,11 +1658,28 @@ function buildPrayerSessions(task, completedList) {
     const sessionEnd = size > 0 ? cursor + size - 1 : cursor - 1;
     cursor += size;
 
+    // Divide session into before prayer and after prayer portions
+    const beforeCount = size > 0 ? Math.ceil(size / 2) : 0;
+    const afterCount = size - beforeCount;
+    const beforeStart = size > 0 ? sessionStart : null;
+    const beforeEnd = beforeCount > 0 ? sessionStart + beforeCount - 1 : null;
+    const afterStart = afterCount > 0 ? beforeEnd + 1 : null;
+    const afterEnd = afterCount > 0 ? sessionEnd : null;
+
     let completed = 0;
+    let beforeCompleted = 0;
+    let afterCompleted = 0;
     let firstUncompleted = null;
+
     for (let p = sessionStart; p <= sessionEnd; p++) {
-      if (doneSet.has(p)) {
+      const isDone = doneSet.has(p);
+      if (isDone) {
         completed++;
+        if (beforeEnd !== null && p <= beforeEnd) {
+          beforeCompleted++;
+        } else {
+          afterCompleted++;
+        }
       } else if (firstUncompleted === null) {
         firstUncompleted = p;
       }
@@ -1677,6 +1692,14 @@ function buildPrayerSessions(task, completedList) {
       end: sessionEnd,
       total: size,
       completed,
+      beforeCount,
+      afterCount,
+      beforeStart,
+      beforeEnd,
+      afterStart,
+      afterEnd,
+      beforeCompleted,
+      afterCompleted,
       done: !isEmpty && completed >= size,
       isEmpty,
       percent: isEmpty ? 0 : Math.round((completed / size) * 100),
@@ -1688,41 +1711,45 @@ function buildPrayerSessions(task, completedList) {
 function prayerSessionRangeLabel(session) {
   if (!session || session.isEmpty) return '—';
   if (session.total === 1) {
-    return window.I18N ? I18N.t('prayer_session_one', { page: session.start }) : `صفحة ${session.start}`;
+    return window.I18N
+      ? I18N.t('prayer_session_flexible_one', { page: session.start })
+      : `ص ${session.start} (قبل أو بعد)`;
   }
-  return window.I18N
-    ? I18N.t('prayer_session_range', { start: session.start, end: session.end })
-    : `صفحة ${session.start}–${session.end}`;
+  if (session.afterCount === 0) {
+    return window.I18N
+      ? I18N.t('prayer_session_range', { start: session.start, end: session.end })
+      : `ص ${session.start}–${session.end}`;
+  }
+  const beforeRange = session.beforeStart === session.beforeEnd
+    ? `${session.beforeStart}`
+    : `${session.beforeStart}–${session.beforeEnd}`;
+  const afterRange = session.afterStart === session.afterEnd
+    ? `${session.afterStart}`
+    : `${session.afterStart}–${session.afterEnd}`;
+
+  if (window.I18N && window.I18N.lang === 'en') {
+    return `Before: p.${beforeRange} · After: p.${afterRange}`;
+  }
+  return `قبل: ص ${beforeRange} · بعد: ص ${afterRange}`;
 }
 
 function renderPrayerPlan(taskType, task, activePage) {
-  if (taskType !== 'MURAJAAH' && taskType !== 'RABT') return '';
-  const beforePrayer = taskType === 'RABT';
+  if (taskType !== 'MURAJAAH') return '';
 
   const sessions = buildPrayerSessions(task, task.completed_pages || []);
   if (!sessions.length) return '';
 
   const totalPages = Math.max(1, parseInt(task.end_page, 10) - parseInt(task.start_page, 10) + 1);
   const nonEmpty = sessions.filter((s) => !s.isEmpty).length;
-  const title = beforePrayer
-    ? (window.I18N ? I18N.t('rabt_plan_title') : 'خطة الربط قبل الصلوات الخمس')
-    : (window.I18N ? I18N.t('prayer_plan_title') : 'خطة المراجعة بعد الصلوات');
-  const hint = beforePrayer
-    ? (window.I18N
-        ? (totalPages === 1 ? I18N.t('rabt_plan_hint_one') : I18N.t('rabt_plan_hint', { total: totalPages }))
-        : (totalPages === 1
-            ? 'وُزّعت صفحات الربط اليوم (صفحة واحدة) على خمس جلسات قبل الصلوات الخمس.'
-            : `وُزّعت صفحات الربط اليوم (${totalPages} صفحة) على خمس جلسات قبل الصلوات الخمس.`))
-    : (window.I18N
-        ? (totalPages === 1
-            ? I18N.t('prayer_plan_hint_one')
-            : I18N.t('prayer_plan_hint', { total: totalPages }))
-        : (totalPages === 1
-            ? 'وُزّعت مراجعة اليوم (صفحة واحدة) على خمس جلسات بعد الصلوات الخمس.'
-            : `وُزّعت مراجعة اليوم (${totalPages} صفحة) على خمس جلسات بعد الصلوات الخمس.`));
-  const aria = beforePrayer
-    ? (window.I18N ? I18N.t('rabt_plan_aria') : 'تقسيم الربط على الصلوات الخمس (قبل كل صلاة)')
-    : (window.I18N ? I18N.t('prayer_plan_aria') : 'تقسيم المراجعة على الصلوات الخمس');
+  const title = window.I18N ? I18N.t('prayer_plan_title') : 'خطة المراجعة قبل الصلوات وبعدها';
+  const hint = window.I18N
+    ? (totalPages === 1
+        ? I18N.t('prayer_plan_hint_one')
+        : I18N.t('prayer_plan_hint', { total: totalPages }))
+    : (totalPages === 1
+        ? 'وُزّعت مراجعة اليوم (صفحة واحدة) على الصلوات الخمس: مقسمة بين قبل الصلاة وبعدها لتيسير الختم وتخفيف الجهد.'
+        : `وُزّعت مراجعة اليوم (${totalPages} صفحة) على الصلوات الخمس: مقسمة بين قبل الصلاة وبعدها لتيسير الختم وتخفيف الجهد.`);
+  const aria = window.I18N ? I18N.t('prayer_plan_aria') : 'تقسيم المراجعة على الصلوات الخمس قبل كل صلاة وبعدها';
   const badge = window.I18N
     ? (nonEmpty === 1 ? I18N.t('prayer_plan_sessions_one') : I18N.t('prayer_plan_sessions', { count: nonEmpty }))
     : (nonEmpty === 1 ? 'جلسة واحدة' : `${nonEmpty} جلسات`);
@@ -1730,7 +1757,7 @@ function renderPrayerPlan(taskType, task, activePage) {
   const cards = sessions.map((session) => {
     const isActive = !session.isEmpty && activePage >= session.start && activePage <= session.end;
     const range = prayerSessionRangeLabel(session);
-    const name = prayerSessionName(session, beforePrayer);
+    const name = prayerSessionName(session);
     const status = session.isEmpty
       ? (window.I18N ? I18N.t('prayer_session_empty') : 'لا توجد صفحات')
       : session.done
@@ -1747,6 +1774,25 @@ function renderPrayerPlan(taskType, task, activePage) {
     ].filter(Boolean).join(' ');
     const countLabel = session.isEmpty ? '—' : session.completed + ' / ' + session.total;
 
+    let rangeHtml = '';
+    if (session.isEmpty) {
+      rangeHtml = `<span class="prayer-range">—</span>`;
+    } else if (session.total === 1) {
+      rangeHtml = `<span class="prayer-range"><span class="prayer-range-row">${esc(range)}</span></span>`;
+    } else {
+      const bText = (window.I18N && window.I18N.lang === 'en')
+        ? `Before: p.${session.beforeStart === session.beforeEnd ? session.beforeStart : session.beforeStart + '–' + session.beforeEnd}`
+        : `قبل: ص ${session.beforeStart === session.beforeEnd ? session.beforeStart : session.beforeStart + '–' + session.beforeEnd}`;
+      const aText = (window.I18N && window.I18N.lang === 'en')
+        ? `After: p.${session.afterStart === session.afterEnd ? session.afterStart : session.afterStart + '–' + session.afterEnd}`
+        : `بعد: ص ${session.afterStart === session.afterEnd ? session.afterStart : session.afterStart + '–' + session.afterEnd}`;
+      rangeHtml = `
+        <span class="prayer-range">
+          <span class="prayer-range-row">${esc(bText)}</span>
+          <span class="prayer-range-row">${esc(aText)}</span>
+        </span>`;
+    }
+
     return `
       <button type="button" class="${classes}"
         data-page="${pageTarget}"
@@ -1759,7 +1805,7 @@ function renderPrayerPlan(taskType, task, activePage) {
           <span class="prayer-name">${esc(name)}</span>
           ${isActive ? `<span class="prayer-now">${esc(window.I18N ? I18N.t('prayer_now') : 'الآن')}</span>` : ''}
         </span>
-        <span class="prayer-range">${esc(range)}</span>
+        ${rangeHtml}
         <span class="prayer-meter" aria-hidden="true"><span style="width:${session.percent}%"></span></span>
         <span class="prayer-foot">
           <span class="prayer-count">${esc(countLabel)}</span>
@@ -1814,64 +1860,12 @@ function renderMurajaahHeader({ taskTitle, completedCount, totalPages, percent, 
     </div>`;
 }
 
-/**
- * Compact task header shared by Rabt and other page-range tasks. Rabt adds the
- * five before-prayer sessions below this header; the complete page grid lives
- * in a bottom sheet so mobile users never scroll through a wall of chips.
- */
-function renderCompactTaskHeader({ taskTitle, completedCount, totalPages, percent, isAllDone, fillClass }) {
-  const headMeta = window.I18N
-    ? I18N.t('compact_task_meta', { pages: totalPages })
-    : `${totalPages} صفحة — ربط قبل الصلوات الخمس`;
-  const allPagesBtn = window.I18N ? I18N.t('murajaah_all_pages_button') : 'كل الصفحات';
-  const doneLabel = window.I18N ? I18N.t('murajaah_head_done') : '✓ مكتمل';
-  const status = isAllDone ? doneLabel : `${completedCount} / ${totalPages}`;
-
-  return `
-    <div class="murajaah-head compact-task-head">
-      <div class="murajaah-head-main">
-        <div class="murajaah-head-title">
-          <h2>${esc(taskTitle)}</h2>
-          <span class="murajaah-head-status ${isAllDone ? 'is-done' : ''}">${esc(status)}</span>
-        </div>
-        <div class="murajaah-head-meta">
-          <span>${esc(headMeta)}</span>
-          <strong>${percent}%</strong>
-        </div>
-      </div>
-      <div class="progress-bar">
-        <div class="progress-fill ${fillClass}" style="width: ${percent}%;"></div>
-      </div>
-      <div class="murajaah-head-actions">
-        <button type="button" id="btn-open-all-pages" class="btn btn-ghost murajaah-head-btn" title="${esc(allPagesBtn)}">${esc(allPagesBtn)}</button>
-      </div>
-    </div>`;
-}
-
-function renderCompactPagesStrip(taskTitle, task, activePage) {
-  const completedList = task.completed_pages || [];
-  const totalPages = Math.max(1, task.end_page - task.start_page + 1);
-  const title = window.I18N
-    ? I18N.t('compact_pages_title', { task: taskTitle })
-    : `صفحات ${taskTitle}`;
-  return `
-    <div class="session-pages compact-pages-strip" id="session-pages">
-      <div class="session-pages-head">
-        <span class="session-pages-title">${esc(title)}</span>
-        <span class="session-pages-count">${completedList.length} / ${totalPages}</span>
-      </div>
-      <div class="page-chips page-chips-strip" id="task-page-chips"></div>
-    </div>`;
-}
-
-function renderSessionRail(activePage, sessions, beforePrayer = false) {
+function renderSessionRail(activePage, sessions) {
   if (!sessions || !sessions.length) return '';
-  const aria = beforePrayer
-    ? (window.I18N ? I18N.t('rabt_plan_aria') : 'تقسيم الربط على الصلوات الخمس (قبل كل صلاة)')
-    : (window.I18N ? I18N.t('prayer_plan_aria') : 'تقسيم المراجعة على الصلوات الخمس');
+  const aria = window.I18N ? I18N.t('prayer_plan_aria') : 'تقسيم المراجعة على الصلوات الخمس قبل كل صلاة وبعدها';
   const pills = sessions.map((session) => {
     const isActive = !session.isEmpty && activePage >= session.start && activePage <= session.end;
-    const name = prayerSessionName(session, beforePrayer);
+    const name = prayerSessionName(session);
     const range = prayerSessionRangeLabel(session);
     const count = session.isEmpty ? '—' : `${session.completed}/${session.total}`;
     const status = session.isEmpty
@@ -1905,22 +1899,18 @@ function renderSessionRail(activePage, sessions, beforePrayer = false) {
   return `<div class="session-rail" id="session-rail" aria-label="${esc(aria)}">${pills}</div>`;
 }
 
-function renderMurajaahSessionPages(session, beforePrayer = false) {
+function renderMurajaahSessionPages(session) {
   if (!session || session.isEmpty) {
     return `
       <div class="session-pages" id="session-pages">
-        <div class="page-chips page-chips-strip" id="task-page-chips"></div>
+        <div class="session-subgroups" id="task-page-chips"></div>
       </div>`;
   }
 
-  const prayerName = prayerSessionName(session, beforePrayer);
-  const title = beforePrayer
-    ? (window.I18N
-        ? I18N.t('rabt_session_pages', { prayer: prayerName })
-        : `صفحات جلسة ${prayerName}`)
-    : (window.I18N
-        ? I18N.t('murajaah_session_pages', { prayer: prayerName })
-        : `صفحات جلسة ${prayerName}`);
+  const prayerName = prayerSessionName(session);
+  const title = window.I18N
+    ? I18N.t('murajaah_session_pages', { prayer: prayerName })
+    : `صفحات جلسة ${prayerName}`;
 
   return `
     <div class="session-pages" id="session-pages">
@@ -1928,16 +1918,14 @@ function renderMurajaahSessionPages(session, beforePrayer = false) {
         <span class="session-pages-title">${esc(title)}</span>
         <span class="session-pages-count">${session.completed} / ${session.total}</span>
       </div>
-      <div class="page-chips page-chips-strip" id="task-page-chips"></div>
+      <div class="session-subgroups" id="task-page-chips"></div>
     </div>`;
 }
 
-function renderMurajaahPlanSheet(prayerPlanHtml, beforePrayer = false) {
+function renderMurajaahPlanSheet(prayerPlanHtml) {
   if (!prayerPlanHtml) return '';
   const closeLabel = window.I18N ? I18N.t('nav_close') : 'إغلاق';
-  const title = beforePrayer
-    ? (window.I18N ? I18N.t('rabt_plan_title') : 'خطة الربط قبل الصلوات الخمس')
-    : (window.I18N ? I18N.t('prayer_plan_title') : 'خطة المراجعة بعد الصلوات');
+  const title = window.I18N ? I18N.t('prayer_plan_title') : 'خطة المراجعة قبل الصلوات وبعدها';
   return `
     <div class="modal-overlay sheet-overlay hidden" id="murajaah-plan-sheet">
       <div class="modal sheet" role="dialog" aria-modal="true" aria-label="${esc(title)}">
@@ -2008,14 +1996,15 @@ function scrollChipStripToActive(wrap) {
   if (!wrap || !wrap.clientWidth) return;
   const active = wrap.querySelector('.page-chip.active');
   if (!active) return;
+  const targetWrap = active.closest('.page-chips-strip') || wrap;
   setTimeout(() => {
-    if (!wrap.isConnected || !active.isConnected) return;
-    const wrapRect = wrap.getBoundingClientRect();
+    if (!targetWrap.isConnected || !active.isConnected) return;
+    const wrapRect = targetWrap.getBoundingClientRect();
     const activeRect = active.getBoundingClientRect();
-    const target = (activeRect.left - wrapRect.left) + wrap.scrollLeft - (wrap.clientWidth - activeRect.width) / 2;
+    const target = (activeRect.left - wrapRect.left) + targetWrap.scrollLeft - (targetWrap.clientWidth - activeRect.width) / 2;
     if (!Number.isFinite(target)) return;
-    const isRtl = getComputedStyle(wrap).direction === 'rtl';
-    wrap.scrollLeft = isRtl ? Math.min(0, target) : Math.max(0, target);
+    const isRtl = getComputedStyle(targetWrap).direction === 'rtl';
+    targetWrap.scrollLeft = isRtl ? Math.min(0, target) : Math.max(0, target);
   }, 100);
 }
 
@@ -2123,8 +2112,8 @@ function renderTaskPage(taskType) {
 
   const isMurajaah = taskType === 'MURAJAAH';
   const isRabt = taskType === 'RABT';
-  const isCompactTask = isRabt;
-  const usesPrayerPlan = isMurajaah || isRabt;
+  const isCompactTask = false;
+  const usesPrayerPlan = isMurajaah;
   const prayerSessions = usesPrayerPlan ? buildPrayerSessions(task, completedList) : [];
   const activeSession = usesPrayerPlan
     ? (prayerSessions.find((s) => !s.isEmpty && activePage >= s.start && activePage <= s.end)
@@ -2156,9 +2145,7 @@ function renderTaskPage(taskType) {
 
   const headerHtml = isMurajaah
     ? renderMurajaahHeader({ taskTitle, completedCount, totalPages, percent, isAllDone, fillClass })
-    : isCompactTask
-      ? renderCompactTaskHeader({ taskTitle, completedCount, totalPages, percent, isAllDone, fillClass })
-      : genericHeaderHtml;
+    : genericHeaderHtml;
 
   const rolloverNotice = rolloverNoticeHtml(task);
 
@@ -2173,18 +2160,7 @@ function renderTaskPage(taskType) {
       ${renderMurajaahPlanSheet(prayerPlanHtml)}
       ${renderMurajaahPagesSheet(chipsHint)}
     `
-    : isCompactTask
-      ? `
-      ${rolloverNotice}
-      ${headerHtml}
-      ${renderSessionRail(activePage, prayerSessions, true)}
-      <div class="murajaah-plan-main">${prayerPlanHtml}</div>
-      <div class="recitation-stage is-compact" id="recitation-stage"></div>
-      ${renderMurajaahSessionPages(activeSession, true)}
-      ${renderMurajaahPlanSheet(prayerPlanHtml, true)}
-      ${renderMurajaahPagesSheet(chipsHint)}
-    `
-      : `
+    : `
       ${rolloverNotice}
       ${headerHtml}
       ${prayerPlanHtml}
@@ -2268,7 +2244,7 @@ function renderChipsList(taskType, task, activePage, activeSession) {
         const pageNum = parseInt(btn.dataset.page, 10);
         if (!Number.isFinite(pageNum)) return;
         selectTaskPage(taskType, pageNum, btn.classList.contains('is-done'),
-          taskType === 'MURAJAAH' || taskType === 'RABT');
+          taskType === 'MURAJAAH');
       });
     });
   };
@@ -2276,10 +2252,50 @@ function renderChipsList(taskType, task, activePage, activeSession) {
   const chipsWrap = document.getElementById('task-page-chips');
   if (chipsWrap) {
     let html = '';
-    if (taskType === 'MURAJAAH' || taskType === 'RABT') {
+    if (taskType === 'MURAJAAH') {
       if (activeSession && !activeSession.isEmpty) {
-        for (let p = activeSession.start; p <= activeSession.end; p++) {
-          html += buildChip(p);
+        if (activeSession.total > 1 && activeSession.afterCount > 0) {
+          const beforeLabel = window.I18N ? I18N.t('session_part_before') : 'قبل الصلاة';
+          const afterLabel = window.I18N ? I18N.t('session_part_after') : 'بعد الصلاة';
+
+          let beforeChips = '';
+          for (let p = activeSession.beforeStart; p <= activeSession.beforeEnd; p++) {
+            beforeChips += buildChip(p);
+          }
+          let afterChips = '';
+          for (let p = activeSession.afterStart; p <= activeSession.afterEnd; p++) {
+            afterChips += buildChip(p);
+          }
+
+          html = `
+            <div class="session-subgroup">
+              <div class="session-subgroup-label">
+                <span>⛅ ${esc(beforeLabel)}</span>
+                <span class="subgroup-count">${activeSession.beforeCompleted} / ${activeSession.beforeCount}</span>
+              </div>
+              <div class="page-chips page-chips-strip">${beforeChips}</div>
+            </div>
+            <div class="session-subgroup">
+              <div class="session-subgroup-label">
+                <span>✨ ${esc(afterLabel)}</span>
+                <span class="subgroup-count">${activeSession.afterCompleted} / ${activeSession.afterCount}</span>
+              </div>
+              <div class="page-chips page-chips-strip">${afterChips}</div>
+            </div>`;
+        } else {
+          const flexLabel = window.I18N ? I18N.t('session_part_flexible') : 'قبل أو بعد الصلاة';
+          let chips = '';
+          for (let p = activeSession.start; p <= activeSession.end; p++) {
+            chips += buildChip(p);
+          }
+          html = `
+            <div class="session-subgroup">
+              <div class="session-subgroup-label">
+                <span>🕌 ${esc(flexLabel)}</span>
+                <span class="subgroup-count">${activeSession.completed} / ${activeSession.total}</span>
+              </div>
+              <div class="page-chips page-chips-strip">${chips}</div>
+            </div>`;
         }
       }
     } else {
@@ -2290,12 +2306,12 @@ function renderChipsList(taskType, task, activePage, activeSession) {
 
     chipsWrap.innerHTML = html;
     bindChips(chipsWrap);
-    if (taskType === 'MURAJAAH' || taskType === 'RABT') {
+    if (taskType === 'MURAJAAH') {
       scrollChipStripToActive(chipsWrap);
     }
   }
 
-  if (taskType === 'MURAJAAH' || taskType === 'RABT') {
+  if (taskType === 'MURAJAAH') {
     const allWrap = document.getElementById('all-pages-grid');
     if (allWrap) {
       let html = '';
@@ -3013,22 +3029,24 @@ function renderActivePageStage(taskType, task, activePage) {
   const statusPill = isPageDone
     ? `<span class="task-status done">${window.I18N ? I18N.t('stage_page_recited') : '✓ تمت تلاوتها'}</span>`
     : `<span class="task-status">${window.I18N ? I18N.t('stage_page_pending') : 'بانتظار التلاوة'}</span>`;
-  const prayerSessions = (taskType === 'MURAJAAH' || taskType === 'RABT')
+  const isMurajaah = taskType === 'MURAJAAH';
+  const prayerSessions = isMurajaah
     ? buildPrayerSessions(task, completedList)
     : [];
   const activePrayer = prayerSessions.find((s) => !s.isEmpty && activePage >= s.start && activePage <= s.end) || null;
-  const beforePrayer = taskType === 'RABT';
-  const stageMeta = taskType === 'HIFZ_JADID'
-    ? (window.I18N ? I18N.t('stage_meta_hifz') : 'الحفظ الجديد (صفحة اليوم)')
-    : activePrayer
-      ? (window.I18N
-          ? I18N.t(beforePrayer ? 'stage_meta_before_prayer' : 'stage_meta_prayer', {
-              prayer: prayerSessionName(activePrayer, beforePrayer),
-              range: prayerSessionRangeLabel(activePrayer),
-            })
-          : (beforePrayer ? 'ربط ' : '') + prayerSessionName(activePrayer, beforePrayer) +
-            ' · ' + prayerSessionRangeLabel(activePrayer))
-      : (window.I18N ? I18N.t('stage_meta_range', { task: taskTitle }) : ('صفحة داخل نطاق ' + taskTitle));
+  let stageMeta = '';
+  if (taskType === 'HIFZ_JADID') {
+    stageMeta = window.I18N ? I18N.t('stage_meta_hifz') : 'الحفظ الجديد (صفحة اليوم)';
+  } else if (isMurajaah && activePrayer) {
+    const isBefore = activePrayer.beforeEnd !== null && activePage <= activePrayer.beforeEnd;
+    const partName = isBefore
+      ? (window.I18N ? I18N.t('session_part_before') : 'قبل الصلاة')
+      : (window.I18N ? I18N.t('session_part_after') : 'بعد الصلاة');
+    const pName = prayerSessionName(activePrayer);
+    stageMeta = `${pName} · ${partName} · ص ${activePage}`;
+  } else {
+    stageMeta = window.I18N ? I18N.t('stage_meta_range', { task: taskTitle }) : ('صفحة داخل نطاق ' + taskTitle);
+  }
 
   const completeBtnText = isPageDone
     ? (window.I18N ? I18N.t('btn_complete_page_reconfirm') : '✓ تم إتمام هذه الصفحة (إعادة التأكيد)')
@@ -3043,8 +3061,7 @@ function renderActivePageStage(taskType, task, activePage) {
   const nextBtnText = window.I18N ? I18N.t('btn_next_page', { page: activePage + 1 }) : `التالية (${activePage + 1})`;
   const kbdHintText = window.I18N ? I18N.t('kbd_hints') : '<span>مفاتيح سريعة:</span> <kbd>→</kbd> <kbd>←</kbd> للتنقل | <kbd>Enter</kbd> للإتمام | <kbd>U</kbd> للتراجع | <kbd>M</kbd> لتسجيل خطأ';
 
-  const isMurajaah = taskType === 'MURAJAAH';
-  const isCompactLayout = isMurajaah || taskType === 'RABT';
+  const isCompactLayout = isMurajaah;
   const focusLabel = window.I18N ? I18N.t('focus_mode') : 'وضع التركيز';
   const focusExitLabel = window.I18N ? I18N.t('focus_exit') : 'إنهاء وضع التركيز';
   const focusTitle = window.I18N ? I18N.t('focus_mode_title') : 'إخفاء العناصر الجانبية والتركيز على التلاوة';

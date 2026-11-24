@@ -1158,11 +1158,19 @@ h1, h2, h3, h4 {
 }
 
 .prayer-range {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
   overflow: hidden;
   color: var(--muted);
   font-size: 0.68rem;
-  text-overflow: ellipsis;
+  line-height: 1.25;
+}
+
+.prayer-range-row {
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .prayer-meter {
@@ -1423,6 +1431,45 @@ h1, h2, h3, h4 {
   color: var(--muted);
   font-size: 0.7rem;
   font-weight: 800;
+}
+
+.session-subgroups {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.session-subgroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  background: var(--surface-subtle, rgba(0, 0, 0, 0.02));
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 0.5rem 0.65rem;
+}
+
+[data-theme="dark"] .session-subgroup {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.session-subgroup-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.session-subgroup-label .subgroup-count {
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 0.08rem 0.45rem;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--ink);
 }
 
 .page-chips-strip {
