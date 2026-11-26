@@ -438,9 +438,10 @@ try {
         // RABT / MURAJAAH - page-by-page completion
         if ($row === null) {
             if ($taskType === 'RABT') {
-                $frontier  = min($lastTikrar, 604);
-                $rabtStart = max(1, $frontier - 29);
-                $rabtEnd   = $frontier;
+                $frontier   = min($lastTikrar, 604);
+                $rabtWindow = $rabtBase + $rabtExtra;
+                $rabtStart  = max(1, $frontier - max(0, $rabtWindow - 1));
+                $rabtEnd    = $frontier;
 
                 if ($completedPage < $rabtStart || $completedPage > $rabtEnd) {
                     $pdo->rollBack();

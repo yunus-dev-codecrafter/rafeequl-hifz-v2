@@ -146,19 +146,70 @@ if (!function_exists('rh_evaluate_tafreet')) {
                 return $defaultResult;
             }
 
-            $currentCount = (int) ($user['tafreet_count'] ?? 0);
-            $lastCheck    = $user['last_tafreet_check_date'] ? (string) $user['last_tafreet_check_date'] : null;
+            $userCreatedAt = $user['created_at'] ? (string) $user['created_at'] : null;
+            $userRegDate   = $userCreatedAt ? rh_today(strtotime($userCreatedAt)) : null;
+
+            // Heal any previous false-positive strikes where all core tasks were actually completed
+            // (e.g. caused by auxiliary tasks like PAGE_TAMKIN being marked incomplete)
+            try {
+                $healStmt = $pdo->prepare(
+                    "DELETE FROM `tafreet_logs`
+                     WHERE `user_id` = :u
+                       AND `missed_date` IN (
+                           SELECT `comp`.`task_date`
+                           FROM (
+                               SELECT `task_date`,
+                                      COUNT(*) AS `total_core`,
+                                      SUM(CASE WHEN `is_completed` = 1 THEN 1 ELSE 0 END) AS `completed_core`
+                               FROM `daily_task_logs`
+                               WHERE `user_id` = :u2
+                                 AND `task_type` IN ('HIFZ_JADID', 'TIKRAR_AMS', 'RABT', 'MURAJAAH')
+                               GROUP BY `task_date`
+                               HAVING `total_core` > 0 AND `total_core` = `completed_core`
+                           ) AS `comp`
+                       )"
+                );
+                $healStmt->execute([':u' => $userId, ':u2' => $userId]);
+            } catch (Throwable $t) {
+                // Ignore healing error if subquery unsupported
+            }
+
+            // Also heal any false-positive strikes on planned absence days
+            try {
+                $healAbsence = $pdo->prepare(
+                    "DELETE FROM `tafreet_logs`
+                     WHERE `user_id` = :u
+                       AND `missed_date` IN (
+                           SELECT `absence_date` FROM `user_absences` WHERE `user_id` = :u2
+                       )"
+                );
+                $healAbsence->execute([':u' => $userId, ':u2' => $userId]);
+            } catch (Throwable $t) {}
+
+            // Recalculate true current count from tafreet_logs
+            $cntStmt = $pdo->prepare('SELECT COUNT(*) FROM `tafreet_logs` WHERE `user_id` = :u');
+            $cntStmt->execute([':u' => $userId]);
+            $currentCount = (int) $cntStmt->fetchColumn();
+
+            $lastCheck = $user['last_tafreet_check_date'] ? (string) $user['last_tafreet_check_date'] : null;
 
             // First audit for this user: initialize baseline to yesterday so we don't retroactively penalize
             if ($lastCheck === null) {
                 $yesterday = date('Y-m-d', strtotime('-1 day', strtotime($today)));
-                $stmt = $pdo->prepare('UPDATE `users` SET `last_tafreet_check_date` = :d WHERE `id` = :u');
-                $stmt->execute([':d' => $yesterday, ':u' => $userId]);
-                $lastCheck = $yesterday;
+                $baseline = ($userRegDate && $userRegDate > $yesterday) ? $userRegDate : $yesterday;
+                $stmt = $pdo->prepare('UPDATE `users` SET `last_tafreet_check_date` = :d, `tafreet_count` = :cnt WHERE `id` = :u');
+                $stmt->execute([':d' => $baseline, ':cnt' => $currentCount, ':u' => $userId]);
+                $lastCheck = $baseline;
             }
 
             $yesterday = date('Y-m-d', strtotime('-1 day', strtotime($today)));
             if ($lastCheck >= $yesterday) {
+                // Keep tafreet_count in users table synchronized with actual count
+                if ($currentCount !== (int) ($user['tafreet_count'] ?? 0)) {
+                    $updSync = $pdo->prepare('UPDATE `users` SET `tafreet_count` = :cnt WHERE `id` = :u');
+                    $updSync->execute([':cnt' => $currentCount, ':u' => $userId]);
+                }
+
                 // Already checked up to yesterday
                 return [
                     'deleted'       => false,
@@ -182,6 +233,12 @@ if (!function_exists('rh_evaluate_tafreet')) {
                 $daysIterated++;
                 $checkDate = date('Y-m-d', $cursorTime);
 
+                // 0. Do not penalize days before user registration
+                if ($userRegDate !== null && $checkDate < $userRegDate) {
+                    $cursorTime = strtotime('+1 day', $cursorTime);
+                    continue;
+                }
+
                 // 1. Check if user had a planned absence on this day
                 if (rh_is_absence_day($pdo, $userId, $checkDate)) {
                     $cursorTime = strtotime('+1 day', $cursorTime);
@@ -189,19 +246,33 @@ if (!function_exists('rh_evaluate_tafreet')) {
                 }
 
                 // 2. Check task completion on this day
-                // Did the user complete their active tasks on this date?
+                // Only core recitation tasks (HIFZ_JADID, TIKRAR_AMS, RABT, MURAJAAH)
+                // determine day completion. Auxiliary tasks (PAGE_TAMKIN, RUB_TAMKIN, MISTAKES)
+                // must NEVER trigger a Tafreet strike.
                 $tStmt = $pdo->prepare(
-                    'SELECT `is_completed` FROM `daily_task_logs`
-                     WHERE `user_id` = :u AND `task_date` = :d'
+                    "SELECT `task_type`, `is_completed` FROM `daily_task_logs`
+                     WHERE `user_id` = :u AND `task_date` = :d
+                       AND `task_type` IN ('HIFZ_JADID', 'TIKRAR_AMS', 'RABT', 'MURAJAAH')"
                 );
                 $tStmt->execute([':u' => $userId, ':d' => $checkDate]);
                 $tasksOnDate = $tStmt->fetchAll();
 
                 $dayCompleted = false;
                 if (!empty($tasksOnDate)) {
-                    $allCompleted = true;
+                    // Group by task_type: each distinct core task assigned on this date must be completed
+                    $byType = [];
                     foreach ($tasksOnDate as $tRow) {
-                        if ((int) $tRow['is_completed'] !== 1) {
+                        $type = (string) $tRow['task_type'];
+                        if (!isset($byType[$type])) {
+                            $byType[$type] = false;
+                        }
+                        if ((int) $tRow['is_completed'] === 1) {
+                            $byType[$type] = true;
+                        }
+                    }
+                    $allCompleted = true;
+                    foreach ($byType as $done) {
+                        if (!$done) {
                             $allCompleted = false;
                             break;
                         }
