@@ -6,6 +6,27 @@ declare(strict_types=1);
  */
 
 /**
+ * Ensure database schema and required columns are up to date.
+ */
+function rh_prayer_ensure_schema(PDO $pdo): void
+{
+    static $ensured = false;
+    if ($ensured) {
+        return;
+    }
+    $ensured = true;
+
+    try {
+        require_once __DIR__ . '/../../config/migrate_v18.php';
+        if (function_exists('rh_migrate_v18')) {
+            rh_migrate_v18($pdo);
+        }
+    } catch (Throwable $t) {
+        error_log('[Prayer Schema Ensure Error] ' . $t->getMessage());
+    }
+}
+
+/**
  * Load Uthmani verse texts for [startAyah..endAyah] in surah.
  * @return array<array{surah:int, ayah:int, text:string}>
  */
@@ -14,7 +35,15 @@ function rh_prayer_load_verses(int $surah, int $startAyah, int $endAyah): array
     static $quran = null;
     if ($quran === null) {
         $file = __DIR__ . '/../../web/data/quran-uthmani.json';
-        $quran = json_decode(file_get_contents($file), true) ?: [];
+        if (is_file($file)) {
+            $raw = @file_get_contents($file);
+            $quran = $raw ? json_decode($raw, true) : [];
+        } else {
+            $quran = [];
+        }
+        if (!is_array($quran)) {
+            $quran = [];
+        }
     }
 
     $out = [];
@@ -37,7 +66,19 @@ function rh_prayer_load_labels(): array
 {
     static $labels = null;
     if ($labels === null) {
-        require __DIR__ . '/../../api/data/labels.php';
+        $file = __DIR__ . '/../../api/data/labels.php';
+        if (is_file($file)) {
+            $loaded = require $file;
+            if (is_array($loaded)) {
+                $labels = $loaded;
+            } elseif (isset($GLOBALS['labels']) && is_array($GLOBALS['labels'])) {
+                $labels = $GLOBALS['labels'];
+            } else {
+                $labels = ['surahs' => []];
+            }
+        } else {
+            $labels = ['surahs' => []];
+        }
     }
     return $labels;
 }
@@ -48,6 +89,8 @@ function rh_prayer_load_labels(): array
  */
 function rh_prayer_get_all_memorized_verses(PDO $pdo, int $userId): array
 {
+    rh_prayer_ensure_schema($pdo);
+
     $uStmt = $pdo->prepare('SELECT `user_type`, `current_hifz_page` FROM `users` WHERE `id` = :id');
     $uStmt->execute([':id' => $userId]);
     $userRow = $uStmt->fetch();
@@ -56,7 +99,7 @@ function rh_prayer_get_all_memorized_verses(PDO $pdo, int $userId): array
     $maxPage = ($utype === 'COMPLETE') ? 604 : max(1, (int) ($userRow['current_hifz_page'] ?? 1));
 
     $pageMapFile = __DIR__ . '/../../web/js/madinah_page_verses.json';
-    $pageMap = is_file($pageMapFile) ? json_decode(file_get_contents($pageMapFile), true) : [];
+    $pageMap = is_file($pageMapFile) ? json_decode((string) @file_get_contents($pageMapFile), true) : [];
     if (!is_array($pageMap)) $pageMap = [];
 
     $allVerses = [];
@@ -104,6 +147,8 @@ function rh_prayer_get_all_memorized_verses(PDO $pdo, int $userId): array
  */
 function rh_prayer_get_cycle_stats(PDO $pdo, int $userId, int $cycleNumber): array
 {
+    rh_prayer_ensure_schema($pdo);
+
     $mem = rh_prayer_get_all_memorized_verses($pdo, $userId);
     $totalVerses = count($mem['verses']);
     $memorizedKeySet = $mem['keySet'];

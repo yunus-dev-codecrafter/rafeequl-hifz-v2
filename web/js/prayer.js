@@ -147,6 +147,7 @@
           const res = await API.call('prayer/update_status.php', {
             method: 'POST',
             body: { recitation_id: currentRecitationId, status: 'MASTERED' },
+            redirectOn401: true,
           });
 
           if (res && res.success) {
@@ -162,7 +163,7 @@
             showToast((res && res.error) || 'حدث خطأ أثناء حفظ التقييم');
           }
         } catch (err) {
-          showToast('تعذر الاتصال بالخادم');
+          showToast(err?.message || 'تعذر الاتصال بالخادم');
         } finally {
           btnMastered.disabled = false;
           if (btnRetry) btnRetry.disabled = false;
@@ -180,6 +181,7 @@
           const res = await API.call('prayer/update_status.php', {
             method: 'POST',
             body: { recitation_id: currentRecitationId, status: 'PENDING_RETRY' },
+            redirectOn401: true,
           });
 
           if (res && res.success) {
@@ -193,7 +195,7 @@
             showToast((res && res.error) || 'حدث خطأ أثناء حفظ التقييم');
           }
         } catch (err) {
-          showToast('تعذر الاتصال بالخادم');
+          showToast(err?.message || 'تعذر الاتصال بالخادم');
         } finally {
           btnRetry.disabled = false;
           if (btnMastered) btnMastered.disabled = false;
@@ -213,13 +215,13 @@
       const res = await API.call('prayer/get_verses.php', {
         method: 'POST',
         body: { length: currentLength, force_new: forceNew },
+        redirectOn401: true,
       });
 
       if (!res || !res.success) {
         if (textDisplay) {
-          textDisplay.innerHTML = `<p style="color:var(--danger); text-align:center; padding:1.5rem;">${
-            res?.error || 'تعذر استحضار آيات من محفوظك، تأكد من تسجيل حفظك في الخطة.'
-          }</p>`;
+          const errText = res?.error || 'تعذر استحضار آيات من محفوظك، تأكد من تسجيل حفظك في الخطة.';
+          textDisplay.innerHTML = `<p style="color:var(--danger); text-align:center; padding:1.5rem;">${escapeHtml(errText)}</p>`;
           textDisplay.classList.remove('hidden');
         }
         return;
@@ -265,9 +267,11 @@
         textDisplay.classList.remove('hidden');
       }
     } catch (err) {
+      console.error('[Prayer Verses Error]', err);
       if (textDisplay) {
+        const errText = err?.message || 'حدث خطأ أثناء تحميل الآيات، يرجى المحاولة ثانية.';
         textDisplay.innerHTML =
-          '<p style="color:var(--danger); text-align:center; padding:1.5rem;">حدث خطأ أثناء تحميل الآيات، يرجى المحاولة ثانية.</p>';
+          `<p style="color:var(--danger); text-align:center; padding:1.5rem;">${escapeHtml(errText)}</p>`;
         textDisplay.classList.remove('hidden');
       }
     } finally {

@@ -18,12 +18,14 @@ require __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../config/auth.php';
 require_once __DIR__ . '/_prayer_helpers.php';
 
-function json_out(int $code, array $payload): void
-{
-    http_response_code($code);
-    header('Content-Type: application/json; charset=utf-8');
-    echo json_encode($payload, JSON_UNESCAPED_UNICODE);
-    exit;
+if (!function_exists('json_out')) {
+    function json_out(int $code, array $payload): void
+    {
+        http_response_code($code);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode($payload, JSON_UNESCAPED_UNICODE);
+        exit;
+    }
 }
 
 $authUser = rh_require_login($pdo);
@@ -310,7 +312,7 @@ try {
     ]);
 } catch (Throwable $t) {
     error_log('[Prayer Recitation Error] ' . $t->getMessage());
-    json_out(500, ['success' => false, 'error' => 'تعذر تجهيز تلاوة الصلاة: ' . $t->getMessage()]);
+    json_out(200, ['success' => false, 'error' => 'تعذر تجهيز تلاوة الصلاة: ' . $t->getMessage()]);
 }
 
 
