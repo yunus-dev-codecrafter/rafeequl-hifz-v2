@@ -20,9 +20,10 @@
     page: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><path d="M8 13h8M8 17h6"></path></svg>',
     history: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>',
     mushaf: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>',
+    prayer: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c-1.5 0-3 1.2-3 3v2h6V6c0-1.8-1.5-3-3-3z"></path><path d="M5 10h14v11H5z"></path><path d="M10 21v-5a2 2 0 0 1 4 0v5"></path></svg>',
   };
 
-  const MORE_PAGES = ['mushaf.html', 'kalimaat.html', 'tikrar.html', 'rabt.html', 'murajaah.html', 'consolidation.html', 'history.html'];
+  const MORE_PAGES = ['mushaf.html', 'kalimaat.html', 'prayer.html', 'tikrar.html', 'rabt.html', 'murajaah.html', 'consolidation.html', 'history.html'];
 
   function currentPage() {
     const parts = location.pathname.split('/');
@@ -80,6 +81,7 @@
         </div>
         <div class="nav-sheet-grid">
           <a href="mushaf.html" class="nav-sheet-item ${page === 'mushaf.html' ? 'is-active' : ''}">${ICONS.mushaf}<span><span data-i18n="nav_mushaf">${t('nav_mushaf', 'المصحف')}</span><small data-i18n="nav_mushaf_sub">${t('nav_mushaf_sub', 'تصفح كل الصفحات')}</small></span></a>
+          <a href="prayer.html" class="nav-sheet-item ${page === 'prayer.html' ? 'is-active' : ''}">${ICONS.prayer}<span><span data-i18n="nav_prayer">${t('nav_prayer', 'تلاوة الصلاة')}</span><small data-i18n="nav_prayer_sub">${t('nav_prayer_sub', 'آيات لصلاتك الحاضرة')}</small></span></a>
           <a href="tikrar.html" class="nav-sheet-item ${page === 'tikrar.html' ? 'is-active' : ''}">${ICONS.tikrar}<span><span data-i18n="nav_tikrar">${t('nav_tikrar', 'تكرار الأمس')}</span><small data-i18n="nav_tikrar_sub">${t('nav_tikrar_sub', 'تثبيت حفظ الأمس')}</small></span></a>
           <a href="rabt.html" class="nav-sheet-item ${page === 'rabt.html' ? 'is-active' : ''}">${ICONS.rabt}<span><span data-i18n="nav_rabt">${t('nav_rabt', 'الربط')}</span><small data-i18n="nav_rabt_sub">${t('nav_rabt_sub', 'ربط الصفحات المحفوظة')}</small></span></a>
           <a href="kalimaat.html" class="nav-sheet-item ${page === 'kalimaat.html' ? 'is-active' : ''}">${ICONS.kalimaat}<span><span data-i18n="nav_kalimaat">${t('nav_kalimaat', 'معاني الكلمات')}</span><small data-i18n="nav_kalimaat_sub">${t('nav_kalimaat_sub', 'كلمة حتى ٥٠٠ تكرار')}</small></span></a>
