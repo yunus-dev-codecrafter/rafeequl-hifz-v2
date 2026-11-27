@@ -1042,6 +1042,8 @@ const I18N_DICTIONARY = {
     task_status_inactive: 'غير مفعّل',
     task_status_inactive_today: 'غير مفعّل اليوم',
     task_status_ready_train: 'متاح للتدريب',
+    task_status_ready_tikrar: 'متاح للتثبيت',
+    tikrar_stages_label: 'مراحل التثبيت التفاعلية',
     task_status_deck_done: 'رائـع! مكتمل',
     task_flag_carried: 'محولة من أمس',
     task_flag_carried_count: 'مُرجَّلة ×{count}',
@@ -2491,6 +2493,8 @@ const I18N_DICTIONARY = {
     task_status_inactive: 'Inactive',
     task_status_inactive_today: 'Inactive Today',
     task_status_ready_train: 'Ready to Practice',
+    task_status_ready_tikrar: 'Ready for consolidation',
+    tikrar_stages_label: 'Interactive stages',
     task_status_deck_done: 'Great! Completed',
     task_flag_carried: 'Carried over from yesterday',
     task_flag_carried_count: 'Rolled over ×{count}',
@@ -3040,9 +3044,10 @@ const I18N = {
     this.bindButtons();
   },
 
-  t(key, params = {}) {
+  t(key, params = {}, fallback = null) {
     const dict = I18N_DICTIONARY[this.lang] || I18N_DICTIONARY.ar;
-    let str = dict[key] !== undefined ? dict[key] : (I18N_DICTIONARY.ar[key] !== undefined ? I18N_DICTIONARY.ar[key] : key);
+    const fallbackVal = typeof params === 'string' ? params : (typeof fallback === 'string' ? fallback : key);
+    let str = dict[key] !== undefined ? dict[key] : (I18N_DICTIONARY.ar[key] !== undefined ? I18N_DICTIONARY.ar[key] : fallbackVal);
     if (params && typeof params === 'object') {
       Object.entries(params).forEach(([k, v]) => {
         str = String(str).replace(new RegExp(`\\{${k}\\}`, 'g'), v);

@@ -55,7 +55,11 @@ const ReviewHub = {
   ],
 
   t(key, fallback) {
-    return window.I18N ? I18N.t(key) : fallback;
+    if (window.I18N && typeof I18N.t === 'function') {
+      const val = I18N.t(key, fallback);
+      if (val && val !== key) return val;
+    }
+    return fallback != null ? fallback : key;
   },
 
   esc(value) {
