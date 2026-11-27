@@ -949,7 +949,7 @@ function initAuthPage() {
 
 const TASK_DESTINATIONS = {
   HIFZ_JADID: { url: 'hifz.html',       cls: 'task-green',  keyTitle: 'task_hifz_title',     keySub: 'task_hifz_sub',     title: 'الحفظ الجديد',     sub: 'صفحة جديدة اليوم' },
-  TIKRAR_AMS: { url: 'tikrar.html',     cls: 'task-amber',  keyTitle: 'task_tikrar_title',   keySub: 'task_tikrar_sub',   title: 'تكرار حفظ الأمس',   sub: 'تكرار ١٠ مرات لتثبيت الحفظ قبل الربط' },
+  TIKRAR_AMS: { url: 'tikrar.html',     cls: 'task-amber',  keyTitle: 'task_tikrar_title',   keySub: 'task_tikrar_sub',   title: 'تكرار حفظ الأمس',   sub: 'تثبيت صفحة الأمس عبر مراحل متدرجة قبل انتقالها للربط' },
   RABT:       { url: 'rabt.html',       cls: 'task-blue',   keyTitle: 'task_rabt_title',     keySub: 'task_rabt_sub',     title: 'الربط',            sub: 'جلسة واحدة حرة لربط الحفظ القريب' },
   PAGE_TAMKIN: { url: 'consolidation.html', cls: 'task-teal', keyTitle: 'task_page_title',  keySub: 'task_page_sub',  title: 'تثبيت الصفحة',      sub: 'صفحة واحدة من محفوظك، ترتيب كلمات ثم تسميع واستماع' },
   MURAJAAH:   { url: 'murajaah.html',   cls: 'task-purple', keyTitle: 'task_murajaah_title', keySub: 'task_murajaah_sub', title: 'المراجعة',         sub: 'مقسمة قبل الصلوات الخمس وبعدها' },
@@ -1522,17 +1522,17 @@ function renderDashboardUI() {
       const percent = task.progress_percent || (task.is_completed ? 100 : 0);
 
       if (type === 'TIKRAR_AMS') {
-        const reps = task.repetition_count || 0;
-        const target = task.target_repetitions || 10;
-        statusPill = task.is_completed
+        const isDone = Boolean(task.is_completed);
+        const percent = isDone ? 100 : (task.progress_percent || 0);
+        statusPill = isDone
           ? `<span class="task-status done">${window.I18N ? I18N.t('task_status_done_today') : '✓ مكتمل اليوم'}</span>`
-          : `<span class="task-status">${window.I18N ? I18N.t('repetition_count_pill', { count: reps, total: target }) : `${reps} / ${target} تكرار`}</span>`;
+          : `<span class="task-status">${window.I18N ? I18N.t('task_status_ready_tikrar', 'متاح للتثبيت') : 'متاح للتثبيت'}</span>`;
 
         progressHtml = `
           <div class="progress-wrap">
             <div class="progress-header">
               <span>${window.I18N ? I18N.t('task_progress_title') : 'التقدم الفردي للعملية'}</span>
-              <span><strong>${reps}</strong> / ${target} (${percent}%)</span>
+              <span>${isDone ? (window.I18N ? I18N.t('task_status_deck_done', 'رائـع! مكتمل') : 'مكتمل (100%)') : (window.I18N ? I18N.t('tikrar_stages_label', 'مراحل التثبيت التفاعلية') : 'مراحل التثبيت التفاعلية')}</span>
             </div>
             <div class="progress-bar"><div class="progress-fill fill-amber" style="width:${percent}%"></div></div>
           </div>`;
