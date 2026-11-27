@@ -17,7 +17,7 @@ const ReviewHub = {
       titleKey: 'task_tikrar_title',
       subKey: 'task_tikrar_sub',
       title: 'تكرار حفظ الأمس',
-      sub: 'كرّر صفحة الأمس ١٠ مرات قبل الربط',
+      sub: 'تثبيت صفحة الأمس عبر مراحل متدرجة قبل انتقالها للربط',
     },
     {
       type: 'RABT',
@@ -185,18 +185,17 @@ const ReviewHub = {
         item.fill
       );
     } else if (item.type === 'TIKRAR_AMS') {
-      const reps = task.repetition_count || 0;
-      const target = task.target_repetitions || 10;
-      const percent = task.progress_percent || 0;
+      const isDone = Boolean(task.is_completed);
+      const percent = isDone ? 100 : (task.progress_percent || 0);
       range = this.pageRange(task);
 
-      status = task.is_completed
+      status = isDone
         ? `<span class="task-status done">${this.esc(this.t('task_status_done_today', '✓ مكتمل اليوم'))}</span>`
-        : `<span class="task-status">${this.esc(reps + ' / ' + target + ' ' + this.t('repetition_unit', 'تكرار'))}</span>`;
+        : `<span class="task-status">${this.esc(this.t('task_status_ready_tikrar', 'متاح للتثبيت'))}</span>`;
 
       progress = this.progressHtml(
         this.t('task_progress_title', 'التقدم'),
-        reps + ' / ' + target + ' (' + percent + '%)',
+        isDone ? this.t('task_status_deck_done', 'رائـع! مكتمل') : this.t('tikrar_stages_label', 'مراحل التثبيت التفاعلية'),
         percent,
         item.fill
       );

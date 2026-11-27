@@ -417,6 +417,7 @@ function registerServiceWorker(attempt = 0) {
   navigator.serviceWorker.register('sw.js')
     .then((reg) => {
       console.log('[PWA] Service Worker registered with scope:', reg.scope);
+      try { reg.update(); } catch (e) {}
     })
     .catch((err) => {
       if (attempt < 1) {
@@ -426,6 +427,17 @@ function registerServiceWorker(attempt = 0) {
         console.warn('[PWA] Service Worker registration failed:', err);
       }
     });
+
+  if (!window._swControllerChangeBound) {
+    window._swControllerChangeBound = true;
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!refreshing) {
+        refreshing = true;
+        window.location.reload();
+      }
+    });
+  }
 }
 
 async function initPWAEngine() {
@@ -2487,18 +2499,18 @@ function renderTikrarStage(task) {
 
   const taskTitle = (window.I18N && window.I18N.lang === 'en' && task.title_en) ? task.title_en : (task.title_ar || 'تكرار حفظ الأمس');
   const pageTitle = window.I18N ? I18N.t('stage_page_label', { page: activePage }) : `📖 صفحة ${activePage}`;
-  const stageMeta = window.I18N ? I18N.t('stage_meta_tikrar') : 'تكرار صفحة الأمس (10 مرات متتالية قبل الربط)';
+  const stageMeta = window.I18N ? I18N.t('stage_meta_tikrar') : 'تثبيت صفحة الأمس عبر مراحل متدرجة قبل الربط';
 
   const doneBadge = isAllDone
-    ? (window.I18N ? I18N.t('tikrar_done_badge') : '✓ أتممت تكرار صفحة الأمس (10 مرات) وانضمت للربط')
+    ? (window.I18N ? I18N.t('tikrar_done_badge') : '✓ أتممت تثبيت صفحة الأمس وانضمت للربط')
     : (window.I18N ? I18N.t('repetition_count_pill', { count: reps, target: targetReps }) : `${reps} / ${targetReps} تكرارات`);
 
   const progressLbl = window.I18N ? I18N.t('daily_recitation_progress') : 'تقدم التلاوة والتكرار';
-  const rangeHint = window.I18N ? I18N.t('task_tikrar_sub') : 'تكرار صفحة الأمس 10 مرات قبل انتقالها للربط';
+  const rangeHint = window.I18N ? I18N.t('task_tikrar_sub') : 'تثبيت صفحة الأمس عبر مراحل متدرجة قبل انتقالها للربط';
 
   const repTitle = window.I18N ? I18N.t('repetition_count_label', { count: reps, target: targetReps }) : `عدد التكرارات المنجزة: ${reps} من ${targetReps}`;
   const btnAddText = window.I18N ? I18N.t('btn_add_repetition') : 'تلاوة مرة واحدة (+1)';
-  const btnAllText = window.I18N ? I18N.t('btn_complete_all_repetitions') : 'إتمام التكرار بالكامل (10/10)';
+  const btnAllText = window.I18N ? I18N.t('btn_complete_all_repetitions') : 'إتمام تثبيت الصفحة بالكامل';
   const btnUndoText = window.I18N ? I18N.t('btn_undo_repetition') : 'تراجع عن تكرار (-1)';
   const btnRabtText = window.I18N ? I18N.t('btn_go_to_rabt') : 'الانتقال إلى ورد الربط ←';
 
@@ -2623,7 +2635,7 @@ function renderTikrarStage(task) {
           if (window.AudioEngine && typeof AudioEngine.playCelebration === 'function') {
             AudioEngine.playCelebration();
           }
-          showToast(window.I18N ? I18N.t('tikrar_celebration_toast') : 'ما شاء الله! أتممت تكرار صفحة الأمس 10 مرات، وانضمت الآن إلى نطاق الربط مباركاً 🎉');
+          showToast(window.I18N ? I18N.t('tikrar_celebration_toast') : 'ما شاء الله! أتممت تثبيت صفحة الأمس بنجاح، وانضمت الآن إلى نطاق الربط مباركاً 🎉');
         } else {
           if (window.AudioEngine && typeof AudioEngine.playSuccess === 'function') {
             AudioEngine.playSuccess();
@@ -2655,7 +2667,7 @@ function renderTikrarStage(task) {
         if (window.AudioEngine && typeof AudioEngine.playCelebration === 'function') {
           AudioEngine.playCelebration();
         }
-        showToast(window.I18N ? I18N.t('tikrar_celebration_toast') : 'ما شاء الله! أتممت تكرار صفحة الأمس 10 مرات، وانضمت الآن إلى نطاق الربط مباركاً 🎉');
+        showToast(window.I18N ? I18N.t('tikrar_celebration_toast') : 'ما شاء الله! أتممت تثبيت صفحة الأمس بنجاح، وانضمت الآن إلى نطاق الربط مباركاً 🎉');
 
         await loadSharedData();
         renderTaskPage('TIKRAR_AMS');
