@@ -81,6 +81,63 @@
   flex-shrink: 0;
 }
 
+/* Cycle Tracker Bar */
+.prayer-cycle-tracker {
+  margin-top: 0.65rem;
+  padding-top: 0.55rem;
+  border-top: 1px dashed var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.prayer-cycle-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.prayer-cycle-title {
+  color: var(--task-green);
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.prayer-cycle-bar {
+  height: 6px;
+  background: var(--panel, rgba(0, 0, 0, 0.05));
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.prayer-cycle-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #10b981, #059669);
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+
+.prayer-badge-cycle {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #7c3aed;
+  background: rgba(124, 58, 237, 0.09);
+  border: 1px solid rgba(124, 58, 237, 0.24);
+  border-radius: 8px;
+  padding: 0.25rem 0.55rem;
+  white-space: nowrap;
+}
+
+[data-theme="dark"] .prayer-badge-cycle {
+  color: #a78bfa;
+  background: rgba(167, 139, 250, 0.15);
+  border-color: rgba(167, 139, 250, 0.3);
+}
+
 /* --------------------------------------------------------------------------
    Length Selector (Modern Segmented Pill Bar)
    -------------------------------------------------------------------------- */

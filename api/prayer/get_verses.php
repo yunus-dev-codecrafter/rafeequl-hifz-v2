@@ -5,12 +5,18 @@ declare(strict_types=1);
  * Rafeequl Hifz - Prayer Recitation Companion (تلاوة الصلاة)
  * GET or POST JSON: length ('SHORT', 'MEDIUM', 'LONG'), force_new (bool)
  *
- * Sourced from student's memorized range with suitable beginnings (الابتداء الحسن).
- * Prioritizes unmastered portions from previous prayers.
+ * Full Coverage Cycle System (الدورة الشاملة لتلاوة الصلاة):
+ * 1. Prioritizes passages marked as PENDING_RETRY from previous prayers.
+ * 2. Traverses student's full memorized range without repeating mastered portions
+ *    until 100% of the memorized verses have been touched across prayers.
+ * 3. Selects portions with suitable beginnings (الابتداء الحسن): Surah starts,
+ *    Quarter/Hizb starts, or smooth sequential continuation.
+ * 4. Once all memorized verses are mastered, automatically advances to the next cycle.
  */
 
 require __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../config/auth.php';
+require_once __DIR__ . '/_prayer_helpers.php';
 
 function json_out(int $code, array $payload): void
 {
@@ -39,7 +45,7 @@ if (!in_array($lengthType, ['SHORT', 'MEDIUM', 'LONG'], true)) {
 $forceNew = !empty($input['force_new']);
 
 // Target verse counts:
-// SHORT: 2-3 verses, MEDIUM: 5-6 verses, LONG: max 10 (7-10 verses)
+// SHORT: 2-3 verses, MEDIUM: 5-6 verses, LONG: 7-10 verses
 $targetVerseCounts = [
     'SHORT'  => [2, 3],
     'MEDIUM' => [5, 6],
@@ -49,11 +55,20 @@ $possibleCounts = $targetVerseCounts[$lengthType];
 $targetCount = $possibleCounts[array_rand($possibleCounts)];
 
 try {
-    // 1. Ensure table exists
+    // 1. Ensure table and columns exist
     require_once __DIR__ . '/../../config/migrate_v18.php';
     rh_migrate_v18($pdo);
 
-    // 2. Check for pending retry in priority queue (if not forcing new)
+    // If forcing new, delete any previous unprayed record (status = 'PRESENTED')
+    if ($forceNew) {
+        $cleanStmt = $pdo->prepare(
+            "DELETE FROM `prayer_recitations` 
+             WHERE `user_id` = :u AND `status` = 'PRESENTED'"
+        );
+        $cleanStmt->execute([':u' => $userId]);
+    }
+
+    // 2. Priority 1: Check for pending retry in priority queue (unless forcing new)
     if (!$forceNew) {
         $stmt = $pdo->prepare(
             "SELECT * FROM `prayer_recitations`
@@ -71,6 +86,10 @@ try {
             $verses = rh_prayer_load_verses($surah, $sAyah, $eAyah);
             $labels = rh_prayer_load_labels();
 
+            // Load cycle progress stats
+            $cycleNum = (int) ($retry['cycle_number'] ?? 1);
+            $stats = rh_prayer_get_cycle_stats($pdo, $userId, $cycleNum);
+
             json_out(200, [
                 'success'        => true,
                 'recitation_id'  => (int) $retry['id'],
@@ -84,132 +103,175 @@ try {
                 'is_retry'       => true,
                 'attempts'       => (int) $retry['attempts'],
                 'verses'         => $verses,
+                'cycle'          => $stats,
             ]);
         }
     }
 
     // 3. User memorized range
-    $uStmt = $pdo->prepare('SELECT `user_type`, `current_hifz_page` FROM `users` WHERE `id` = :id');
-    $uStmt->execute([':id' => $userId]);
-    $userRow = $uStmt->fetch();
+    $memData = rh_prayer_get_all_memorized_verses($pdo, $userId);
+    $allMemorizedVerses = $memData['verses'];
+    $memorizedKeySet = $memData['keySet'];
+    $maxPage = $memData['maxPage'];
+    $totalMemorizedCount = count($allMemorizedVerses);
 
-    $utype = (string) ($userRow['user_type'] ?? 'NEW');
-    $maxPage = ($utype === 'COMPLETE') ? 604 : max(1, (int) ($userRow['current_hifz_page'] ?? 1));
+    $totalMemorizedCount = count($allMemorizedVerses);
 
-    // 4. Load page-to-verses mapping
-    $pageMapFile = __DIR__ . '/../../web/js/madinah_page_verses.json';
-    if (!is_file($pageMapFile)) {
-        json_out(500, ['success' => false, 'error' => 'Madinah page verses map not found.']);
-    }
-    $pageMap = json_decode(file_get_contents($pageMapFile), true);
-    if (!is_array($pageMap)) {
-        json_out(500, ['success' => false, 'error' => 'Invalid page verses map format.']);
-    }
+    // 5. Determine Current Prayer Cycle
+    $cycleStmt = $pdo->prepare(
+        "SELECT COALESCE(MAX(`cycle_number`), 1) FROM `prayer_recitations` WHERE `user_id` = :u"
+    );
+    $cycleStmt->execute([':u' => $userId]);
+    $currentCycle = (int) ($cycleStmt->fetchColumn() ?: 1);
 
-    // Build list of memorized Surah sections: [surah => [minAyah, maxAyah]]
-    $memorizedSections = [];
-    $cappedPage = min($maxPage, count($pageMap));
-    for ($p = 0; $p < $cappedPage; $p++) {
-        $sections = $pageMap[$p];
-        if (!is_array($sections)) continue;
-        foreach ($sections as $sec) {
-            $s = (int) $sec[0];
-            $startA = (int) $sec[1];
-            $endA = (int) $sec[2];
-            if (!isset($memorizedSections[$s])) {
-                $memorizedSections[$s] = ['min' => $startA, 'max' => $endA];
-            } else {
-                $memorizedSections[$s]['min'] = min($memorizedSections[$s]['min'], $startA);
-                $memorizedSections[$s]['max'] = max($memorizedSections[$s]['max'], $endA);
-            }
+    // Load verses already mastered in this cycle
+    $mStmt = $pdo->prepare(
+        "SELECT `surah_number`, `start_ayah`, `end_ayah` 
+         FROM `prayer_recitations` 
+         WHERE `user_id` = :u AND `status` = 'MASTERED' AND `cycle_number` = :c"
+    );
+    $mStmt->execute([':u' => $userId, ':c' => $currentCycle]);
+    $masteredRows = $mStmt->fetchAll();
+
+    $masteredAyahKeys = [];
+    foreach ($masteredRows as $mr) {
+        $s = (int) $mr['surah_number'];
+        $sa = (int) $mr['start_ayah'];
+        $ea = (int) $mr['end_ayah'];
+        for ($a = $sa; $a <= $ea; $a++) {
+            $masteredAyahKeys["{$s}:{$a}"] = true;
         }
     }
 
-    if (empty($memorizedSections)) {
-        $memorizedSections[1] = ['min' => 1, 'max' => 7];
+    $masteredCount = 0;
+    foreach ($allMemorizedVerses as $mv) {
+        if (isset($masteredAyahKeys["{$mv['surah']}:{$mv['ayah']}"])) {
+            $masteredCount++;
+        }
     }
 
-    // 5. Load quarter starts (بدايات الأرباع) for suitable beginnings
+    // Check if the entire memorized range has been covered & mastered in this cycle
+    $cycleJustCompleted = false;
+    if ($masteredCount >= $totalMemorizedCount && $totalMemorizedCount > 0) {
+        // Complete cycle achieved! Start fresh cycle!
+        $currentCycle++;
+        $masteredAyahKeys = [];
+        $masteredCount = 0;
+        $cycleJustCompleted = true;
+    }
+
+    // 6. Assemble Untouched Verses pool in current cycle
+    $untouchedVerses = [];
+    $untouchedKeySet = [];
+    foreach ($allMemorizedVerses as $mv) {
+        $k = "{$mv['surah']}:{$mv['ayah']}";
+        if (!isset($masteredAyahKeys[$k])) {
+            $untouchedVerses[] = $mv;
+            $untouchedKeySet[$k] = true;
+        }
+    }
+
+    // Safety fallback: if somehow untouched is empty, reset to all memorized verses
+    if (empty($untouchedVerses)) {
+        $untouchedVerses = $allMemorizedVerses;
+        foreach ($allMemorizedVerses as $mv) {
+            $untouchedKeySet["{$mv['surah']}:{$mv['ayah']}"] = true;
+        }
+    }
+
+    // 7. Load quarter starts (بدايات الأرباع) for suitable beginnings
     $rubStartsFile = __DIR__ . '/../../api/data/rub_starts.json';
-    $rubStarts = [];
+    $rubStartsMap = [];
     if (is_file($rubStartsFile)) {
         $decRub = json_decode(file_get_contents($rubStartsFile), true);
         if (is_array($decRub)) {
             foreach ($decRub as $ref) {
-                $parts = explode(':', (string) $ref);
-                if (count($parts) === 2) {
-                    $rubStarts[] = [(int) $parts[0], (int) $parts[1]];
-                }
+                $rubStartsMap[(string) $ref] = true;
             }
         }
     }
 
-    // 6. Assemble suitable beginning candidates within memorized range
-    // A suitable beginning is:
-    // - Ayah 1 of any memorized surah
-    // - Any Quarter/Hizb start inside memorized range
-    $candidates = [];
+    // 8. Find Candidate Suitable Beginnings (الابتداء الحسن) among untouched verses
+    $candidateStarts = [];
 
-    foreach ($memorizedSections as $s => $bounds) {
-        // Surah start
-        if ($bounds['min'] === 1) {
-            $candidates[] = [$s, 1];
+    // Check last recited verse for natural sequential continuity
+    $lastStmt = $pdo->prepare(
+        "SELECT `surah_number`, `end_ayah` FROM `prayer_recitations`
+         WHERE `user_id` = :u AND `status` = 'MASTERED' AND `cycle_number` = :c
+         ORDER BY `last_recited_at` DESC LIMIT 1"
+    );
+    $lastStmt->execute([':u' => $userId, ':c' => $currentCycle]);
+    $lastMastered = $lastStmt->fetch();
+
+    foreach ($untouchedVerses as $idx => $v) {
+        $s = $v['surah'];
+        $a = $v['ayah'];
+        $k = "{$s}:{$a}";
+
+        // A. Surah start: weight 10
+        if ($a === 1) {
+            $candidateStarts[] = ['surah' => $s, 'ayah' => $a, 'weight' => 10];
+            continue;
+        }
+
+        // B. Quarter / Hizb start: weight 9
+        if (isset($rubStartsMap[$k])) {
+            $candidateStarts[] = ['surah' => $s, 'ayah' => $a, 'weight' => 9];
+            continue;
+        }
+
+        // C. Direct sequential continuation after previous prayer: weight 8
+        if ($lastMastered && (int) $lastMastered['surah_number'] === $s && (int) $lastMastered['end_ayah'] + 1 === $a) {
+            $candidateStarts[] = ['surah' => $s, 'ayah' => $a, 'weight' => 8];
+            continue;
+        }
+
+        // D. Beginning of a contiguous untouched run: weight 6
+        $prevKey = "{$s}:" . ($a - 1);
+        if (!isset($untouchedKeySet[$prevKey])) {
+            $candidateStarts[] = ['surah' => $s, 'ayah' => $a, 'weight' => 6];
+            continue;
         }
     }
 
-    foreach ($rubStarts as $r) {
-        $s = $r[0];
-        $a = $r[1];
-        if (isset($memorizedSections[$s])) {
-            if ($a >= $memorizedSections[$s]['min'] && $a <= $memorizedSections[$s]['max']) {
-                $candidates[] = [$s, $a];
-            }
-        }
+    // If no weighted candidates found, any untouched verse is acceptable
+    if (empty($candidateStarts)) {
+        $candidateStarts[] = ['surah' => $untouchedVerses[0]['surah'], 'ayah' => $untouchedVerses[0]['ayah'], 'weight' => 5];
     }
 
-    // Fallback if very few candidates (e.g. beginner student with only 1 page):
-    if (count($candidates) < 3) {
-        foreach ($memorizedSections as $s => $bounds) {
-            for ($a = $bounds['min']; $a <= $bounds['max']; $a++) {
-                $candidates[] = [$s, $a];
-            }
-        }
-    }
+    // Sort candidates by weight descending, shuffle within highest weight
+    usort($candidateStarts, function ($a, $b) {
+        return $b['weight'] <=> $a['weight'];
+    });
+    $maxWeight = $candidateStarts[0]['weight'];
+    $topCandidates = array_values(array_filter($candidateStarts, function ($c) use ($maxWeight) {
+        return $c['weight'] === $maxWeight;
+    }));
+    $chosenStart = $topCandidates[array_rand($topCandidates)];
 
-    // Pick a candidate start
-    shuffle($candidates);
-    $selectedSurah = 1;
-    $selectedStart = 1;
-    $selectedEnd   = 7;
+    $selectedSurah = $chosenStart['surah'];
+    $selectedStart = $chosenStart['ayah'];
 
-    $uthmaniFile = __DIR__ . '/../../web/data/quran-uthmani.json';
-    $quranText = json_decode(file_get_contents($uthmaniFile), true);
-
-    foreach ($candidates as $cand) {
-        $s = $cand[0];
-        $startA = $cand[1];
-        $maxA = $memorizedSections[$s]['max'];
-        $surahTotalAyahs = isset($quranText[(string) $s]) ? count($quranText[(string) $s]) : $maxA;
-        $effectiveMax = min($maxA, $surahTotalAyahs);
-
-        $avail = $effectiveMax - $startA + 1;
-        if ($avail >= 2) {
-            $selectedSurah = $s;
-            $selectedStart = $startA;
-            $portionCount = min($targetCount, $avail);
-            $selectedEnd = $selectedStart + $portionCount - 1;
+    // 9. Determine portion end ayah (consecutive untouched verses in same surah)
+    $availCount = 1;
+    while ($availCount < $targetCount) {
+        $nextAyah = $selectedStart + $availCount;
+        $nextKey = "{$selectedSurah}:{$nextAyah}";
+        if (!isset($untouchedKeySet[$nextKey])) {
             break;
         }
+        $availCount++;
     }
+    $selectedEnd = $selectedStart + $availCount - 1;
 
     $verses = rh_prayer_load_verses($selectedSurah, $selectedStart, $selectedEnd);
     $labels = rh_prayer_load_labels();
 
-    // 7. Save pending prayer recitation record
+    // 10. Record presented recitation in prayer_recitations
     $ins = $pdo->prepare(
         "INSERT INTO `prayer_recitations`
-            (`user_id`, `surah_number`, `start_ayah`, `end_ayah`, `length_type`, `status`, `attempts`)
-         VALUES (:u, :s, :sa, :ea, :l, 'PENDING_RETRY', 1)"
+            (`user_id`, `surah_number`, `start_ayah`, `end_ayah`, `length_type`, `cycle_number`, `status`, `attempts`)
+         VALUES (:u, :s, :sa, :ea, :l, :c, 'PRESENTED', 1)"
     );
     $ins->execute([
         ':u'  => $userId,
@@ -217,8 +279,12 @@ try {
         ':sa' => $selectedStart,
         ':ea' => $selectedEnd,
         ':l'  => $lengthType,
+        ':c'  => $currentCycle,
     ]);
     $recitationId = (int) $pdo->lastInsertId();
+
+    $cyclePercent = ($totalMemorizedCount > 0) ? min(100, (int) round(($masteredCount / $totalMemorizedCount) * 100)) : 0;
+    $remainingVerses = max(0, $totalMemorizedCount - $masteredCount);
 
     json_out(200, [
         'success'        => true,
@@ -231,47 +297,20 @@ try {
         'ayah_count'     => count($verses),
         'length_type'    => $lengthType,
         'is_retry'       => false,
-        'attempts'       => 1,
+        'attempts'       => 0,
         'verses'         => $verses,
+        'cycle'          => [
+            'cycle_number'           => $currentCycle,
+            'total_memorized_verses' => $totalMemorizedCount,
+            'mastered_verses'        => $masteredCount,
+            'remaining_verses'       => $remainingVerses,
+            'percent'                => $cyclePercent,
+            'cycle_completed'        => $cycleJustCompleted,
+        ],
     ]);
 } catch (Throwable $t) {
     error_log('[Prayer Recitation Error] ' . $t->getMessage());
     json_out(500, ['success' => false, 'error' => 'تعذر تجهيز تلاوة الصلاة: ' . $t->getMessage()]);
 }
 
-/**
- * Load Uthmani verse texts for [startAyah..endAyah] in surah.
- * @return array<array{surah:int, ayah:int, text:string}>
- */
-function rh_prayer_load_verses(int $surah, int $startAyah, int $endAyah): array
-{
-    static $quran = null;
-    if ($quran === null) {
-        $file = __DIR__ . '/../../web/data/quran-uthmani.json';
-        $quran = json_decode(file_get_contents($file), true) ?: [];
-    }
 
-    $out = [];
-    $surahList = $quran[(string) $surah] ?? [];
-    for ($a = $startAyah; $a <= $endAyah; $a++) {
-        $text = $surahList[$a - 1] ?? '';
-        $out[] = [
-            'surah' => $surah,
-            'ayah'  => $a,
-            'text'  => $text,
-        ];
-    }
-    return $out;
-}
-
-/**
- * Load Arabic & English surah names.
- */
-function rh_prayer_load_labels(): array
-{
-    static $labels = null;
-    if ($labels === null) {
-        require __DIR__ . '/../../api/data/labels.php';
-    }
-    return $labels;
-}

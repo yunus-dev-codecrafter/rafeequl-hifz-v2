@@ -2,7 +2,7 @@
 
 /**
  * Rafeequl Hifz — Prayer Recitation Companion (تلاوة الصلاة)
- * Handles verse fetching, font resizing, length switching, and post-prayer mastery feedback.
+ * Handles verse fetching, font resizing, length switching, and full coverage cycle tracking.
  */
 
 (function () {
@@ -20,6 +20,10 @@
   const surahBadge = document.getElementById('prayer-badge-surah');
   const metaBadge = document.getElementById('prayer-badge-meta');
   const retryBadge = document.getElementById('prayer-badge-retry');
+  const cycleBadgeEl = document.getElementById('prayer-badge-cycle');
+  const cycleTitleEl = document.getElementById('prayer-cycle-title');
+  const cycleProgressEl = document.getElementById('prayer-cycle-progress');
+  const cycleFillEl = document.getElementById('prayer-cycle-fill');
   const textDisplay = document.getElementById('prayer-verses-text');
   const skeletonEl = document.getElementById('prayer-skeleton');
   const refreshBtn = document.getElementById('prayer-refresh-btn');
@@ -29,6 +33,7 @@
   const btnRetry = document.getElementById('btn-prayer-retry');
   const feedbackCard = document.getElementById('prayer-feedback-card');
   const celebrationCard = document.getElementById('prayer-celebration-card');
+  const celebrationSub = document.getElementById('prayer-celebration-sub');
   const btnNextPortion = document.getElementById('btn-next-portion');
 
   function init() {
@@ -47,6 +52,25 @@
     }
     if (save) {
       localStorage.setItem('rh_prayer_font_size', currentFontSize.toFixed(2));
+    }
+  }
+
+  function updateCycleDisplay(cycle) {
+    if (!cycle) return;
+    if (cycleTitleEl) {
+      cycleTitleEl.textContent = `🔄 الدورة الشاملة ${cycle.cycle_number}`;
+    }
+    if (cycleProgressEl) {
+      cycleProgressEl.textContent = `${cycle.mastered_verses} من ${cycle.total_memorized_verses} آية (${cycle.percent}%)`;
+    }
+    if (cycleFillEl) {
+      cycleFillEl.style.width = `${cycle.percent}%`;
+    }
+    if (cycleBadgeEl) {
+      cycleBadgeEl.textContent = `الدورة ${cycle.cycle_number}`;
+    }
+    if (cycle.cycle_completed) {
+      showToast(`🎉 ما شاء الله! ختمت تلاوة كامل محفوظك في صلواتك بنجاح! تبدأ الآن الدورة رقم ${cycle.cycle_number}.`);
     }
   }
 
@@ -127,6 +151,12 @@
 
           if (res && res.success) {
             playFeedbackSound(true);
+            if (res.cycle) {
+              updateCycleDisplay(res.cycle);
+              if (celebrationSub) {
+                celebrationSub.textContent = `تم تسجيل إتقان المقطع بنجاح! أنجزتَ ${res.cycle.mastered_verses} من ${res.cycle.total_memorized_verses} آية (${res.cycle.percent}%) في الدورة ${res.cycle.cycle_number}.`;
+              }
+            }
             showCelebration();
           } else {
             showToast((res && res.error) || 'حدث خطأ أثناء حفظ التقييم');
@@ -156,6 +186,9 @@
             playFeedbackSound(false);
             showToast('حُفظ المقطع، وسيكون هو وردك في صلاتك القادمة لإتقانه بإذن الله 🤲');
             if (retryBadge) retryBadge.classList.remove('hidden');
+            if (res.cycle) {
+              updateCycleDisplay(res.cycle);
+            }
           } else {
             showToast((res && res.error) || 'حدث خطأ أثناء حفظ التقييم');
           }
@@ -212,6 +245,11 @@
         } else {
           retryBadge.classList.add('hidden');
         }
+      }
+
+      // Update cycle tracker
+      if (res.cycle) {
+        updateCycleDisplay(res.cycle);
       }
 
       // Render verses

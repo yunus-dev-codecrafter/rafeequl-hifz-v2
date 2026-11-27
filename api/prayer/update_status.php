@@ -8,6 +8,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../config/auth.php';
+require_once __DIR__ . '/_prayer_helpers.php';
 
 function json_out(int $code, array $payload): void
 {
@@ -45,7 +46,7 @@ if ($recitationId < 1 || !in_array($status, ['MASTERED', 'PENDING_RETRY'], true)
 
 try {
     $stmt = $pdo->prepare(
-        'SELECT `id`, `attempts` FROM `prayer_recitations` WHERE `id` = :id AND `user_id` = :u'
+        'SELECT `id`, `attempts`, `cycle_number` FROM `prayer_recitations` WHERE `id` = :id AND `user_id` = :u'
     );
     $stmt->execute([':id' => $recitationId, ':u' => $userId]);
     $row = $stmt->fetch();
@@ -57,6 +58,8 @@ try {
     if ($status === 'PENDING_RETRY') {
         $attempts++;
     }
+
+    $cycleNum = (int) ($row['cycle_number'] ?? 1);
 
     $upd = $pdo->prepare(
         'UPDATE `prayer_recitations`
@@ -70,10 +73,14 @@ try {
         ':u'   => $userId,
     ]);
 
+    // Compute updated cycle stats after status change
+    $cycleStats = rh_prayer_get_cycle_stats($pdo, $userId, $cycleNum);
+
     json_out(200, [
         'success'  => true,
         'status'   => $status,
         'attempts' => $attempts,
+        'cycle'    => $cycleStats,
         'message'  => ($status === 'MASTERED')
             ? 'ما شاء الله! هنيئاً لك إتقان التلاوة في صلاتك، تقبل الله طاعتك.'
             : 'أحسنت المحاولة! تم حفظ هذه الآيات في قائمة مراجعة الصلاة لتعاود قراءتها في صلاتك القادمة بإذن الله.',

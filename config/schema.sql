@@ -506,10 +506,12 @@ CREATE TABLE IF NOT EXISTS `prayer_recitations` (
     `start_ayah` SMALLINT UNSIGNED NOT NULL,
     `end_ayah` SMALLINT UNSIGNED NOT NULL,
     `length_type` ENUM('SHORT', 'MEDIUM', 'LONG') NOT NULL DEFAULT 'SHORT',
-    `status` ENUM('PENDING_RETRY', 'MASTERED') NOT NULL DEFAULT 'PENDING_RETRY',
+    `cycle_number` INT UNSIGNED NOT NULL DEFAULT 1,
+    `status` ENUM('PRESENTED', 'PENDING_RETRY', 'MASTERED') NOT NULL DEFAULT 'PRESENTED',
     `attempts` INT UNSIGNED NOT NULL DEFAULT 1,
     `last_recited_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    KEY `idx_pr_user_cycle` (`user_id`, `cycle_number`, `status`),
     KEY `idx_pr_user_status` (`user_id`, `status`),
     KEY `idx_pr_user_surah` (`user_id`, `surah_number`),
     CONSTRAINT `fk_prayer_recitations_user`

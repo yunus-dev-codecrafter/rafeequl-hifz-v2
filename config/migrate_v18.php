@@ -48,10 +48,12 @@ if (!function_exists('rh_migrate_v18')) {
                         `start_ayah` SMALLINT UNSIGNED NOT NULL,
                         `end_ayah` SMALLINT UNSIGNED NOT NULL,
                         `length_type` ENUM('SHORT', 'MEDIUM', 'LONG') NOT NULL DEFAULT 'SHORT',
-                        `status` ENUM('PENDING_RETRY', 'MASTERED') NOT NULL DEFAULT 'PENDING_RETRY',
+                        `cycle_number` INT UNSIGNED NOT NULL DEFAULT 1,
+                        `status` ENUM('PRESENTED', 'PENDING_RETRY', 'MASTERED') NOT NULL DEFAULT 'PRESENTED',
                         `attempts` INT UNSIGNED NOT NULL DEFAULT 1,
                         `last_recited_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                         `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        KEY `idx_pr_user_cycle` (`user_id`, `cycle_number`, `status`),
                         KEY `idx_pr_user_status` (`user_id`, `status`),
                         KEY `idx_pr_user_surah` (`user_id`, `surah_number`),
                         CONSTRAINT `fk_prayer_recitations_user`
@@ -66,6 +68,26 @@ if (!function_exists('rh_migrate_v18')) {
             }
         } else {
             $log('  ~ table `prayer_recitations` already exists');
+            // Check for cycle_number column
+            try {
+                $cStmt = $pdo->prepare("SHOW COLUMNS FROM `prayer_recitations` LIKE 'cycle_number'");
+                $cStmt->execute();
+                if (!$cStmt->fetch()) {
+                    $pdo->exec("ALTER TABLE `prayer_recitations` ADD COLUMN `cycle_number` INT UNSIGNED NOT NULL DEFAULT 1 AFTER `length_type`");
+                    $pdo->exec("ALTER TABLE `prayer_recitations` ADD KEY `idx_pr_user_cycle` (`user_id`, `cycle_number`, `status`)");
+                    $log('  + added column `cycle_number` and index to `prayer_recitations`');
+                }
+            } catch (Throwable $t) {
+                $log('  ! warning checking cycle_number column: ' . $t->getMessage());
+            }
+
+            // Check if PRESENTED is in status enum
+            try {
+                $pdo->exec("ALTER TABLE `prayer_recitations` MODIFY COLUMN `status` ENUM('PRESENTED', 'PENDING_RETRY', 'MASTERED') NOT NULL DEFAULT 'PRESENTED'");
+                $log('  + updated status ENUM to include PRESENTED');
+            } catch (Throwable $t) {
+                // If already updated or error, continue
+            }
         }
 
         return $stats;
