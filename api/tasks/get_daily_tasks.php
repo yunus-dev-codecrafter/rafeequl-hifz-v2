@@ -506,30 +506,115 @@ try {
     $pdo->beginTransaction();
     $tasks = [];
 
-    foreach ($fresh as $type => $bounds) {
-        $row = findExistingTask($pdo, $userId, $type, $today);
+    // Strict Day-Lock Check:
+    // If any core task from a previous calendar day is still uncompleted,
+    // the day remains locked to that past day. The student must complete it
+    // before any new day's tasks can be generated.
+    $lockStmt = $pdo->prepare(
+        "SELECT `task_date` FROM `daily_task_logs`
+         WHERE `user_id` = :u
+           AND `task_date` < :today
+           AND `task_type` IN ('HIFZ_JADID', 'TIKRAR_AMS', 'RABT', 'MURAJAAH')
+           AND `is_completed` = 0
+         ORDER BY `task_date` ASC, `id` ASC
+         LIMIT 1"
+    );
+    $lockStmt->execute([':u' => $userId, ':today' => $today]);
+    $lockedDate = $lockStmt->fetchColumn();
 
-        if ($row === null) {
-            if ($type === 'MURAJAAH') {
-                $nextStartOverride = ($lastCompletedEnd > 0 && !$cycleCompleted) ? ($lastCompletedEnd + 1) : null;
-                $chunk = nextMurajaahChunk($pdo, $userId, $bounds[0], $bounds[1], $target, $cycleCompleted, $nextStartOverride);
-                if ($chunk === null) {
-                    continue; // empty range -> task inactive
-                }
-                $bounds = $chunk;
+    $dayLocked = false;
+    $activeDate = $today;
+
+    if ($lockedDate !== false && $lockedDate !== null) {
+        $dayLocked = true;
+        $activeDate = (string) $lockedDate;
+    } else {
+        // Also check: did the user complete an unfinished previous day's task TODAY?
+        // If so, their catch-up was completed today, so they see that completed day
+        // until the next 6:00 AM cutoff.
+        $catchUpStmt = $pdo->prepare(
+            "SELECT `task_date` FROM `daily_task_logs`
+             WHERE `user_id` = :u
+               AND `task_date` < :today
+               AND `task_type` IN ('HIFZ_JADID', 'TIKRAR_AMS', 'RABT', 'MURAJAAH')
+               AND `last_rollover_date` = :today2
+             ORDER BY `task_date` DESC, `id` DESC
+             LIMIT 1"
+        );
+        $catchUpStmt->execute([':u' => $userId, ':today' => $today, ':today2' => $today]);
+        $catchUpDate = $catchUpStmt->fetchColumn();
+
+        if ($catchUpDate !== false && $catchUpDate !== null) {
+            $todayTaskStmt = $pdo->prepare(
+                "SELECT COUNT(*) FROM `daily_task_logs`
+                 WHERE `user_id` = :u AND `task_date` = :today
+                   AND `task_type` IN ('HIFZ_JADID', 'TIKRAR_AMS', 'RABT', 'MURAJAAH')"
+            );
+            $todayTaskStmt->execute([':u' => $userId, ':today' => $today]);
+            $hasTodayTasks = ((int) $todayTaskStmt->fetchColumn()) > 0;
+            if (!$hasTodayTasks) {
+                $dayLocked = true;
+                $activeDate = (string) $catchUpDate;
             }
-            $row = insertTask($pdo, $userId, $type, $bounds, $today);
         }
-
-        $tasks[] = formatTask($row, $today, $pdo, $userId);
     }
 
-    // Task 4b - Page-by-page consolidation (PAGE_TAMKIN).
-    // There is deliberately no rollover: an unfinished page keeps its pending
-    // state in consolidation_pages and gets a fresh daily task row tomorrow.
-    $pageRow = rh_pg_ensure_task($pdo, $userId, $today);
-    if ($pageRow !== null) {
-        $tasks[] = formatTask($pageRow, $today, $pdo, $userId);
+    if ($dayLocked) {
+        // DAY LOCK ACTIVE:
+        // Do NOT generate new tasks for today.
+        // Return the tasks from the locked day so the user finishes them first.
+        $stmt = $pdo->prepare(
+            "SELECT " . rh_task_log_select($pdo) . "
+             FROM `daily_task_logs`
+             WHERE `user_id` = :u
+               AND `task_date` = :d
+               AND `task_type` IN ('HIFZ_JADID', 'TIKRAR_AMS', 'RABT', 'MURAJAAH')
+             ORDER BY FIELD(`task_type`, 'HIFZ_JADID', 'TIKRAR_AMS', 'RABT', 'MURAJAAH'), `id` ASC"
+        );
+        $stmt->execute([':u' => $userId, ':d' => $activeDate]);
+        $lockedRows = $stmt->fetchAll();
+
+        $latestByType = [];
+        foreach ($lockedRows as $r) {
+            $latestByType[$r['task_type']] = $r;
+        }
+
+        foreach ($latestByType as $r) {
+            $tasks[] = formatTask($r, $activeDate, $pdo, $userId);
+        }
+
+        $pageRow = rh_pg_ensure_task($pdo, $userId, $activeDate);
+        if ($pageRow !== null) {
+            $tasks[] = formatTask($pageRow, $activeDate, $pdo, $userId);
+        }
+
+        $today = $activeDate;
+    } else {
+        foreach ($fresh as $type => $bounds) {
+            $row = findExistingTask($pdo, $userId, $type, $today);
+
+            if ($row === null) {
+                if ($type === 'MURAJAAH') {
+                    $nextStartOverride = ($lastCompletedEnd > 0 && !$cycleCompleted) ? ($lastCompletedEnd + 1) : null;
+                    $chunk = nextMurajaahChunk($pdo, $userId, $bounds[0], $bounds[1], $target, $cycleCompleted, $nextStartOverride);
+                    if ($chunk === null) {
+                        continue; // empty range -> task inactive
+                    }
+                    $bounds = $chunk;
+                }
+                $row = insertTask($pdo, $userId, $type, $bounds, $today);
+            }
+
+            $tasks[] = formatTask($row, $today, $pdo, $userId);
+        }
+
+        // Task 4b - Page-by-page consolidation (PAGE_TAMKIN).
+        // There is deliberately no rollover: an unfinished page keeps its pending
+        // state in consolidation_pages and gets a fresh daily task row tomorrow.
+        $pageRow = rh_pg_ensure_task($pdo, $userId, $today);
+        if ($pageRow !== null) {
+            $tasks[] = formatTask($pageRow, $today, $pdo, $userId);
+        }
     }
 
     $pdo->commit();

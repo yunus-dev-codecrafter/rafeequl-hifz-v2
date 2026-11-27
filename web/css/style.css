@@ -7100,3 +7100,79 @@ html[dir="ltr"] .rub-mic-note {
   color: var(--muted);
   text-align: center;
 }
+
+/* Prayer Recitation Companion (تلاوة الصلاة) */
+.prayer-dash-card {
+  display: grid;
+  gap: 0.55rem;
+  margin-top: 1rem;
+  padding: 0.95rem 1rem;
+  border: 1px solid var(--accent-soft-border);
+  border-radius: var(--radius);
+  background:
+    radial-gradient(circle at 100% 0%, rgba(16, 185, 129, 0.12), transparent 48%),
+    var(--card);
+  box-shadow: var(--shadow-sm);
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.16s ease, border-color 0.16s ease;
+}
+
+.prayer-dash-card:hover {
+  transform: translateY(-1px);
+  border-color: var(--task-green);
+}
+
+.prayer-dash-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.prayer-dash-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.prayer-dash-icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  background: var(--task-green-bg);
+  color: var(--task-green);
+  border: 1px solid var(--task-green-border);
+  font-size: 1.15rem;
+  flex-shrink: 0;
+}
+
+.prayer-dash-arrow {
+  font-size: 1.1rem;
+  color: var(--muted);
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+
+.prayer-dash-card:hover .prayer-dash-arrow {
+  color: var(--task-green);
+  transform: translateX(-3px);
+}
+
+.prayer-length-btn {
+  border: 1px solid var(--line);
+  padding: 0.6rem 0.5rem;
+  border-radius: 8px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.prayer-length-btn.active {
+  border-color: var(--task-green);
+  background: var(--task-green-bg);
+  color: var(--task-green);
+  font-weight: 700;
+}

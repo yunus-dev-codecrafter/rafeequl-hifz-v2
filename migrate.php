@@ -372,6 +372,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 throw new RuntimeException('تعذر تحميل ملف الترقية config/migrate_v17.php.');
             }
             $stats17 = rh_migrate_v17($pdo, $log);
+            require_once __DIR__ . '/config/migrate_v18.php';
+            if (!function_exists('rh_migrate_v18')) {
+                throw new RuntimeException('تعذر تحميل ملف الترقية config/migrate_v18.php.');
+            }
+            $stats18 = rh_migrate_v18($pdo, $log);
             foreach (['columns_added', 'indexes_added', 'tables_created', 'enum_updates'] as $statKey) {
                 $stats[$statKey] = (int) ($stats[$statKey] ?? 0) + (int) ($stats10[$statKey] ?? 0);
             }

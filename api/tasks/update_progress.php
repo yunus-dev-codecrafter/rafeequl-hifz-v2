@@ -334,20 +334,34 @@ try {
 
             if ($row) {
                 $compJson = json_encode([$newCurrent]);
+                $hasRolloverCol = rh_task_has_rollover($pdo);
+                $rolloverSet = ($hasRolloverCol && (string) ($row['task_date'] ?? '') < $today) ? ', `last_rollover_date` = :today' : '';
+
                 if ($hasHifzColumn) {
                     $stmt = $pdo->prepare(
                         'UPDATE `daily_task_logs`
-                         SET `is_completed` = 1, `completed_pages` = :p, `hifz_progress` = :hp
+                         SET `is_completed` = 1, `completed_pages` = :p, `hifz_progress` = :hp' . $rolloverSet . '
                          WHERE `id` = :id'
                     );
-                    $stmt->execute([':p' => $compJson, ':hp' => $hifzRaw, ':id' => $row['id']]);
+                    $params = [':p' => $compJson, ':hp' => $hifzRaw, ':id' => $row['id']];
+                    if ($rolloverSet !== '') {
+                        $params[':today'] = $today;
+                    }
+                    $stmt->execute($params);
                     $row['hifz_progress'] = $hifzRaw;
                 } else {
-                    $stmt = $pdo->prepare('UPDATE `daily_task_logs` SET `is_completed` = 1, `completed_pages` = :p WHERE `id` = :id');
-                    $stmt->execute([':p' => $compJson, ':id' => $row['id']]);
+                    $stmt = $pdo->prepare('UPDATE `daily_task_logs` SET `is_completed` = 1, `completed_pages` = :p' . $rolloverSet . ' WHERE `id` = :id');
+                    $params = [':p' => $compJson, ':id' => $row['id']];
+                    if ($rolloverSet !== '') {
+                        $params[':today'] = $today;
+                    }
+                    $stmt->execute($params);
                 }
                 $row['is_completed'] = 1;
                 $row['completed_pages'] = $compJson;
+                if ($rolloverSet !== '') {
+                    $row['last_rollover_date'] = $today;
+                }
                 $affectedTask = $row;
             } else {
                 $affectedTask = insertLogRow($pdo, $userId, 'HIFZ_JADID', $newCurrent, $newCurrent, $today, true, [$newCurrent]);
@@ -382,17 +396,26 @@ try {
             $isTaskDone = ($newReps >= 10) ? 1 : 0;
             $compJson = $isTaskDone ? json_encode([$completedPage]) : null;
 
-            $stmt = $pdo->prepare('UPDATE `daily_task_logs` SET `repetition_count` = :r, `is_completed` = :c, `completed_pages` = :p WHERE `id` = :id');
-            $stmt->execute([
+            $hasRolloverCol = rh_task_has_rollover($pdo);
+            $rolloverSet = ($hasRolloverCol && (string) ($row['task_date'] ?? '') < $today) ? ', `last_rollover_date` = :today' : '';
+            $stmt = $pdo->prepare('UPDATE `daily_task_logs` SET `repetition_count` = :r, `is_completed` = :c, `completed_pages` = :p' . $rolloverSet . ' WHERE `id` = :id');
+            $params = [
                 ':r' => $newReps,
                 ':c' => $isTaskDone,
                 ':p' => $compJson,
                 ':id' => $row['id'],
-            ]);
+            ];
+            if ($rolloverSet !== '') {
+                $params[':today'] = $today;
+            }
+            $stmt->execute($params);
 
             $row['repetition_count'] = $newReps;
             $row['is_completed'] = $isTaskDone;
             $row['completed_pages'] = $compJson;
+            if ($rolloverSet !== '') {
+                $row['last_rollover_date'] = $today;
+            }
             $affectedTask = $row;
 
             // When TIKRAR_AMS is completed (10 recitations done), this page NOW JOINS RABT!
@@ -488,11 +511,20 @@ try {
             $isTaskDone  = ($totalDone >= $totalNeeded) ? 1 : (int) $row['is_completed'];
 
             $compJson = json_encode($currentList);
-            $stmt = $pdo->prepare('UPDATE `daily_task_logs` SET `completed_pages` = :p, `is_completed` = :c WHERE `id` = :id');
-            $stmt->execute([':p' => $compJson, ':c' => $isTaskDone, ':id' => $row['id']]);
+            $hasRolloverCol = rh_task_has_rollover($pdo);
+            $rolloverSet = ($hasRolloverCol && (string) ($row['task_date'] ?? '') < $today) ? ', `last_rollover_date` = :today' : '';
+            $stmt = $pdo->prepare('UPDATE `daily_task_logs` SET `completed_pages` = :p, `is_completed` = :c' . $rolloverSet . ' WHERE `id` = :id');
+            $params = [':p' => $compJson, ':c' => $isTaskDone, ':id' => $row['id']];
+            if ($rolloverSet !== '') {
+                $params[':today'] = $today;
+            }
+            $stmt->execute($params);
 
             $row['completed_pages'] = $compJson;
             $row['is_completed']    = $isTaskDone;
+            if ($rolloverSet !== '') {
+                $row['last_rollover_date'] = $today;
+            }
             $affectedTask = $row;
 
             // If Murajaah task is completed and end_page reaches or exceeds the current Murajaah boundary,

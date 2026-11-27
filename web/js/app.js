@@ -989,6 +989,7 @@ async function initDashboard() {
   initResetModal();
   initPlanModal();
   initAbsenceModal();
+  initPrayerModal();
 
   if (window.I18N && !window._dashLangBound) {
     I18N.onChange(() => {
@@ -1336,6 +1337,155 @@ function initAbsenceModal() {
       } catch (err) {
         showToast(err.message || 'تعذر إضافة يوم الغياب', true);
       }
+    });
+  }
+}
+
+function initPrayerModal() {
+  const modal = document.getElementById('prayer-modal');
+  const openBtn = document.getElementById('btn-open-prayer-modal');
+  const closeBtn = document.getElementById('prayer-modal-close');
+  const lengthBtns = document.querySelectorAll('.prayer-length-btn');
+  const loadingEl = document.getElementById('prayer-verses-loading');
+  const contentEl = document.getElementById('prayer-verses-content');
+  const surahBadge = document.getElementById('prayer-surah-badge');
+  const retryBadge = document.getElementById('prayer-retry-badge');
+  const textDisplay = document.getElementById('prayer-text-display');
+  const btnMastered = document.getElementById('btn-prayer-mastered');
+  const btnRetry = document.getElementById('btn-prayer-retry');
+  const btnChange = document.getElementById('btn-prayer-change');
+
+  if (!modal || !openBtn) return;
+
+  let currentLength = 'SHORT';
+  let currentRecitationId = null;
+
+  const openModal = () => {
+    modal.classList.remove('hidden');
+    fetchPrayerVerses(false);
+  };
+
+  const closeModal = () => {
+    modal.classList.add('hidden');
+  };
+
+  openBtn.addEventListener('click', openModal);
+  if (closeBtn) closeBtn.addEventListener('click', closeModal);
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) closeModal();
+  });
+
+  lengthBtns.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      lengthBtns.forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentLength = btn.getAttribute('data-len') || 'SHORT';
+      fetchPrayerVerses(true);
+    });
+  });
+
+  async function fetchPrayerVerses(forceNew = false) {
+    if (loadingEl) loadingEl.classList.remove('hidden');
+    if (contentEl) contentEl.classList.add('hidden');
+
+    try {
+      const res = await API.call('prayer/get_verses.php', {
+        method: 'POST',
+        body: { length: currentLength, force_new: forceNew },
+      });
+
+      if (!res || !res.success) {
+        throw new Error(res?.error || 'تعذر استحضار الآيات');
+      }
+
+      currentRecitationId = res.recitation_id;
+
+      if (surahBadge) {
+        surahBadge.textContent = `${res.surah_name_ar} • الآيات ${res.start_ayah} – ${res.end_ayah}`;
+      }
+
+      if (retryBadge) {
+        if (res.is_retry) {
+          retryBadge.classList.remove('hidden');
+        } else {
+          retryBadge.classList.add('hidden');
+        }
+      }
+
+      if (textDisplay) {
+        const versesHtml = (res.verses || []).map((v) => {
+          return `<span class="ayah-text">${v.text}</span> <span class="ayah-end" style="color:var(--accent); font-weight:700; margin:0 0.35rem;">﴿${v.ayah}﴾</span>`;
+        }).join(' ');
+        textDisplay.innerHTML = versesHtml;
+      }
+
+      // Update active length button if server returned existing retry length
+      if (res.length_type) {
+        currentLength = res.length_type;
+        lengthBtns.forEach((b) => {
+          if (b.getAttribute('data-len') === res.length_type) {
+            b.classList.add('active');
+          } else {
+            b.classList.remove('active');
+          }
+        });
+      }
+
+      if (loadingEl) loadingEl.classList.add('hidden');
+      if (contentEl) contentEl.classList.remove('hidden');
+    } catch (err) {
+      if (loadingEl) loadingEl.classList.add('hidden');
+      if (contentEl) contentEl.classList.remove('hidden');
+      if (textDisplay) {
+        textDisplay.innerHTML = `<div style="color:var(--danger); text-align:center;">${err.message}</div>`;
+      }
+    }
+  }
+
+  if (btnMastered) {
+    btnMastered.addEventListener('click', async () => {
+      if (!currentRecitationId) return;
+      btnMastered.disabled = true;
+      try {
+        const res = await API.call('prayer/update_status.php', {
+          method: 'POST',
+          body: { recitation_id: currentRecitationId, status: 'MASTERED' },
+        });
+        if (window.AudioEngine && typeof AudioEngine.playCelebration === 'function') {
+          AudioEngine.playCelebration();
+        }
+        showToast(res.message || 'تقبل الله صلاتك وطاعتك! أتقنت التلاوة مباركاً 🎉');
+        closeModal();
+      } catch (err) {
+        showToast(err.message, true);
+      } finally {
+        btnMastered.disabled = false;
+      }
+    });
+  }
+
+  if (btnRetry) {
+    btnRetry.addEventListener('click', async () => {
+      if (!currentRecitationId) return;
+      btnRetry.disabled = true;
+      try {
+        const res = await API.call('prayer/update_status.php', {
+          method: 'POST',
+          body: { recitation_id: currentRecitationId, status: 'PENDING_RETRY' },
+        });
+        showToast(res.message || 'تم حفظ الآيات لمراجعتها في صلاتك القادمة 👍');
+        closeModal();
+      } catch (err) {
+        showToast(err.message, true);
+      } finally {
+        btnRetry.disabled = false;
+      }
+    });
+  }
+
+  if (btnChange) {
+    btnChange.addEventListener('click', () => {
+      fetchPrayerVerses(true);
     });
   }
 }

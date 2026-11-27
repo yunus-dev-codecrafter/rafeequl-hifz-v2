@@ -77,43 +77,14 @@ if (!function_exists('rh_task_log_select')) {
 
 if (!function_exists('rh_apply_rollover')) {
     /**
-     * Shift uncompleted task to become today's active task (cancels rollover accumulation and shifts day).
+     * In the strict day-lock model, an uncompleted task preserves its original task_date
+     * so that missed days are audited accurately (Tafreet) and the user finishes their
+     * pending day's tasks before the next day's tasks unlock.
      * Safe to call repeatedly and from concurrent requests.
      */
     function rh_apply_rollover(PDO $pdo, array $row, string $today): array
     {
-        if ((int) ($row['is_completed'] ?? 0) === 1) {
-            return $row;
-        }
-
-        $taskDate = (string) ($row['task_date'] ?? '');
-        if ($taskDate === '' || $taskDate >= $today) {
-            return $row;
-        }
-
-        try {
-            // Shift date to today and clear rollover count
-            $stmt = $pdo->prepare(
-                'UPDATE `daily_task_logs`
-                 SET `task_date` = :today,
-                     `rollover_count` = 0,
-                     `last_rollover_date` = :today2
-                 WHERE `id` = :id
-                   AND `is_completed` = 0'
-            );
-            $stmt->execute([
-                ':today'  => $today,
-                ':today2' => $today,
-                ':id'     => (int) $row['id'],
-            ]);
-
-            $row['task_date'] = $today;
-            $row['rollover_count'] = 0;
-            $row['last_rollover_date'] = $today;
-            return $row;
-        } catch (Throwable $t) {
-            error_log('[Task Shift] ' . $t->getMessage());
-            return $row;
-        }
+        // Keep row date intact so the day is locked to the original pending day
+        return $row;
     }
 }

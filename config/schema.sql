@@ -497,3 +497,22 @@ CREATE TABLE IF NOT EXISTS `user_absences` (
         FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
         ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 14. prayer_recitations table (v18: Prayer Recitation Companion)
+CREATE TABLE IF NOT EXISTS `prayer_recitations` (
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `user_id` INT NOT NULL,
+    `surah_number` SMALLINT UNSIGNED NOT NULL,
+    `start_ayah` SMALLINT UNSIGNED NOT NULL,
+    `end_ayah` SMALLINT UNSIGNED NOT NULL,
+    `length_type` ENUM('SHORT', 'MEDIUM', 'LONG') NOT NULL DEFAULT 'SHORT',
+    `status` ENUM('PENDING_RETRY', 'MASTERED') NOT NULL DEFAULT 'PENDING_RETRY',
+    `attempts` INT UNSIGNED NOT NULL DEFAULT 1,
+    `last_recited_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    KEY `idx_pr_user_status` (`user_id`, `status`),
+    KEY `idx_pr_user_surah` (`user_id`, `surah_number`),
+    CONSTRAINT `fk_prayer_recitations_user`
+        FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
+        ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

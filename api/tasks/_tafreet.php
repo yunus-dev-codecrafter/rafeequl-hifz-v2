@@ -160,12 +160,15 @@ if (!function_exists('rh_evaluate_tafreet')) {
                            FROM (
                                SELECT `task_date`,
                                       COUNT(*) AS `total_core`,
-                                      SUM(CASE WHEN `is_completed` = 1 THEN 1 ELSE 0 END) AS `completed_core`
+                                      SUM(CASE WHEN `is_completed` = 1 THEN 1 ELSE 0 END) AS `completed_core`,
+                                      MAX(COALESCE(`last_rollover_date`, `task_date`)) AS `latest_completion_date`
                                FROM `daily_task_logs`
                                WHERE `user_id` = :u2
                                  AND `task_type` IN ('HIFZ_JADID', 'TIKRAR_AMS', 'RABT', 'MURAJAAH')
                                GROUP BY `task_date`
-                               HAVING `total_core` > 0 AND `total_core` = `completed_core`
+                               HAVING `total_core` > 0
+                                  AND `total_core` = `completed_core`
+                                  AND `latest_completion_date` <= `task_date`
                            ) AS `comp`
                        )"
                 );
